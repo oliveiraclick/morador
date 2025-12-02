@@ -64,27 +64,27 @@ export const SaaS_LP: React.FC = () => {
         </p>
 
         <div className="space-y-4 max-w-sm mx-auto">
-          <Button 
-            fullWidth 
+          <Button
+            fullWidth
             icon={<Heart size={20} className="text-red-500 fill-red-500" />}
             variant="secondary"
             className="!border-fuchsia-100 !text-fuchsia-700 hover:!border-fuchsia-200"
           >
             Já aderiram <span className="ml-2 flex -space-x-2 overflow-hidden">
-              <img className="inline-block h-8 w-8 rounded-full ring-2 ring-fuchsia-50" src="https://i.pravatar.cc/32?img=6" alt="Avatar 1"/>
-              <img className="inline-block h-8 w-8 rounded-full ring-2 ring-fuchsia-50" src="https://i.pravatar.cc/32?img=12" alt="Avatar 2"/>
-              <img className="inline-block h-8 w-8 rounded-full ring-2 ring-fuchsia-50" src="https://i.pravatar.cc/32?img=17" alt="Avatar 3"/>
+              <img className="inline-block h-8 w-8 rounded-full ring-2 ring-fuchsia-50" src="https://i.pravatar.cc/32?img=6" alt="Avatar 1" />
+              <img className="inline-block h-8 w-8 rounded-full ring-2 ring-fuchsia-50" src="https://i.pravatar.cc/32?img=12" alt="Avatar 2" />
+              <img className="inline-block h-8 w-8 rounded-full ring-2 ring-fuchsia-50" src="https://i.pravatar.cc/32?img=17" alt="Avatar 3" />
             </span>
           </Button>
           <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">ou</p>
-          <Button fullWidth onClick={handleTrial} className="bg-fuchsia-600 hover:bg-fuchsia-700 !shadow-lg !shadow-fuchsia-500/40">
+          <Button fullWidth onClick={handleTrial} className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 !shadow-lg !shadow-fuchsia-500/40">
             Eu Quero
           </Button>
-          <Input 
-            type="email" 
-            placeholder="seu@email.com" 
-            value={email} 
-            onChange={(e) => setEmail(e.target.value)} 
+          <Input
+            type="email"
+            placeholder="seu@email.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             className="!h-14 !rounded-[20px] !bg-white !border-slate-100 !text-slate-800 !text-center font-bold"
           />
         </div>
@@ -109,78 +109,78 @@ export const Marketplace: React.FC = () => {
   const categoryIcons = ['✨', '💅', '🍔', '🏠', '🐶'];
 
   const handleCategoryClick = (cat: string) => {
-    if (cat === 'Tudo') { /* Reset logic */ } 
+    if (cat === 'Tudo') { /* Reset logic */ }
     else { navigate(`/category/${cat.toLowerCase()}`); }
   };
 
   return (
     <div className="min-h-screen bg-[#f8fafc] pb-20">
-       <header className="px-6 pt-12 pb-6 bg-white shadow-sm">
-         <div className="flex justify-between items-center mb-6">
-           <h1 className="text-3xl font-black text-slate-800 tracking-tight">
-             Explore os <br />
-             <span className="gradient-text">Melhores Salões</span>
-           </h1>
-           <button 
-             onClick={() => navigate('/login')}
-             className="w-12 h-12 rounded-2xl bg-slate-50 shadow-glass border border-white flex items-center justify-center"
-             title="Minha Conta"
-           >
-              <User size={24} className="text-slate-400" />
-           </button>
-         </div>
-         <div className="flex gap-3">
-            <div className="flex-1 h-14 bg-white rounded-[20px] shadow-sm flex items-center px-4 gap-3 border border-slate-50">
-              <Search size={20} className="text-slate-300" />
-              <input type="text" placeholder="Buscar salões, serviços..." className="flex-1 bg-transparent font-bold text-slate-600 outline-none placeholder-slate-300" />
-            </div>
-            <button className="w-14 h-14 bg-slate-900 rounded-[20px] flex items-center justify-center text-white">
-              <Search size={20} />
-            </button>
-         </div>
-       </header>
-       <div className="pl-6 my-8 overflow-x-auto whitespace-nowrap scrollbar-hide pb-2">
-          {categories.map((cat, i) => (
-            <div key={cat} onClick={() => handleCategoryClick(cat)} className="inline-flex flex-col items-center mr-5 cursor-pointer group">
-              <div className={`w-16 h-16 rounded-[24px] mb-2 flex items-center justify-center text-2xl shadow-sm group-hover:-translate-y-1 transition-all ${i === 0 ? 'bg-violet-100' : 'bg-white'}`}>
-                 {categoryIcons[i]}
-              </div>
-              <span className={`text-[10px] font-bold ${i === 0 ? 'text-violet-500' : 'text-slate-400'}`}>{cat}</span>
-            </div>
-          ))}
-       </div>
-       <div className="mb-4 px-6 flex justify-between items-center">
-          <h2 className="text-xl font-black text-slate-800">Salões em Destaque</h2>
-          <div className="bg-white p-1.5 rounded-[20px] flex shadow-soft border border-slate-100">
-             <button onClick={()=>setActiveTab('service')} className={`px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${activeTab==='service' ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg' : 'text-slate-400'}`}>Serviços</button>
-             <button onClick={()=>setActiveTab('product')} className={`px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${activeTab==='product' ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg' : 'text-slate-400'}`}>Produtos</button>
-          </div>
-       </div>
-        <div className="px-6 space-y-6">
-          {filteredProviders.map((provider) => (
-             <div key={provider.id} onClick={() => navigate(`/provider/${provider.id}`)} className="bg-white rounded-[32px] p-4 shadow-soft border border-slate-50 flex gap-4 cursor-pointer">
-                <div className="w-24 h-24 rounded-[24px] overflow-hidden relative shrink-0">
-                   <img src={provider.coverImage} className="w-full h-full object-cover" alt="" />
-                </div>
-                <div className="flex-1 py-1">
-                   <div className="flex justify-between items-start mb-1">
-                      <span className="text-[10px] font-black text-slate-400 uppercase">{provider.subcategory}</span>
-                      <div className="flex items-center gap-1">
-                        <Star size={12} className="text-yellow-400 fill-yellow-400" />
-                        <span className="text-xs font-bold text-slate-700">{provider.rating}</span>
-                      </div>
-                   </div>
-                   <h3 className="text-lg font-black text-slate-800 leading-tight mb-2">{provider.name}</h3>
-                    {provider.isPresent && (
-                      <div className="flex items-center gap-1.5">
-                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                        <span className="text-xs font-bold text-green-600">No condomínio</span>
-                      </div>
-                    )}
-                </div>
-             </div>
-          ))}
+      <header className="px-6 pt-12 pb-6 bg-white shadow-sm">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-black text-slate-800 tracking-tight">
+            Explore os <br />
+            <span className="gradient-text">Melhores Salões</span>
+          </h1>
+          <button
+            onClick={() => navigate('/login')}
+            className="w-12 h-12 rounded-2xl bg-slate-50 shadow-glass border border-white flex items-center justify-center"
+            title="Minha Conta"
+          >
+            <User size={24} className="text-slate-400" />
+          </button>
         </div>
+        <div className="flex gap-3">
+          <div className="flex-1 h-14 bg-white rounded-[20px] shadow-sm flex items-center px-4 gap-3 border border-slate-50">
+            <Search size={20} className="text-slate-300" />
+            <input type="text" placeholder="Buscar salões, serviços..." className="flex-1 bg-transparent font-bold text-slate-600 outline-none placeholder-slate-300" />
+          </div>
+          <button className="w-14 h-14 bg-slate-900 rounded-[20px] flex items-center justify-center text-white">
+            <Search size={20} />
+          </button>
+        </div>
+      </header>
+      <div className="pl-6 my-8 overflow-x-auto whitespace-nowrap scrollbar-hide pb-2">
+        {categories.map((cat, i) => (
+          <div key={cat} onClick={() => handleCategoryClick(cat)} className="inline-flex flex-col items-center mr-5 cursor-pointer group">
+            <div className={`w-16 h-16 rounded-[24px] mb-2 flex items-center justify-center text-2xl shadow-sm group-hover:-translate-y-1 transition-all ${i === 0 ? 'bg-violet-100' : 'bg-white'}`}>
+              {categoryIcons[i]}
+            </div>
+            <span className={`text-[10px] font-bold ${i === 0 ? 'text-violet-500' : 'text-slate-400'}`}>{cat}</span>
+          </div>
+        ))}
+      </div>
+      <div className="mb-4 px-6 flex justify-between items-center">
+        <h2 className="text-xl font-black text-slate-800">Salões em Destaque</h2>
+        <div className="bg-white p-1.5 rounded-[20px] flex shadow-soft border border-slate-100">
+          <button onClick={() => setActiveTab('service')} className={`px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${activeTab === 'service' ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg' : 'text-slate-400'}`}>Serviços</button>
+          <button onClick={() => setActiveTab('product')} className={`px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${activeTab === 'product' ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg' : 'text-slate-400'}`}>Produtos</button>
+        </div>
+      </div>
+      <div className="px-6 space-y-6">
+        {filteredProviders.map((provider) => (
+          <div key={provider.id} onClick={() => navigate(`/provider/${provider.id}`)} className="bg-white rounded-[32px] p-4 shadow-soft border border-slate-50 flex gap-4 cursor-pointer">
+            <div className="w-24 h-24 rounded-[24px] overflow-hidden relative shrink-0">
+              <img src={provider.coverImage} className="w-full h-full object-cover" alt="" />
+            </div>
+            <div className="flex-1 py-1">
+              <div className="flex justify-between items-start mb-1">
+                <span className="text-[10px] font-black text-slate-400 uppercase">{provider.subcategory}</span>
+                <div className="flex items-center gap-1">
+                  <Star size={12} className="text-yellow-400 fill-yellow-400" />
+                  <span className="text-xs font-bold text-slate-700">{provider.rating}</span>
+                </div>
+              </div>
+              <h3 className="text-lg font-black text-slate-800 leading-tight mb-2">{provider.name}</h3>
+              {provider.isPresent && (
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                  <span className="text-xs font-bold text-green-600">No condomínio</span>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
@@ -193,14 +193,14 @@ export const SaaSAdmin: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'plans' | 'providers' | 'appearance'>('overview');
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const [currentLogo, setCurrentLogo] = useState<string | null>(null);
+
   const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     const fetchLogo = async () => {
       const { data } = await supabase.from('app_settings').select('logo_url').eq('id', 1).single();
       if (data?.logo_url) {
-        setCurrentLogo(data.logo_url);
+
         setLogoPreview(data.logo_url);
       }
     };
@@ -250,11 +250,11 @@ export const SaaSAdmin: React.FC = () => {
       alert('Erro ao salvar no banco de dados: ' + dbError.message);
     } else {
       alert('Logo atualizada com sucesso!');
-      setCurrentLogo(publicUrl);
+
     }
     setIsUploading(false);
   };
-  
+
   return (
     <div className="min-h-screen bg-slate-900 pb-20">
       <div className="bg-gradient-to-br from-violet-800 to-fuchsia-800 pt-12 pb-8 px-6 rounded-b-[40px] shadow-2xl relative">

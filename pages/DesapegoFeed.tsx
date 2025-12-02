@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, MessageCircle, Edit2, Trash2, MapPin, Search } from 'lucide-react';
+import { ArrowLeft, Plus, MessageCircle, MapPin, Search } from 'lucide-react';
 import { MOCK_DESAPEGO_ITEMS } from '../types';
 import { Button } from '../components/Button';
 
