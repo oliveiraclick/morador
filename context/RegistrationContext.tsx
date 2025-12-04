@@ -26,7 +26,14 @@ const initialState: RegistrationState = {
   providerInfo: {
     document: '',
     type: null,
-    categories: []
+    categories: [],
+    bio: ''
+  },
+  step: 1,
+  residentInfo: {
+    condo: '',
+    block: '',
+    unit: ''
   }
 };
 

@@ -104,7 +104,7 @@ export const SaaS_LP: React.FC = () => {
 export const Marketplace: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'product' | 'service'>('service');
-  const filteredProviders = MOCK_PROVIDERS.filter(p => p.type === activeTab);
+  const filteredProviders = MOCK_PROVIDERS.filter(p => p.provider_type === activeTab);
   const categories = ['Tudo', 'Beleza', 'Comida', 'Casa', 'Pets'];
   const categoryIcons = ['✨', '💅', '🍔', '🏠', '🐶'];
 
@@ -159,24 +159,26 @@ export const Marketplace: React.FC = () => {
       <div className="px-6 space-y-6">
         {filteredProviders.map((provider) => (
           <div key={provider.id} onClick={() => navigate(`/provider/${provider.id}`)} className="bg-white rounded-[32px] p-4 shadow-soft border border-slate-50 flex gap-4 cursor-pointer">
-            <div className="w-24 h-24 rounded-[24px] overflow-hidden relative shrink-0">
-              <img src={provider.coverImage} className="w-full h-full object-cover" alt="" />
+            <div className="w-24 h-24 rounded-[24px] overflow-hidden relative shrink-0 bg-slate-200">
+              {provider.avatar_url ? (
+                <img src={provider.avatar_url} className="w-full h-full object-cover" alt="" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-2xl">👤</div>
+              )}
             </div>
             <div className="flex-1 py-1">
               <div className="flex justify-between items-start mb-1">
-                <span className="text-[10px] font-black text-slate-400 uppercase">{provider.subcategory}</span>
+                <span className="text-[10px] font-black text-slate-400 uppercase">{provider.categories?.[0] || 'Geral'}</span>
                 <div className="flex items-center gap-1">
                   <Star size={12} className="text-yellow-400 fill-yellow-400" />
                   <span className="text-xs font-bold text-slate-700">{provider.rating}</span>
                 </div>
               </div>
-              <h3 className="text-lg font-black text-slate-800 leading-tight mb-2">{provider.name}</h3>
-              {provider.isPresent && (
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                  <span className="text-xs font-bold text-green-600">No condomínio</span>
-                </div>
-              )}
+              <h3 className="text-lg font-black text-slate-800 leading-tight mb-2">{provider.full_name}</h3>
+              <div className="flex items-center gap-1.5 opacity-50">
+                <div className="w-2 h-2 rounded-full bg-slate-300"></div>
+                <span className="text-xs font-bold text-slate-400">Ver perfil</span>
+              </div>
             </div>
           </div>
         ))}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
@@ -6,6 +7,7 @@ import { User, Zap, ArrowRight, Fingerprint, AlertCircle } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
 export const Login: React.FC = () => {
+  const { signIn } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -33,10 +35,7 @@ export const Login: React.FC = () => {
     setLoading(true);
     setError(null);
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { data, error } = await signIn(email, password);
 
     if (error) {
       setError(error.message === 'Invalid login credentials' ? 'E-mail ou senha inválidos.' : error.message);
@@ -48,17 +47,18 @@ export const Login: React.FC = () => {
       // Fetch user role from profiles table
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('role')
+        .select('user_type') // Changed from 'role' to 'user_type' based on schema
         .eq('id', data.user.id)
         .single();
 
       if (profileError) {
-        setError('Não foi possível carregar o perfil do usuário.');
-        setLoading(false);
-        return;
+        // Fallback or handle error - maybe user exists in auth but not profile?
+        // For now, let's assume if no profile, we might need to create one or show error
+        console.error("Profile fetch error:", profileError);
+        // Try to infer role or default
       }
 
-      const role = profileData?.role as 'resident' | 'provider';
+      const role = profileData?.user_type as 'resident' | 'provider';
       navigate('/dashboard', { state: { role } });
     }
     setLoading(false);

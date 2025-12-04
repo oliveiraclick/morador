@@ -1,11 +1,9 @@
-
-
 import React, { createContext, useContext, useState } from 'react';
-import { Offer, OrderItem } from '../types';
+import { Offer, CartItem } from '../types';
 
 interface CartContextType {
-  items: OrderItem[];
-  addToCart: (offer: Offer) => void;
+  items: CartItem[];
+  addToCart: (offer: Offer, providerId: string) => void;
   removeFromCart: (offerId: string) => void;
   clearCart: () => void;
   total: number;
@@ -15,15 +13,23 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [items, setItems] = useState<OrderItem[]>([]);
+  const [items, setItems] = useState<CartItem[]>([]);
 
-  const addToCart = (offer: Offer) => {
+  const addToCart = (offer: Offer, providerId: string) => {
     setItems(prev => {
       const existing = prev.find(i => i.offerId === offer.id);
       if (existing) {
         return prev.map(i => i.offerId === offer.id ? { ...i, quantity: i.quantity + 1 } : i);
       }
-      return [...prev, { offerId: offer.id, title: offer.title, quantity: 1, price: offer.price }];
+      return [...prev, {
+        offerId: offer.id,
+        title: offer.title,
+        quantity: 1,
+        price: offer.price,
+        imageUrl: offer.imageUrl,
+        providerId,
+        type: offer.type
+      }];
     });
   };
 

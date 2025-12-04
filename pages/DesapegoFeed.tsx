@@ -1,16 +1,81 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, MessageCircle, MapPin, Search } from 'lucide-react';
-import { MOCK_DESAPEGO_ITEMS } from '../types';
 import { Button } from '../components/Button';
+import { supabase } from '../supabaseClient';
+import { Product, Profile } from '../types';
+
+interface DesapegoItem extends Product {
+    seller?: Profile;
+}
 
 export const DesapegoFeed: React.FC = () => {
     const navigate = useNavigate();
-    // CORRIGIDO: 'setItems' foi removido para resolver o erro TS6133
-    const [items] = useState(MOCK_DESAPEGO_ITEMS);
+    const [items, setItems] = useState<DesapegoItem[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetchItems();
+    }, []);
+
+    const fetchItems = async () => {
+        setLoading(true);
+        try {
+            // Fetch products where product_type is 'desapego'
+            const { data: productsData, error: productsError } = await supabase
+                .from('products')
+                .select('*')
+                .eq('product_type', 'desapego')
+                .eq('is_available', true)
+                .order('created_at', { ascending: false });
+
+            if (productsError) throw productsError;
+
+            // Fetch seller profiles for these products
+            const sellerIds = Array.from(new Set(productsData.map(p => p.seller_id)));
+
+            if (sellerIds.length > 0) {
+                const { data: profilesData, error: profilesError } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .in('id', sellerIds);
+
+                if (profilesError) throw profilesError;
+
+                // Map profiles to a dictionary for easy lookup
+                const profilesMap = (profilesData || []).reduce((acc, profile) => {
+                    acc[profile.id] = profile;
+                    return acc;
+                }, {} as Record<string, Profile>);
+
+                // Combine product data with seller data
+                const itemsWithSellers = productsData.map(product => ({
+                    ...product,
+                    seller: profilesMap[product.seller_id]
+                }));
+
+                setItems(itemsWithSellers);
+            } else {
+                setItems([]);
+            }
+
+        } catch (error) {
+            console.error("Error fetching desapego items:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleBack = () => {
         navigate('/dashboard', { state: { role: 'resident' } });
+    };
+
+    const handleContact = (phone?: string) => {
+        if (phone) {
+            window.open(`https://wa.me/${phone}`, '_blank');
+        } else {
+            alert("Telefone não disponível.");
+        }
     };
 
     return (
@@ -43,53 +108,62 @@ export const DesapegoFeed: React.FC = () => {
 
             {/* Feed */}
             <div className="p-6 space-y-8 animate-slide-up">
-                {items.map((item) => (
-                    <div key={item.id} className="bg-white rounded-[32px] overflow-hidden shadow-soft border border-slate-50 group">
+                {loading ? (
+                    <div className="text-center py-10 text-slate-400">Carregando...</div>
+                ) : items.length === 0 ? (
+                    <div className="text-center py-10 text-slate-400">Nenhum item encontrado.</div>
+                ) : (
+                    items.map((item) => (
+                        <div key={item.id} className="bg-white rounded-[32px] overflow-hidden shadow-soft border border-slate-50 group">
 
-                        {/* Header: Seller Info */}
-                        <div className="px-5 py-4 flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <img src={item.sellerAvatar} alt={item.sellerName} className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm" />
-                                <div>
-                                    <h3 className="text-sm font-bold text-slate-900">{item.sellerName}</h3>
-                                    <div className="flex items-center gap-1 text-slate-400 text-[10px] font-bold uppercase tracking-wider">
-                                        <MapPin size={10} />
-                                        <span>{item.sellerAddress}</span>
-                                        <span>•</span>
-                                        <span>{item.date}</span>
+                            {/* Header: Seller Info */}
+                            <div className="px-5 py-4 flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <img src={item.seller?.avatar_url || "https://via.placeholder.com/100"} alt={item.seller?.full_name} className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm" />
+                                    <div>
+                                        <h3 className="text-sm font-bold text-slate-900">{item.seller?.full_name || 'Usuário'}</h3>
+                                        <div className="flex items-center gap-1 text-slate-400 text-[10px] font-bold uppercase tracking-wider">
+                                            <MapPin size={10} />
+                                            <span>{item.seller?.condo_name || item.seller?.address || 'Vizinho'}</span>
+                                            <span>•</span>
+                                            <span>{new Date(item.created_at || Date.now()).toLocaleDateString()}</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
-                        {/* Item Content */}
-                        <div className="px-5 pb-5">
-                            <h2 className="text-lg font-bold text-slate-900 mb-2">{item.title}</h2>
-                            <p className="text-slate-600 text-sm leading-relaxed mb-4">{item.description}</p>
+                            {/* Item Content */}
+                            <div className="px-5 pb-5">
+                                <h2 className="text-lg font-bold text-slate-900 mb-2">{item.title}</h2>
+                                <p className="text-slate-600 text-sm leading-relaxed mb-4">{item.description}</p>
 
-                            {/* Images */}
-                            {item.images.length > 0 && (
-                                <div className="mb-4 overflow-hidden rounded-2xl border border-slate-100">
-                                    <img src={item.images[0]} alt={item.title} className="w-full h-64 object-cover" />
-                                </div>
-                            )}
-
-                            {/* Footer: Price & Action */}
-                            <div className="flex items-center justify-between pt-2">
-                                <div>
-                                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Valor</span>
-                                    <div className="text-2xl font-black text-slate-900">
-                                        R$ {item.price.toFixed(2).replace('.', ',')}
+                                {/* Images */}
+                                {item.images && item.images.length > 0 && (
+                                    <div className="mb-4 overflow-hidden rounded-2xl border border-slate-100">
+                                        <img src={item.images[0]} alt={item.title} className="w-full h-64 object-cover" />
                                     </div>
+                                )}
+
+                                {/* Footer: Price & Action */}
+                                <div className="flex items-center justify-between pt-2">
+                                    <div>
+                                        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Valor</span>
+                                        <div className="text-2xl font-black text-slate-900">
+                                            R$ {item.price.toFixed(2).replace('.', ',')}
+                                        </div>
+                                    </div>
+                                    <Button
+                                        onClick={() => handleContact(item.contact_phone || item.seller?.phone)}
+                                        className="rounded-full px-6 h-12 shadow-lg shadow-violet-200"
+                                    >
+                                        <MessageCircle size={18} className="mr-2" />
+                                        Tenho Interesse
+                                    </Button>
                                 </div>
-                                <Button className="rounded-full px-6 h-12 shadow-lg shadow-violet-200">
-                                    <MessageCircle size={18} className="mr-2" />
-                                    Tenho Interesse
-                                </Button>
                             </div>
                         </div>
-                    </div>
-                ))}
+                    ))
+                )}
             </div>
         </div>
     );

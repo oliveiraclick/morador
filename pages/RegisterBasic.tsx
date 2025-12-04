@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { useRegistration } from '../context/RegistrationContext';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
@@ -8,6 +9,7 @@ import { ArrowLeft, ChevronRight, AlertCircle } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
 export const RegisterBasic: React.FC = () => {
+  const { signUp } = useAuth();
   const navigate = useNavigate();
   const { data, updateBasicInfo } = useRegistration();
   const [loading, setLoading] = useState(false);
@@ -41,15 +43,16 @@ export const RegisterBasic: React.FC = () => {
       return;
     }
 
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: name,
-          role: data.role,
-        },
-      },
+    // For providers, we don't create the account yet, we move to next step
+    if (data.role === 'provider') {
+      navigate('/register/provider-complete');
+      return;
+    }
+
+    // For residents, we create the account now
+    const { data: signUpData, error: signUpError } = await signUp(email, password, {
+      full_name: name,
+      role: data.role,
     });
 
     if (signUpError) {
@@ -61,11 +64,15 @@ export const RegisterBasic: React.FC = () => {
     if (signUpData.user) {
       // The trigger will create the profile. For residents, we update it.
       if (data.role === 'resident') {
+        // Convert DD/MM/YYYY to YYYY-MM-DD for Supabase date type
+        const [day, month, year] = data.basicInfo.birthDate.split('/');
+        const formattedBirthDate = `${year}-${month}-${day}`;
+
         const { error: updateError } = await supabase
           .from('profiles')
           .update({
             phone: data.basicInfo.phone,
-            birth_date: data.basicInfo.birthDate,
+            birth_date: formattedBirthDate,
             condo_name: data.basicInfo.condoName,
             address: data.basicInfo.address,
           })
@@ -78,9 +85,6 @@ export const RegisterBasic: React.FC = () => {
         }
         alert("Cadastro realizado! Verifique seu e-mail para confirmar a conta.");
         navigate('/login');
-      } else {
-        // For providers, just continue to the next step
-        navigate('/register/provider-complete');
       }
     }
     setLoading(false);
@@ -108,14 +112,14 @@ export const RegisterBasic: React.FC = () => {
         {data.role === 'resident' && (
           <>
             <Input label="Nome do Condomínio" name="condoName" placeholder="Residencial..." value={data.basicInfo.condoName || ''} onChange={handleChange} required disabled={loading} />
-             <Input label="Endereço" name="address" placeholder="Bloco B, Apt 402" value={data.basicInfo.address || ''} onChange={handleChange} required disabled={loading} />
+            <Input label="Endereço" name="address" placeholder="Bloco B, Apt 402" value={data.basicInfo.address || ''} onChange={handleChange} required disabled={loading} />
           </>
         )}
 
         <Input label="E-mail" name="email" type="email" placeholder="seu@email.com" value={data.basicInfo.email} onChange={handleChange} required disabled={loading} />
         <Input label="Senha" name="password" isPassword placeholder="•••••••" value={data.basicInfo.password} onChange={handleChange} required disabled={loading} />
         <Input label="Confirmar Senha" name="confirmPassword" isPassword placeholder="•••••••" value={data.basicInfo.confirmPassword} onChange={handleChange} required disabled={loading} />
-        
+
         {error && (
           <div className="bg-red-50 text-red-600 text-xs font-bold p-3 rounded-xl flex items-center gap-2">
             <AlertCircle size={16} /> {error}
@@ -124,7 +128,7 @@ export const RegisterBasic: React.FC = () => {
 
         <div className="pt-6">
           <Button type="submit" fullWidth disabled={loading}>
-            {loading ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div> : data.role === 'resident' ? 'Finalizar' : 'Continuar'} 
+            {loading ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div> : data.role === 'resident' ? 'Finalizar' : 'Continuar'}
             {!loading && data.role !== 'resident' && <ChevronRight size={20} />}
           </Button>
         </div>
