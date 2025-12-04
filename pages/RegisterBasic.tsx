@@ -35,59 +35,96 @@ export const RegisterBasic: React.FC = () => {
     setLoading(true);
     setError(null);
 
-    const { email, password, confirmPassword, name } = data.basicInfo;
+    try {
+      console.log('🔵 [DEBUG] Iniciando cadastro...');
+      const { email, password, confirmPassword, name } = data.basicInfo;
+      console.log('🔵 [DEBUG] Dados do formulário:', { email, name, role: data.role });
 
-    if (password !== confirmPassword) {
-      setError("As senhas não coincidem.");
-      setLoading(false);
-      return;
-    }
+      if (password !== confirmPassword) {
+        console.log('🔴 [ERROR] Senhas não coincidem');
+        setError("As senhas não coincidem.");
+        setLoading(false);
+        return;
+      }
 
-    // For providers, we don't create the account yet, we move to next step
-    if (data.role === 'provider') {
-      navigate('/register/provider-complete');
-      return;
-    }
+      // For providers, we don't create the account yet, we move to next step
+      if (data.role === 'provider') {
+        console.log('🔵 [DEBUG] Redirecionando para completar cadastro de prestador');
+        navigate('/register/provider-complete');
+        return;
+      }
 
-    // For residents, we create the account now
-    const { data: signUpData, error: signUpError } = await signUp(email, password, {
-      full_name: name,
-      role: data.role,
-    });
+      // For residents, we create the account now
+      console.log('🔵 [DEBUG] Criando conta de morador...');
+      console.log('🔵 [DEBUG] Metadados enviados:', { full_name: name, role: data.role });
 
-    if (signUpError) {
-      setError(signUpError.message);
-      setLoading(false);
-      return;
-    }
+      const { data: signUpData, error: signUpError } = await signUp(email, password, {
+        full_name: name,
+        role: data.role,
+      });
 
-    if (signUpData.user) {
-      // The trigger will create the profile. For residents, we update it.
-      if (data.role === 'resident') {
-        // Convert DD/MM/YYYY to YYYY-MM-DD for Supabase date type
-        const [day, month, year] = data.basicInfo.birthDate.split('/');
-        const formattedBirthDate = `${year}-${month}-${day}`;
+      console.log('🔵 [DEBUG] Resposta do signUp:', { signUpData, signUpError });
 
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({
+      if (signUpError) {
+        console.log('🔴 [ERROR] Erro no signUp:', signUpError);
+        setError(`Erro ao criar conta: ${signUpError.message}`);
+        setLoading(false);
+        return;
+      }
+
+      if (signUpData.user) {
+        console.log('🟢 [SUCCESS] Usuário criado com ID:', signUpData.user.id);
+
+        // The trigger will create the profile. For residents, we update it.
+        if (data.role === 'resident') {
+          console.log('🔵 [DEBUG] Aguardando trigger criar perfil...');
+
+          // Wait a bit for the trigger to complete
+          await new Promise(resolve => setTimeout(resolve, 1000));
+
+          // Convert DD/MM/YYYY to YYYY-MM-DD for Supabase date type
+          const [day, month, year] = data.basicInfo.birthDate.split('/');
+          const formattedBirthDate = `${year}-${month}-${day}`;
+
+          console.log('🔵 [DEBUG] Atualizando perfil com dados adicionais...');
+          console.log('🔵 [DEBUG] Dados a atualizar:', {
             phone: data.basicInfo.phone,
             birth_date: formattedBirthDate,
             condo_name: data.basicInfo.condoName,
             address: data.basicInfo.address,
-          })
-          .eq('id', signUpData.user.id);
+          });
 
-        if (updateError) {
-          setError(`Usuário criado, mas falha ao salvar perfil: ${updateError.message}`);
-          setLoading(false);
-          return;
+          const { data: updateData, error: updateError } = await supabase
+            .from('profiles')
+            .update({
+              phone: data.basicInfo.phone,
+              birth_date: formattedBirthDate,
+              condo_name: data.basicInfo.condoName,
+              address: data.basicInfo.address,
+            })
+            .eq('id', signUpData.user.id)
+            .select();
+
+          console.log('🔵 [DEBUG] Resposta do update:', { updateData, updateError });
+
+          if (updateError) {
+            console.log('🔴 [ERROR] Erro ao atualizar perfil:', updateError);
+            setError(`Usuário criado, mas falha ao salvar perfil: ${updateError.message} (Código: ${updateError.code})`);
+            setLoading(false);
+            return;
+          }
+
+          console.log('🟢 [SUCCESS] Cadastro completo!');
+          alert("Cadastro realizado! Verifique seu e-mail para confirmar a conta.");
+          navigate('/login');
         }
-        alert("Cadastro realizado! Verifique seu e-mail para confirmar a conta.");
-        navigate('/login');
       }
+    } catch (err: any) {
+      console.log('🔴 [ERROR] Erro inesperado:', err);
+      setError(`Erro inesperado: ${err.message || 'Erro desconhecido'}`);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
