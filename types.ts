@@ -18,6 +18,7 @@ export interface Profile {
   document?: string;
   provider_type?: 'service' | 'product';
   categories?: string[];
+  rating?: number;
 }
 
 export interface AppSettings {
