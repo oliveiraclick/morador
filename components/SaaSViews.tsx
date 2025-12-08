@@ -39,7 +39,7 @@ export const SaaS_LP: React.FC = () => {
       <div className="relative z-10 max-w-xl mx-auto py-16">
         <div className="flex items-center justify-center gap-3 mb-6">
           {logoUrl ? (
-            <img src={logoUrl} alt="LIVIN Pro" className="w-12 h-12 object-contain" />
+            <img src={logoUrl} alt="MORADOR Pro" className="w-12 h-12 object-contain" />
           ) : (
             <div className="w-12 h-12 bg-gradient-to-br from-fuchsia-600 to-violet-600 rounded-2xl flex items-center justify-center shadow-lg">
               <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -47,7 +47,7 @@ export const SaaS_LP: React.FC = () => {
               </svg>
             </div>
           )}
-          <span className="text-3xl font-black text-slate-800">LIVIN <span className="gradient-text">Pro</span></span>
+          <span className="text-3xl font-black text-slate-800">MORADOR <span className="gradient-text">Pro</span></span>
         </div>
 
         <p className="inline-flex items-center gap-2 px-4 py-2 mb-8 bg-fuchsia-100 text-fuchsia-700 rounded-full text-xs font-bold uppercase tracking-widest">

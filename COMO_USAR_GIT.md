@@ -106,7 +106,7 @@ git stash pop
 
 ## 📌 Seu Repositório
 
-**URL:** https://github.com/oliveiraclick/livin
+**URL:** https://github.com/oliveiraclick/morador
 
 **Branch principal:** master
 

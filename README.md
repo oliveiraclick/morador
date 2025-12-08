@@ -1,4 +1,4 @@
-# LIVIN App 🏠
+# MORADOR App 🏠
 
 Aplicativo de marketplace para condomínios, conectando residentes e prestadores de serviços/produtos.
 
@@ -28,7 +28,7 @@ Aplicativo de marketplace para condomínios, conectando residentes e prestadores
 1. **Clone o repositório:**
    ```bash
    git clone <seu-repositorio>
-   cd livin
+   cd morador
    ```
 
 2. **Instale as dependências:**
@@ -87,7 +87,7 @@ npm run build
 ## 📱 Estrutura do Projeto
 
 ```
-livin/
+morador/
 ├── components/       # Componentes reutilizáveis
 ├── context/         # Context API (Auth, Cart, Registration)
 ├── pages/           # Páginas da aplicação

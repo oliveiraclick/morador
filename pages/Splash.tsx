@@ -19,7 +19,7 @@ export const Splash: React.FC = () => {
 
       <div className="flex-1 flex flex-col items-center justify-center z-10 w-full animate-fade-in">
         <div className="w-60 h-60 flex items-center justify-center mb-8">
-          <img src="/logo.png" alt="LIVIN Logo" className="w-full h-full object-contain drop-shadow-[0_0_50px_rgba(139,92,246,0.6)]" />
+          <img src="/logo.png" alt="MORADOR Logo" className="w-full h-full object-contain drop-shadow-[0_0_50px_rgba(139,92,246,0.6)]" />
         </div>
         <div className="mt-4 px-3 py-1 bg-white/20 rounded-full text-[9px] font-bold text-slate-300">v4.1 - ATUALIZADO AGORA</div>
       </div>

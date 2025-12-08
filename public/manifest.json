@@ -1,6 +1,6 @@
 {
-    "name": "LIVIN",
-    "short_name": "LIVIN",
+    "name": "MORADOR",
+    "short_name": "MORADOR",
     "description": "Marketplace de serviços entre moradores e prestadores",
     "start_url": "/",
     "display": "standalone",
