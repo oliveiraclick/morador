@@ -187,7 +187,7 @@ export const Marketplace: React.FC = () => {
                 <span className="text-[10px] font-black text-slate-400 uppercase">{provider.categories?.[0] || 'Geral'}</span>
                 <div className="flex items-center gap-1">
                   <Star size={12} className="text-yellow-400 fill-yellow-400" />
-                  <span className="text-xs font-bold text-slate-700">{provider.rating}</span>
+                  <span className="text-xs font-bold text-slate-700">{(provider as any).rating || '5.0'}</span>
                 </div>
               </div>
               <h3 className="text-lg font-black text-slate-800 leading-tight mb-2">{provider.full_name}</h3>
