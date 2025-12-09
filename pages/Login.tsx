@@ -143,6 +143,7 @@ export const Login: React.FC = () => {
           <Link to="/register/type" className="text-sm font-black text-slate-800 border-b-2 border-fuchsia-400 pb-0.5 hover:text-fuchsia-600">
             Criar uma nova conta
           </Link>
+          <p className="mt-4 text-[10px] text-slate-400 font-mono">v1.1.0</p>
         </div>
       </div>
     </div>
