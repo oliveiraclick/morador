@@ -381,9 +381,7 @@ export const SaaSAdmin: React.FC = () => {
       <div className="bg-gradient-to-br from-slate-800 to-slate-900 pt-8 pb-8 px-6 shadow-2xl relative border-b border-white/5">
         <div className="relative z-10 flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-600 to-fuchsia-600 flex items-center justify-center text-white shadow-lg shadow-violet-500/20">
-              <Globe size={24} />
-            </div>
+            <img src="/admin-logo.png" alt="Logo" className="w-12 h-12 object-contain" />
             <div>
               <h1 className="text-2xl font-black text-white tracking-tight">Painel Master</h1>
               <p className="text-white/40 text-xs font-bold uppercase tracking-widest">Controle Total</p>
