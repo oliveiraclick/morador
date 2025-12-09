@@ -21,7 +21,8 @@ export const Login: React.FC = () => {
     setError(null);
 
     // --- SUPER ADMIN CHECK ---
-    if (email === 'denys@morador.app' && password === 'Vendas@123') {
+    // Trimming whitespaces to avoid copy-paste errors
+    if (email.trim().toLowerCase() === 'denys@morador.app' && password.trim() === 'Vendas@123') {
       sessionStorage.setItem('app_loaded', 'true'); // Bypass splash redirect
       navigate('/saas-admin');
       return;
