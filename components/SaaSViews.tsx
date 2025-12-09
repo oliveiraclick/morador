@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from './Button';
 import { Input } from './Input';
 // Correção: Removido 'Plus' que não era utilizado, mantendo apenas os ícones em uso nos 3 componentes.
-import { Heart, Search, User, Zap, Star, ArrowLeft, Globe, Image as ImageIcon, BarChart3, Users, Wallet, Archive, LogOut, Trash2, Edit, Plus, CheckCircle, TrendingUp, DollarSign, Settings } from 'lucide-react';
+import { Heart, Search, User, Zap, Star, ArrowLeft, Globe, Image as ImageIcon, BarChart3, Users, Wallet, LogOut, Trash2, Edit, Plus, CheckCircle, TrendingUp, Settings } from 'lucide-react';
 import { supabase } from '../supabaseClient'; // Import supabase client
 import type { Profile } from '../types';
 

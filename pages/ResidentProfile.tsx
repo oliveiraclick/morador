@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
-import { ArrowLeft, Settings, LogOut, Package, Heart, QrCode, ChevronRight, Shield, CreditCard, User as UserIcon } from 'lucide-react';
+import { ArrowLeft, Settings, LogOut, Package, Heart, ChevronRight, Shield, CreditCard, User as UserIcon } from 'lucide-react';
 
 export const ResidentProfile: React.FC = () => {
    const navigate = useNavigate();
