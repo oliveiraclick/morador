@@ -1,10 +1,24 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, User, Settings, LogOut, Package, Heart, QrCode, ChevronRight, Shield, CreditCard } from 'lucide-react';
+import { supabase } from '../supabaseClient';
+import { ArrowLeft, Settings, LogOut, Package, Heart, QrCode, ChevronRight, Shield, CreditCard, User as UserIcon } from 'lucide-react';
 
 export const ResidentProfile: React.FC = () => {
    const navigate = useNavigate();
+
+   // Banner state with static fallback
+   const [bannerUrl, setBannerUrl] = useState<string>("https://images.pexels.com/photos/1267696/pexels-photo-1267696.jpeg?auto=compress&cs=tinysrgb&w=800");
+
+   useEffect(() => {
+      const fetchBanner = async () => {
+         const { data } = await supabase.from('app_settings').select('banner_url').eq('id', 1).single();
+         if (data?.banner_url) {
+            setBannerUrl(data.banner_url);
+         }
+      };
+      fetchBanner();
+   }, []);
 
    const handleBack = () => {
       navigate('/dashboard', { state: { role: 'resident' } });
@@ -51,22 +65,31 @@ export const ResidentProfile: React.FC = () => {
             </div>
          </div>
 
+         {/* Main Content Actions */}
          <div className="px-6 -mt-16 relative z-20 space-y-6 animate-slide-up">
 
-            {/* Digital Access Card */}
-            <div className="bg-white/80 backdrop-blur-xl p-6 rounded-[32px] shadow-soft border border-white flex items-center justify-between relative overflow-hidden group cursor-pointer hover:scale-[1.02] transition-transform">
-               <div className="absolute inset-0 bg-gradient-to-r from-violet-600/5 to-fuchsia-600/5"></div>
-               <div className="relative z-10">
-                  <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-1">Acesso Digital</p>
-                  <h3 className="text-lg font-black text-slate-800">Liberar Entrada</h3>
-                  <p className="text-xs text-slate-500 font-medium">Toque para gerar QR Code</p>
+            {/* Promotional Banner (Ad Space) - Dynamic from Supabase/Admin */}
+            <div className="relative p-6 rounded-[32px] shadow-lg shadow-orange-500/20 flex items-center justify-between overflow-hidden group cursor-pointer hover:scale-[1.02] transition-transform h-32 bg-amber-600">
+               {/* Background Image & Overlay */}
+               <div className="absolute inset-0 z-0">
+                  <img src={bannerUrl} className="w-full h-full object-cover" alt="Banner" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/40 to-transparent"></div>
                </div>
-               <div className="w-14 h-14 bg-slate-900 text-white rounded-2xl flex items-center justify-center shadow-lg group-hover:bg-violet-600 transition-colors relative z-10">
-                  <QrCode size={24} />
+
+               <div className="relative z-10 text-white flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                     <span className="bg-amber-500/90 backdrop-blur-md px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-widest text-white">Parceiro</span>
+                  </div>
+                  <h3 className="text-xl font-black leading-tight">Cerveja Gelada?</h3>
+                  <p className="text-xs font-bold text-slate-200 mt-0.5">Cupom de R$ 15,00 no Zé Delivery!</p>
+               </div>
+
+               <div className="w-12 h-12 bg-white/20 backdrop-blur-md border border-white/20 text-white rounded-2xl flex items-center justify-center shadow-lg group-hover:bg-amber-500 group-hover:border-amber-500 transition-colors relative z-10">
+                  <span className="text-2xl">🍻</span>
                </div>
             </div>
 
-            {/* Menu Grid */}
+            {/* Quick Actions Grid */}
             <div className="grid grid-cols-2 gap-4">
                <button className="bg-white p-5 rounded-[24px] shadow-sm border border-slate-50 flex flex-col items-center gap-3 hover:-translate-y-1 transition-transform group">
                   <div className="w-12 h-12 rounded-2xl bg-violet-50 text-violet-600 flex items-center justify-center group-hover:bg-violet-600 group-hover:text-white transition-colors">
@@ -88,7 +111,7 @@ export const ResidentProfile: React.FC = () => {
                <button className="w-full flex items-center justify-between p-4 hover:bg-slate-50 rounded-2xl transition-colors group">
                   <div className="flex items-center gap-4">
                      <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 group-hover:bg-violet-100 group-hover:text-violet-600 transition-colors">
-                        <User size={20} />
+                        <UserIcon size={20} />
                      </div>
                      <div className="text-left">
                         <h4 className="font-bold text-slate-800">Dados Pessoais</h4>

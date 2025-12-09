@@ -40,8 +40,8 @@ const AppContent: React.FC = () => {
     // FORCE REDIRECT TO SPLASH ON LOAD/RELOAD
     // This ensures the user always starts at the beginning for the demo flow
     // We check if we are already at root to avoid infinite loops if Splash redirects elsewhere
-    // Exclude test-connection route from forced redirect
-    if (location.pathname !== '/' && location.pathname !== '/test-connection' && !sessionStorage.getItem('app_loaded')) {
+    // Exclude test-connection and saas-admin from forced redirect
+    if (location.pathname !== '/' && location.pathname !== '/test-connection' && location.pathname !== '/saas-admin' && !sessionStorage.getItem('app_loaded')) {
       sessionStorage.setItem('app_loaded', 'true');
       navigate('/');
     }

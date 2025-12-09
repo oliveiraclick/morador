@@ -5,15 +5,18 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Home, Search, ShoppingBag, User, LayoutGrid, Zap } from 'lucide-react';
 import { UserRole } from '../types';
 
+import { useAuth } from '../context/AuthContext';
+
 export const BottomNav: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  
+  const { profile } = useAuth();
+
   // Rotas de gestão do prestador (onde a nav DEVE aparecer)
   const isProviderManagementRoute = [
-    '/provider/store', 
-    '/provider/schedule', 
-    '/provider/orders', 
+    '/provider/store',
+    '/provider/schedule',
+    '/provider/orders',
     '/dashboard'
   ].some(path => location.pathname === path || location.pathname.startsWith(path + '/'));
 
@@ -22,12 +25,13 @@ export const BottomNav: React.FC = () => {
   const isPublicProviderProfile = location.pathname.startsWith('/provider/') && !isProviderManagementRoute;
 
   // Hide nav on these paths
-  const shouldHide = location.pathname === '/' || 
-                     location.pathname === '/login' || 
-                     location.pathname.startsWith('/register') ||
-                     location.pathname.startsWith('/booking') ||
-                     isPublicProviderProfile; // Oculta no perfil do prestador para o botão de carrinho aparecer
-  
+  const shouldHide = location.pathname === '/' ||
+    location.pathname === '/login' ||
+    location.pathname.startsWith('/register') ||
+    location.pathname.startsWith('/booking') ||
+    isPublicProviderProfile ||
+    location.pathname === '/saas-admin'; // Oculta no admin e perfil publico
+
   if (shouldHide) return null;
 
   const state = location.state as { role?: UserRole } | null;
@@ -38,7 +42,7 @@ export const BottomNav: React.FC = () => {
     flex flex-col items-center justify-center w-12 h-12 rounded-2xl transition-all duration-300 relative
     ${isActive ? 'text-violet-600 -translate-y-2' : 'text-slate-400 hover:text-slate-600'}
   `;
-  
+
   const activeDotClass = "absolute -bottom-2 w-1.5 h-1.5 bg-violet-600 rounded-full";
 
   return (
@@ -49,14 +53,14 @@ export const BottomNav: React.FC = () => {
             <LayoutGrid size={26} strokeWidth={2.5} />
             {location.pathname === '/dashboard' && <div className={activeDotClass} />}
           </button>
-          
-          <button onClick={() => navigate('/provider/store', { state: { role: 'provider' } })} className={navItemClass(location.pathname === '/provider/store')}>
+
+          <button onClick={() => navigate('/provider/orders', { state: { role: 'provider' } })} className={navItemClass(location.pathname === '/provider/orders')}>
             <ShoppingBag size={26} strokeWidth={2.5} />
-            {location.pathname === '/provider/store' && <div className={activeDotClass} />}
+            {location.pathname === '/provider/orders' && <div className={activeDotClass} />}
           </button>
-          
+
           {/* Floating Action Button (Provider - Actions) */}
-          <button 
+          <button
             onClick={() => navigate('/provider/orders', { state: { role: 'provider' } })}
             className="w-16 h-16 bg-gradient-to-tr from-violet-600 to-fuchsia-600 rounded-full shadow-glow flex items-center justify-center text-white -mt-12 border-[6px] border-[#f8fafc] active:scale-95 transition-transform"
           >
@@ -64,13 +68,13 @@ export const BottomNav: React.FC = () => {
           </button>
 
           <button onClick={() => navigate('/provider/schedule', { state: { role: 'provider' } })} className={navItemClass(location.pathname === '/provider/schedule')}>
-             <span className="text-xl">📅</span>
-             {location.pathname === '/provider/schedule' && <div className={activeDotClass} />}
+            <span className="text-xl">📅</span>
+            {location.pathname === '/provider/schedule' && <div className={activeDotClass} />}
           </button>
 
-          <button onClick={() => navigate('/profile', { state: { role: 'provider' } })} className={navItemClass(location.pathname === '/profile')}>
-             <User size={26} strokeWidth={2.5} />
-             {location.pathname === '/profile' && <div className={activeDotClass} />}
+          <button onClick={() => navigate(profile?.id ? `/provider/${profile.id}` : '/profile', { state: { role: 'provider' } })} className={navItemClass(location.pathname === (profile?.id ? `/provider/${profile.id}` : '/profile'))}>
+            <User size={26} strokeWidth={2.5} />
+            {location.pathname === (profile?.id ? `/provider/${profile.id}` : '/profile') && <div className={activeDotClass} />}
           </button>
         </>
       ) : (
@@ -79,23 +83,23 @@ export const BottomNav: React.FC = () => {
             <Home size={26} strokeWidth={2.5} />
             {location.pathname === '/dashboard' && <div className={activeDotClass} />}
           </button>
-          
+
           <button onClick={() => navigate('/search', { state: { role: 'resident' } })} className={navItemClass(location.pathname === '/search')}>
             <Search size={26} strokeWidth={2.5} />
             {location.pathname === '/search' && <div className={activeDotClass} />}
           </button>
 
-          {/* Floating Action Button (Resident - Desapego/Shop) */}
-          <button 
-             onClick={() => navigate('/desapego', { state: { role: 'resident' } })}
-             className="w-16 h-16 bg-slate-900 rounded-full shadow-lg shadow-slate-900/30 flex items-center justify-center text-white -mt-12 border-[6px] border-[#f8fafc] active:scale-95 transition-transform"
+          {/* Floating Action Button (Resident - Shop) */}
+          <button
+            onClick={() => navigate('/marketplace', { state: { role: 'resident' } })}
+            className="w-16 h-16 bg-slate-900 rounded-full shadow-lg shadow-slate-900/30 flex items-center justify-center text-white -mt-12 border-[6px] border-[#f8fafc] active:scale-95 transition-transform"
           >
             <ShoppingBag size={24} />
           </button>
 
           <button onClick={() => navigate('/orders', { state: { role: 'resident' } })} className={navItemClass(location.pathname === '/orders')}>
-             <span className="text-xl">📦</span>
-             {location.pathname === '/orders' && <div className={activeDotClass} />}
+            <span className="text-xl">📦</span>
+            {location.pathname === '/orders' && <div className={activeDotClass} />}
           </button>
 
           <button onClick={() => navigate('/profile', { state: { role: 'resident' } })} className={navItemClass(location.pathname === '/profile')}>
