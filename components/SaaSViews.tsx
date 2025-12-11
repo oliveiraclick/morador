@@ -127,7 +127,7 @@ export const Marketplace: React.FC = () => {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-black text-slate-800 tracking-tight">
             Explore os <br />
-            <span className="gradient-text">Melhores Salões</span>
+            <span className="gradient-text">Melhores Serviços</span>
           </h1>
           <button
             onClick={() => navigate('/login')}
