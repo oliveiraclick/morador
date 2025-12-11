@@ -60,37 +60,37 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 const USERS = [
     // Residents
-    { email: 'resident.one.test@gmail.com', password: 'password123', full_name: 'Resident One', user_type: 'resident', role: 'resident', avatar_url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200' },
-    { email: 'resident.two.test@gmail.com', password: 'password123', full_name: 'Resident Two', user_type: 'resident', role: 'resident', avatar_url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200' },
-    { email: 'resident.three.test@gmail.com', password: 'password123', full_name: 'Resident Three', user_type: 'resident', role: 'resident', avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200' },
+    { email: 'resident.one.test@gmail.com', password: 'password123', full_name: 'Morador Um', user_type: 'resident', role: 'resident', avatar_url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200' },
+    { email: 'resident.two.test@gmail.com', password: 'password123', full_name: 'Morador Dois', user_type: 'resident', role: 'resident', avatar_url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200' },
+    { email: 'resident.three.test@gmail.com', password: 'password123', full_name: 'Morador Tres', user_type: 'resident', role: 'resident', avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200' },
 
     // Providers
-    { email: 'provider.alpha.test@gmail.com', password: 'password123', full_name: 'Provider Alpha', user_type: 'provider', role: 'provider', provider_type: 'service', categories: ['limpeza'], avatar_url: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&q=80&w=200' },
-    { email: 'provider.beta.test@gmail.com', password: 'password123', full_name: 'Provider Beta', user_type: 'provider', role: 'provider', provider_type: 'service', categories: ['manutencao'], avatar_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200' },
-    { email: 'provider.gamma.test@gmail.com', password: 'password123', full_name: 'Provider Gamma', user_type: 'provider', role: 'provider', provider_type: 'service', categories: ['aulas', 'beleza'], avatar_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200' },
+    { email: 'provider.alpha.test@gmail.com', password: 'password123', full_name: 'Prestador Alfa', user_type: 'provider', role: 'provider', provider_type: 'service', categories: ['limpeza'], avatar_url: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&q=80&w=200' },
+    { email: 'provider.beta.test@gmail.com', password: 'password123', full_name: 'Prestador Beta', user_type: 'provider', role: 'provider', provider_type: 'service', categories: ['manutencao'], avatar_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200' },
+    { email: 'provider.gamma.test@gmail.com', password: 'password123', full_name: 'Prestador Gama', user_type: 'provider', role: 'provider', provider_type: 'service', categories: ['aulas', 'beleza'], avatar_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200' },
 
     // Sellers
-    { email: 'seller.x.test@gmail.com', password: 'password123', full_name: 'Seller X', user_type: 'provider', role: 'provider', provider_type: 'product', categories: ['comida'], avatar_url: 'https://images.unsplash.com/photo-1544725176-7c40e5a71c5e?auto=format&fit=crop&q=80&w=200' },
-    { email: 'seller.y.test@gmail.com', password: 'password123', full_name: 'Seller Y', user_type: 'provider', role: 'provider', provider_type: 'product', categories: ['artesanato'], avatar_url: 'https://images.unsplash.com/photo-1527980965255-d3b416303d12?auto=format&fit=crop&q=80&w=200' },
-    { email: 'seller.z.test@gmail.com', password: 'password123', full_name: 'Seller Z', user_type: 'provider', role: 'provider', provider_type: 'product', categories: ['outros'], avatar_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200' },
+    { email: 'seller.x.test@gmail.com', password: 'password123', full_name: 'Vendedor X', user_type: 'provider', role: 'provider', provider_type: 'product', categories: ['comida'], avatar_url: 'https://images.unsplash.com/photo-1544725176-7c40e5a71c5e?auto=format&fit=crop&q=80&w=200' },
+    { email: 'seller.y.test@gmail.com', password: 'password123', full_name: 'Vendedor Y', user_type: 'provider', role: 'provider', provider_type: 'product', categories: ['artesanato'], avatar_url: 'https://images.unsplash.com/photo-1527980965255-d3b416303d12?auto=format&fit=crop&q=80&w=200' },
+    { email: 'seller.z.test@gmail.com', password: 'password123', full_name: 'Vendedor Z', user_type: 'provider', role: 'provider', provider_type: 'product', categories: ['outros'], avatar_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200' },
 ];
 
 const SERVICE_TEMPLATES = [
-    { title: "Standard Service", price: 100.00, description: "Standard service description", image_url: "https://images.unsplash.com/photo-1581578731117-104f2a863a17?auto=format&fit=crop&q=80&w=400" }, // Repair/Service
-    { title: "Premium Service", price: 200.00, description: "Premium service description", image_url: "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&q=80&w=400" }, // Meeting/Service
-    { title: "Quick Fix", price: 50.00, description: "Quick service description", image_url: "https://images.unsplash.com/photo-1504754524776-8f4f37790ca0?auto=format&fit=crop&q=80&w=400" } // Tools/Service
+    { title: "Serviço Padrão", price: 100.00, description: "Descrição do serviço padrão", image_url: "https://images.unsplash.com/photo-1581578731117-104f2a863a17?auto=format&fit=crop&q=80&w=400" }, // Repair/Service
+    { title: "Serviço Premium", price: 200.00, description: "Descrição do serviço premium, alta qualidade", image_url: "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&q=80&w=400" }, // Meeting/Service
+    { title: "Reparo Rápido", price: 50.00, description: "Serviço rápido e eficiente", image_url: "https://images.unsplash.com/photo-1504754524776-8f4f37790ca0?auto=format&fit=crop&q=80&w=400" } // Tools/Service
 ];
 
 const PRODUCT_TEMPLATES = [
-    { title: "Store Item A", price: 25.00, description: "Good quality item", condition: "new", images: ["https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&q=80&w=400"] }, // Product
-    { title: "Store Item B", price: 55.00, description: "Best seller", condition: "new", images: ["https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=400"] }, // Product
-    { title: "Store Item C", price: 15.00, description: "Budget choice", condition: "new", images: ["https://images.unsplash.com/photo-1572635196237-14b3f281503f?auto=format&fit=crop&q=80&w=400"] } // Product
+    { title: "Produto A da Loja", price: 25.00, description: "Item de boa qualidade", condition: "new", images: ["https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&q=80&w=400"] }, // Product
+    { title: "Produto B da Loja", price: 55.00, description: "Mais vendido", condition: "new", images: ["https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=400"] }, // Product
+    { title: "Produto C da Loja", price: 15.00, description: "Escolha econômica", condition: "new", images: ["https://images.unsplash.com/photo-1572635196237-14b3f281503f?auto=format&fit=crop&q=80&w=400"] } // Product
 ];
 
 const DESAPEGO_TEMPLATES = [
-    { title: "Used Chair", price: 30.00, description: "Slightly used", condition: "good", category: "moveis", images: ["https://images.unsplash.com/photo-1592078615290-033ee584e267?auto=format&fit=crop&q=80&w=400"] },
-    { title: "Old Book", price: 5.00, description: "Classic novel", condition: "fair", category: "outros", images: ["https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=400"] },
-    { title: "Bike", price: 150.00, description: "Needs new tires", condition: "poor", category: "esportes", images: ["https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&q=80&w=400"] }
+    { title: "Cadeira Usada", price: 30.00, description: "Pouco uso", condition: "good", category: "moveis", images: ["https://images.unsplash.com/photo-1592078615290-033ee584e267?auto=format&fit=crop&q=80&w=400"] },
+    { title: "Livro Antigo", price: 5.00, description: "Romance clássico", condition: "fair", category: "outros", images: ["https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=400"] },
+    { title: "Bicicleta", price: 150.00, description: "Precisa de pneus novos", condition: "poor", category: "esportes", images: ["https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&q=80&w=400"] }
 ];
 
 const CATEGORIES_LIST = [
@@ -192,6 +192,7 @@ async function seed() {
             // Update profile with extra fields if needed
             if (user.avatar_url || user.provider_type) {
                 const updates = {};
+                updates.full_name = user.full_name; // Force update full_name for translation
                 if (user.provider_type) {
                     updates.provider_type = user.provider_type;
                     updates.categories = user.categories;
@@ -212,9 +213,12 @@ async function seed() {
         const provId = usersMap[prov.email];
         if (!provId) continue;
 
+        // Cleanup old English services mostly to avoid duplicates for test users
+        await supabase.from('services').delete().eq('provider_id', provId);
+
         for (let i = 0; i < 3; i++) {
             const template = SERVICE_TEMPLATES[i];
-            const title = `${template.title} by ${prov.full_name}`;
+            const title = `${template.title} por ${prov.full_name}`;
 
             const { data: existing } = await supabase.from('services').select('id').eq('title', title).eq('provider_id', provId).maybeSingle();
 
@@ -257,9 +261,12 @@ async function seed() {
         const sellerId = usersMap[seller.email];
         if (!sellerId) continue;
 
+        // Cleanup old English products
+        await supabase.from('products').delete().eq('seller_id', sellerId);
+
         for (let i = 0; i < 3; i++) {
             const template = PRODUCT_TEMPLATES[i];
-            const title = `${template.title} by ${seller.full_name}`;
+            const title = `${template.title} por ${seller.full_name}`;
 
             const { data: existing } = await supabase.from('products').select('id').eq('title', title).eq('seller_id', sellerId).maybeSingle();
 
@@ -300,9 +307,12 @@ async function seed() {
         const resId = usersMap[resident.email];
         if (!resId) continue;
 
+        // Cleanup old English desapegos
+        await supabase.from('products').delete().eq('seller_id', resId).eq('product_type', 'desapego');
+
         for (let i = 0; i < 3; i++) {
             const template = DESAPEGO_TEMPLATES[i];
-            const title = `${template.title} from ${resident.full_name}`;
+            const title = `${template.title} de ${resident.full_name}`;
 
             const { data: existing } = await supabase.from('products').select('id').eq('title', title).eq('seller_id', resId).maybeSingle();
 
