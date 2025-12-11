@@ -60,19 +60,19 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 const USERS = [
     // Residents
-    { email: 'resident.one.test@gmail.com', password: 'password123', full_name: 'Resident One', user_type: 'resident', role: 'resident' },
-    { email: 'resident.two.test@gmail.com', password: 'password123', full_name: 'Resident Two', user_type: 'resident', role: 'resident' },
-    { email: 'resident.three.test@gmail.com', password: 'password123', full_name: 'Resident Three', user_type: 'resident', role: 'resident' },
+    { email: 'resident.one.test@gmail.com', password: 'password123', full_name: 'Resident One', user_type: 'resident', role: 'resident', avatar_url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200' },
+    { email: 'resident.two.test@gmail.com', password: 'password123', full_name: 'Resident Two', user_type: 'resident', role: 'resident', avatar_url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200' },
+    { email: 'resident.three.test@gmail.com', password: 'password123', full_name: 'Resident Three', user_type: 'resident', role: 'resident', avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200' },
 
     // Providers
-    { email: 'provider.alpha.test@gmail.com', password: 'password123', full_name: 'Provider Alpha', user_type: 'provider', role: 'provider', provider_type: 'service', categories: ['limpeza'] },
-    { email: 'provider.beta.test@gmail.com', password: 'password123', full_name: 'Provider Beta', user_type: 'provider', role: 'provider', provider_type: 'service', categories: ['manutencao'] },
-    { email: 'provider.gamma.test@gmail.com', password: 'password123', full_name: 'Provider Gamma', user_type: 'provider', role: 'provider', provider_type: 'service', categories: ['aulas', 'beleza'] },
+    { email: 'provider.alpha.test@gmail.com', password: 'password123', full_name: 'Provider Alpha', user_type: 'provider', role: 'provider', provider_type: 'service', categories: ['limpeza'], avatar_url: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&q=80&w=200' },
+    { email: 'provider.beta.test@gmail.com', password: 'password123', full_name: 'Provider Beta', user_type: 'provider', role: 'provider', provider_type: 'service', categories: ['manutencao'], avatar_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200' },
+    { email: 'provider.gamma.test@gmail.com', password: 'password123', full_name: 'Provider Gamma', user_type: 'provider', role: 'provider', provider_type: 'service', categories: ['aulas', 'beleza'], avatar_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200' },
 
     // Sellers
-    { email: 'seller.x.test@gmail.com', password: 'password123', full_name: 'Seller X', user_type: 'provider', role: 'provider', provider_type: 'product', categories: ['comida'] },
-    { email: 'seller.y.test@gmail.com', password: 'password123', full_name: 'Seller Y', user_type: 'provider', role: 'provider', provider_type: 'product', categories: ['artesanato'] },
-    { email: 'seller.z.test@gmail.com', password: 'password123', full_name: 'Seller Z', user_type: 'provider', role: 'provider', provider_type: 'product', categories: ['outros'] },
+    { email: 'seller.x.test@gmail.com', password: 'password123', full_name: 'Seller X', user_type: 'provider', role: 'provider', provider_type: 'product', categories: ['comida'], avatar_url: 'https://images.unsplash.com/photo-1544725176-7c40e5a71c5e?auto=format&fit=crop&q=80&w=200' },
+    { email: 'seller.y.test@gmail.com', password: 'password123', full_name: 'Seller Y', user_type: 'provider', role: 'provider', provider_type: 'product', categories: ['artesanato'], avatar_url: 'https://images.unsplash.com/photo-1527980965255-d3b416303d12?auto=format&fit=crop&q=80&w=200' },
+    { email: 'seller.z.test@gmail.com', password: 'password123', full_name: 'Seller Z', user_type: 'provider', role: 'provider', provider_type: 'product', categories: ['outros'], avatar_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200' },
 ];
 
 const SERVICE_TEMPLATES = [
@@ -190,11 +190,15 @@ async function seed() {
         if (userId) {
             usersMap[user.email] = userId;
             // Update profile with extra fields if needed
-            if (user.provider_type) {
-                const updates = {
-                    provider_type: user.provider_type,
-                    categories: user.categories
-                };
+            if (user.avatar_url || user.provider_type) {
+                const updates = {};
+                if (user.provider_type) {
+                    updates.provider_type = user.provider_type;
+                    updates.categories = user.categories;
+                }
+                if (user.avatar_url) {
+                    updates.avatar_url = user.avatar_url;
+                }
                 await supabase.from('profiles').update(updates).eq('id', userId);
             }
         }
