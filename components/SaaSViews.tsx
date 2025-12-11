@@ -399,10 +399,13 @@ export const SaaSAdmin: React.FC = () => {
     setIsUploading(false);
   };
 
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
   const handleGenericUpload = async (type: 'splash' | 'login' | 'pwa') => {
     const file = dataFiles[type];
     if (!file) return;
     setIsUploading(true);
+    setSuccessMessage(null);
 
     const fileName = `${type}-logo-${Date.now()}`;
     const { error: uploadError } = await supabase.storage.from('branding').upload(fileName, file, {
@@ -430,7 +433,8 @@ export const SaaSAdmin: React.FC = () => {
     if (dbError) {
       alert('Erro ao salvar: ' + dbError.message);
     } else {
-      alert(`${type.toUpperCase()} logo atualizada!`);
+      setSuccessMessage(`${type.toUpperCase()} logo atualizada com sucesso!`);
+      setTimeout(() => setSuccessMessage(null), 3000);
     }
     setIsUploading(false);
   };
@@ -658,8 +662,8 @@ export const SaaSAdmin: React.FC = () => {
                       key={tab}
                       onClick={() => setActiveLogoTab(tab as any)}
                       className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${activeLogoTab === tab
-                          ? 'bg-violet-600 text-white shadow-md'
-                          : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
+                        ? 'bg-violet-600 text-white shadow-md'
+                        : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
                         }`}
                     >
                       {tab === 'main' ? 'Principal' : tab === 'splash' ? 'Splash' : tab === 'login' ? 'Login' : 'PWA Icon'}
@@ -714,6 +718,11 @@ export const SaaSAdmin: React.FC = () => {
                       <Button fullWidth onClick={() => handleGenericUpload(type as any)} disabled={isUploading || !dataFiles[type as 'splash' | 'login' | 'pwa']} className="mt-2">
                         {isUploading ? 'Enviando...' : `Salvar ${type === 'pwa' ? 'Ícone' : 'Logo'}`}
                       </Button>
+                      {successMessage && activeLogoTab === type && (
+                        <p className="text-center text-xs font-bold text-green-500 mt-2 animate-bounce">
+                          {successMessage}
+                        </p>
+                      )}
                     </div>
                   )
                 ))}
