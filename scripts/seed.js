@@ -59,6 +59,8 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 // --- DATA DEFINITIONS ---
 
 const USERS = [
+    // Custom Admin/User
+    { email: 'denys@morador.app', password: 'Vendas@123', full_name: 'Denys', user_type: 'provider', role: 'provider', provider_type: 'product', categories: ['outros'], avatar_url: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=200' },
     // Residents
     { email: 'resident.one.test@gmail.com', password: 'password123', full_name: 'Morador Um', user_type: 'resident', role: 'resident', avatar_url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200' },
     { email: 'resident.two.test@gmail.com', password: 'password123', full_name: 'Morador Dois', user_type: 'resident', role: 'resident', avatar_url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200' },
