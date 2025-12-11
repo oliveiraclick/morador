@@ -68,9 +68,39 @@ const AppContent: React.FC = () => {
           if (appleLink) {
             appleLink.href = data.pwa_icon_url;
           }
+
+          // Dynamic Manifest for PWA
+          // We override the default manifest behavior to inject the dynamic icon
+          const manifestInput = document.querySelector("link[rel='manifest']") as HTMLLinkElement;
+          if (manifestInput) {
+            const dynamicManifest = {
+              name: "MORADOR",
+              short_name: "Morador",
+              start_url: "/",
+              display: "standalone",
+              background_color: "#7c3aed",
+              theme_color: "#7c3aed",
+              icons: [
+                {
+                  src: data.pwa_icon_url,
+                  sizes: "192x192",
+                  type: "image/png"
+                },
+                {
+                  src: data.pwa_icon_url,
+                  sizes: "512x512",
+                  type: "image/png"
+                }
+              ]
+            };
+            const stringManifest = JSON.stringify(dynamicManifest);
+            const blob = new Blob([stringManifest], { type: 'application/json' });
+            const manifestURL = URL.createObjectURL(blob);
+            manifestInput.href = manifestURL;
+          }
         }
       } catch (error) {
-        console.error("Failed to update favicon:", error);
+        console.error("Failed to update favicon/manifest:", error);
       }
     };
     void updateFavicon();
