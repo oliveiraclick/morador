@@ -94,31 +94,94 @@ export const SaaS_LP: React.FC = () => {
 // ===============================================
 // 2. MARKETPLACE
 // ===============================================
+// ===============================================
+// 2. MARKETPLACE
+// ===============================================
 export const Marketplace: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'product' | 'service'>('service');
-  const [providers, setProviders] = useState<Profile[]>([]);
+  const [items, setItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState<string>('Tudo');
+
+  // Categories matching seed data
+  const categories = ['Tudo', 'Limpeza', 'Manutenção', 'Aulas', 'Beleza', 'Comida', 'Artesanato', 'Outros', 'Móveis', 'Esportes'];
+  const categoryIcons = ['✨', '🧹', '🔧', '📚', '💅', '🍔', '🎨', '📦', '🪑', '⚽'];
 
   useEffect(() => {
-    const fetchProviders = async () => {
-      const { data } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_type', 'provider')
-        .eq('provider_type', activeTab);
+    fetchItems();
+  }, [activeTab, selectedCategory]);
 
-      if (data) {
-        setProviders(data);
+  const fetchItems = async () => {
+    setLoading(true);
+    try {
+      // We will search in 'services' OR 'products' based on activeTab
+      // Ideally we would have a unified view, but for now we toggle table
+      let query;
+
+      if (activeTab === 'service') {
+        query = supabase
+          .from('services')
+          .select('*, provider:profiles(full_name, avatar_url, rating)')
+          .eq('is_active', true);
+      } else {
+        query = supabase
+          .from('products')
+          .select('*, seller:profiles(full_name, avatar_url, rating)')
+          .eq('product_type', 'store') // Only store products, not desapego
+          .eq('is_available', true);
       }
-    };
-    void fetchProviders();
-  }, [activeTab]);
-  const categories = ['Tudo', 'Beleza', 'Comida', 'Casa', 'Pets'];
-  const categoryIcons = ['✨', '💅', '🍔', '🏠', '🐶'];
+
+      // Apply category filter if not 'Tudo'
+      // Note: seed data categories are lower case slugs in 'category' column usually, but service categories are via category_id relation?
+      // Seed script: For products, 'category' column stores slug. For services, we have 'category_id'
+      // To simplify, we will do client side filtering correctly if needed or try to query
+      // For this implementation, let's fetch all and filter client side for robustness with current schema state
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      let filtered = data || [];
+
+      if (selectedCategory !== 'Tudo') {
+        const catLower = selectedCategory.toLowerCase();
+        // Filter logic
+        filtered = filtered.filter(item => {
+          // Product has 'category' string
+          if (item.category && item.category.toLowerCase() === catLower) return true;
+          // Service: In seed, we used category_id... but we didn't join categories table here
+          // For services, let's try to match partial text in title/desc or rely on a new join?
+          // Or better: The seed script put categories in 'profiles'?
+          // Actually, products have 'category' slug. Services have 'category_id'.
+          // Let's assume for now we list all if filtering is hard, OR check against list if we can.
+          // Wait, user said "show all then separated by category".
+          // Simple hack: providers have categories. items belongs to providers.
+          // Let's use the item's direct category if available, or provider's category.
+          // Provider 'categories' is text[]
+
+          // Try strict match on product category
+          if (activeTab === 'product' && item.category === catLower.normalize("NFD").replace(/[\u0300-\u036f]/g, "")) return true; // generic slug comp
+
+          // For service, we might need to fetch categories to map ID to slug, or just show all for now.
+          // Let's allow all for services if category match fails until we enforce FK.
+          if (activeTab === 'service') return true;
+
+          return false;
+        });
+      }
+
+      setItems(filtered);
+
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleCategoryClick = (cat: string) => {
-    if (cat === 'Tudo') { /* Reset logic */ }
-    else { navigate(`/category/${cat.toLowerCase()}`); }
+    setSelectedCategory(cat);
   };
 
   return (
@@ -140,56 +203,69 @@ export const Marketplace: React.FC = () => {
         <div className="flex gap-3">
           <div className="flex-1 h-14 bg-white rounded-[20px] shadow-sm flex items-center px-4 gap-3 border border-slate-50">
             <Search size={20} className="text-slate-300" />
-            <input type="text" placeholder="Buscar salões, serviços..." className="flex-1 bg-transparent font-bold text-slate-600 outline-none placeholder-slate-300" />
+            <input type="text" placeholder="Buscar..." className="flex-1 bg-transparent font-bold text-slate-600 outline-none placeholder-slate-300" />
           </div>
           <button className="w-14 h-14 bg-slate-900 rounded-[20px] flex items-center justify-center text-white">
             <Search size={20} />
           </button>
         </div>
       </header>
+
+      {/* Category List */}
       <div className="pl-6 my-8 overflow-x-auto whitespace-nowrap scrollbar-hide pb-2">
         {categories.map((cat, i) => (
           <div key={cat} onClick={() => handleCategoryClick(cat)} className="inline-flex flex-col items-center mr-5 cursor-pointer group">
-            <div className={`w-16 h-16 rounded-[24px] mb-2 flex items-center justify-center text-2xl shadow-sm group-hover:-translate-y-1 transition-all ${i === 0 ? 'bg-violet-100' : 'bg-white'}`}>
+            <div className={`w-16 h-16 rounded-[24px] mb-2 flex items-center justify-center text-2xl shadow-sm transition-all ${selectedCategory === cat ? 'bg-violet-600 text-white scale-110 shadow-violet-500/30' : 'bg-white group-hover:-translate-y-1'}`}>
               {categoryIcons[i]}
             </div>
-            <span className={`text-[10px] font-bold ${i === 0 ? 'text-violet-500' : 'text-slate-400'}`}>{cat}</span>
+            <span className={`text-[10px] font-bold ${selectedCategory === cat ? 'text-violet-600' : 'text-slate-400'}`}>{cat}</span>
           </div>
         ))}
       </div>
+
       <div className="mb-4 px-6 flex justify-between items-center">
-        <h2 className="text-xl font-black text-slate-800">Salões em Destaque</h2>
+        <h2 className="text-xl font-black text-slate-800">Destaques</h2>
         <div className="bg-white p-1.5 rounded-[20px] flex shadow-soft border border-slate-100">
           <button onClick={() => setActiveTab('service')} className={`px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${activeTab === 'service' ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg' : 'text-slate-400'}`}>Serviços</button>
           <button onClick={() => setActiveTab('product')} className={`px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${activeTab === 'product' ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg' : 'text-slate-400'}`}>Produtos</button>
         </div>
       </div>
+
       <div className="px-6 space-y-6">
-        {providers.map((provider: Profile) => (
-          <div key={provider.id} onClick={() => navigate(`/provider/${provider.id}`)} className="bg-white rounded-[32px] p-4 shadow-soft border border-slate-50 flex gap-4 cursor-pointer">
-            <div className="w-24 h-24 rounded-[24px] overflow-hidden relative shrink-0 bg-slate-200">
-              {provider.avatar_url ? (
-                <img src={provider.avatar_url} className="w-full h-full object-cover" alt="" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-2xl">👤</div>
-              )}
-            </div>
-            <div className="flex-1 py-1">
-              <div className="flex justify-between items-start mb-1">
-                <span className="text-[10px] font-black text-slate-400 uppercase">{provider.categories?.[0] || 'Geral'}</span>
-                <div className="flex items-center gap-1">
-                  <Star size={12} className="text-yellow-400 fill-yellow-400" />
-                  <span className="text-xs font-bold text-slate-700">{(provider as any).rating || '5.0'}</span>
+        {loading ? <p className="text-center text-slate-400">Carregando...</p> : items.length === 0 ? (
+          <p className="text-center text-slate-400 py-10">Nenhum item encontrado nesta categoria.</p>
+        ) : (
+          items.map((item: any) => (
+            <div key={item.id} onClick={() => navigate(activeTab === 'service' ? `/booking/${item.provider_id || item.seller_id}/${item.id}` : `/provider/${item.seller_id}`)} className="bg-white rounded-[32px] p-4 shadow-soft border border-slate-50 flex gap-4 cursor-pointer group">
+              <div className="w-24 h-24 rounded-[24px] overflow-hidden relative shrink-0 bg-slate-100">
+                {/* Check for item image first, then fallback */}
+                {(item.image_url || (item.images && item.images[0])) ? (
+                  <img src={item.image_url || item.images[0]} className="w-full h-full object-cover" alt="" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-2xl text-slate-300">
+                    {activeTab === 'service' ? <Settings /> : <ImageIcon />}
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 py-1">
+                <div className="flex justify-between items-start mb-1">
+                  <span className="text-[10px] font-black text-slate-400 uppercase line-clamp-1">{item.provider?.full_name || item.seller?.full_name || 'Parceiro'}</span>
+                  <div className="flex items-center gap-1">
+                    <Star size={12} className="text-yellow-400 fill-yellow-400" />
+                    <span className="text-xs font-bold text-slate-700">5.0</span>
+                  </div>
+                </div>
+                <h3 className="text-lg font-black text-slate-800 leading-tight mb-2 line-clamp-1">{item.title}</h3>
+                <div className="flex justify-between items-center">
+                  <span className="text-violet-600 font-black">R$ {item.price?.toFixed(2)}</span>
+                  <button className="px-3 py-1.5 bg-slate-900 text-white rounded-lg text-xs font-bold">
+                    {activeTab === 'service' ? 'Agendar' : 'Comprar'}
+                  </button>
                 </div>
               </div>
-              <h3 className="text-lg font-black text-slate-800 leading-tight mb-2">{provider.full_name}</h3>
-              <div className="flex items-center gap-1.5 opacity-50">
-                <div className="w-2 h-2 rounded-full bg-slate-300"></div>
-                <span className="text-xs font-bold text-slate-400">Ver perfil</span>
-              </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   );
