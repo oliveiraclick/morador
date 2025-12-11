@@ -228,6 +228,23 @@ select create_policy_if_not_exists('Users can update own profile', 'profiles', '
 
 /* App Settings */
 select create_policy_if_not_exists('App settings are viewable by everyone', 'app_settings', 'select', ARRAY['public'], 'true', null);
+select create_policy_if_not_exists('Enable update for all users', 'app_settings', 'update', ARRAY['public'], 'true', 'true');
+
+/* Storage Policies (Branding) */
+insert into storage.buckets (id, name, public) values ('branding', 'branding', true) on conflict (id) do update set public = true;
+
+do $$
+begin
+    if not exists (select 1 from pg_policies where schemaname = 'storage' and tablename = 'objects' and policyname = 'Public Access Branding') then
+        create policy "Public Access Branding" on storage.objects for select using ( bucket_id = 'branding' );
+    end if;
+    if not exists (select 1 from pg_policies where schemaname = 'storage' and tablename = 'objects' and policyname = 'Public Upload Branding') then
+        create policy "Public Upload Branding" on storage.objects for insert with check ( bucket_id = 'branding' );
+    end if;
+    if not exists (select 1 from pg_policies where schemaname = 'storage' and tablename = 'objects' and policyname = 'Public Update Branding') then
+        create policy "Public Update Branding" on storage.objects for update using ( bucket_id = 'branding' );
+    end if;
+end $$;
 
 /* Categories */
 select create_policy_if_not_exists('Categories are viewable by everyone', 'categories', 'select', ARRAY['public'], 'true', null);

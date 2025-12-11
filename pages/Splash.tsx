@@ -1,8 +1,21 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../supabaseClient';
 
 export const Splash: React.FC = () => {
   const navigate = useNavigate();
+
+  const [logoUrl, setLogoUrl] = React.useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchLogo = async () => {
+      const { data } = await supabase.from('app_settings').select('logo_url, splash_logo_url').eq('id', 1).single();
+      if (data) {
+        setLogoUrl(data.splash_logo_url || data.logo_url);
+      }
+    };
+    void fetchLogo();
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -19,9 +32,9 @@ export const Splash: React.FC = () => {
 
       <div className="flex-1 flex flex-col items-center justify-center z-10 w-full animate-fade-in">
         <div className="w-60 h-60 flex items-center justify-center mb-8">
-          <img src="/white-logo.png" alt="MORADOR Logo" className="w-full h-full object-contain drop-shadow-[0_0_50px_rgba(139,92,246,0.6)]" />
+          <img src={logoUrl || "/brand-logo.png"} alt="MORADOR Logo" className="w-full h-full object-contain drop-shadow-[0_0_50px_rgba(139,92,246,0.6)]" />
         </div>
-        <div className="mt-4 px-3 py-1 bg-white/20 rounded-full text-[9px] font-bold text-slate-300">v1.1.0 - ATUALIZADO AGORA</div>
+        <div className="mt-4 px-3 py-1 bg-white/20 rounded-full text-[9px] font-bold text-slate-300">v4.1 - ATUALIZADO AGORA</div>
       </div>
 
       <div className="w-full z-10 pb-10">

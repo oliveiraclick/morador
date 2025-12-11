@@ -103,10 +103,7 @@ export const ProviderDashboard: React.FC<ProviderDashboardProps> = ({ onLogout }
                   </div>
                </button>
 
-               <button
-                  onClick={() => navigate('/profile', { state: { role: 'provider' } })}
-                  className="bg-white p-6 rounded-[24px] shadow-soft flex flex-col items-start gap-4 hover:-translate-y-1 transition-transform group"
-               >
+               <button className="bg-white p-6 rounded-[24px] shadow-soft flex flex-col items-start gap-4 hover:-translate-y-1 transition-transform group">
                   <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-600 group-hover:bg-slate-800 group-hover:text-white transition-colors shadow-sm">
                      <Settings size={24} />
                   </div>

@@ -5,14 +5,27 @@ import { Star, Search } from 'lucide-react';
 import { ProviderDashboard } from './ProviderDashboard';
 import { supabase } from '../supabaseClient';
 
+import { useAuth } from '../context/AuthContext';
+
 export const Dashboard: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { profile } = useAuth(); // Hooks must be at top level
   const role = (location.state as { role: UserRole })?.role || 'resident';
 
   const [activeTab, setActiveTab] = useState<'product' | 'service'>('service');
   const [providers, setProviders] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Greeting Logic
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Bom dia';
+    if (hour < 18) return 'Boa tarde';
+    return 'Boa noite';
+  };
+
+  const firstName = profile?.full_name?.split(' ')[0] || 'Vizinho';
 
   // Redireciona para Splash se for provider logout, mas para Perfil se for morador
   const handleLogout = () => navigate('/');
@@ -72,8 +85,8 @@ export const Dashboard: React.FC = () => {
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-3xl font-black text-slate-800 tracking-tight">
-              Bom dia,<br />
-              <span className="gradient-text">Vizinho.</span>
+              {getGreeting()},<br />
+              <span className="gradient-text">{firstName}.</span>
             </h1>
           </div>
           <div
@@ -138,8 +151,8 @@ export const Dashboard: React.FC = () => {
             <button
               onClick={() => setActiveTab('service')}
               className={`px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${activeTab === 'service'
-                  ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-500/30 scale-105'
-                  : 'text-slate-400 hover:bg-slate-50'
+                ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-500/30 scale-105'
+                : 'text-slate-400 hover:bg-slate-50'
                 }`}
             >
               Serviços
@@ -147,8 +160,8 @@ export const Dashboard: React.FC = () => {
             <button
               onClick={() => setActiveTab('product')}
               className={`px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-wider transition-all ${activeTab === 'product'
-                  ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-500/30 scale-105'
-                  : 'text-slate-400 hover:bg-slate-50'
+                ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-500/30 scale-105'
+                : 'text-slate-400 hover:bg-slate-50'
                 }`}
             >
               Produtos

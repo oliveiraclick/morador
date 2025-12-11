@@ -209,6 +209,21 @@ export const SaaSAdmin: React.FC = () => {
 
   const [isUploading, setIsUploading] = useState(false);
 
+  // New Branding Assets
+  const [activeLogoTab, setActiveLogoTab] = useState<'main' | 'splash' | 'login' | 'pwa'>('main');
+
+  const [dataFiles, setDataFiles] = useState<{
+    splash: File | null;
+    login: File | null;
+    pwa: File | null;
+  }>({ splash: null, login: null, pwa: null });
+
+  const [previews, setPreviews] = useState<{
+    splash: string | null;
+    login: string | null;
+    pwa: string | null;
+  }>({ splash: null, login: null, pwa: null });
+
   // Admin Management
   const [adminsList, setAdminsList] = useState<any[]>([]);
   const [newAdminEmail, setNewAdminEmail] = useState('');
@@ -279,10 +294,18 @@ export const SaaSAdmin: React.FC = () => {
 
   useEffect(() => {
     const fetchSettings = async () => {
-      const { data } = await supabase.from('app_settings').select('logo_url, banner_url').eq('id', 1).single();
+      // Fetch all logo fields
+      const { data } = await supabase.from('app_settings').select('logo_url, banner_url, splash_logo_url, login_logo_url, pwa_icon_url').eq('id', 1).single();
       if (data) {
         if (data.logo_url) setLogoPreview(data.logo_url);
         if (data.banner_url) setBannerPreview(data.banner_url);
+
+        setPreviews(prev => ({
+          ...prev,
+          splash: data.splash_logo_url || null,
+          login: data.login_logo_url || null,
+          pwa: data.pwa_icon_url || null
+        }));
       }
     };
     void fetchSettings();
@@ -374,6 +397,55 @@ export const SaaSAdmin: React.FC = () => {
       alert('Banner atualizado com sucesso!');
     }
     setIsUploading(false);
+  };
+
+  const handleGenericUpload = async (type: 'splash' | 'login' | 'pwa') => {
+    const file = dataFiles[type];
+    if (!file) return;
+    setIsUploading(true);
+
+    const fileName = `${type}-logo-${Date.now()}`;
+    const { error: uploadError } = await supabase.storage.from('branding').upload(fileName, file, {
+      cacheControl: '3600',
+      upsert: true,
+    });
+
+    if (uploadError) {
+      alert('Erro no upload: ' + uploadError.message);
+      setIsUploading(false);
+      return;
+    }
+
+    const { data: urlData } = supabase.storage.from('branding').getPublicUrl(fileName);
+    const publicUrl = urlData.publicUrl;
+
+    // Map type to column name
+    const column = type === 'splash' ? 'splash_logo_url' : type === 'login' ? 'login_logo_url' : 'pwa_icon_url';
+
+    const { error: dbError } = await supabase
+      .from('app_settings')
+      .update({ [column]: publicUrl, updated_at: new Date().toISOString() })
+      .eq('id', 1);
+
+    if (dbError) {
+      alert('Erro ao salvar: ' + dbError.message);
+    } else {
+      alert(`${type.toUpperCase()} logo atualizada!`);
+    }
+    setIsUploading(false);
+  };
+
+  const handleGenericFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'splash' | 'login' | 'pwa') => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setDataFiles(prev => ({ ...prev, [type]: file }));
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviews(prev => ({ ...prev, [type]: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   return (
@@ -578,27 +650,73 @@ export const SaaSAdmin: React.FC = () => {
 
             <div className="space-y-4">
               {/* Logo Section */}
+              {/* Logo Manager Section with Tabs */}
               <div>
-                <div className="flex justify-between items-center mb-3 ml-1">
-                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest">Logo Principal</label>
-                  <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-lg">Max: 500x500px</span>
+                <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+                  {['main', 'splash', 'login', 'pwa'].map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveLogoTab(tab as any)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all ${activeLogoTab === tab
+                          ? 'bg-violet-600 text-white shadow-md'
+                          : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
+                        }`}
+                    >
+                      {tab === 'main' ? 'Principal' : tab === 'splash' ? 'Splash' : tab === 'login' ? 'Login' : 'PWA Icon'}
+                    </button>
+                  ))}
                 </div>
-                <div className="flex items-center gap-4">
-                  <div className="w-24 h-24 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center p-2">
-                    {logoPreview ? (
-                      <img src={logoPreview} alt="Preview" className="max-w-full max-h-full object-contain" />
-                    ) : (
-                      <ImageIcon size={32} className="text-slate-300" />
-                    )}
+
+                {activeLogoTab === 'main' && (
+                  <div className="animate-fade-in">
+                    <div className="flex justify-between items-center mb-3 ml-1">
+                      <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest">Logo Principal</label>
+                      <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-lg">Max: 500x500px</span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="w-24 h-24 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center p-2">
+                        {logoPreview ? (
+                          <img src={logoPreview} alt="Preview" className="max-w-full max-h-full object-contain" />
+                        ) : (
+                          <ImageIcon size={32} className="text-slate-300" />
+                        )}
+                      </div>
+                      <label className="flex-1 h-24 flex items-center justify-center px-6 bg-slate-50 text-slate-500 font-bold rounded-2xl border-2 border-dashed border-slate-200 cursor-pointer hover:bg-violet-50 hover:border-violet-200 hover:text-violet-600 transition-colors">
+                        <input type="file" className="hidden" onChange={handleFileChange} accept="image/png, image/jpeg, image/svg+xml" />
+                        <span>Escolher Logo</span>
+                      </label>
+                    </div>
+                    <Button fullWidth onClick={handleLogoUpload} disabled={isUploading || !logoFile} className="mt-2">
+                      {isUploading ? 'Enviando...' : 'Salvar Logomarca'}
+                    </Button>
                   </div>
-                  <label className="flex-1 h-24 flex items-center justify-center px-6 bg-slate-50 text-slate-500 font-bold rounded-2xl border-2 border-dashed border-slate-200 cursor-pointer hover:bg-violet-50 hover:border-violet-200 hover:text-violet-600 transition-colors">
-                    <input type="file" className="hidden" onChange={handleFileChange} accept="image/png, image/jpeg, image/svg+xml" />
-                    <span>Escolher Logo</span>
-                  </label>
-                </div>
-                <Button fullWidth onClick={handleLogoUpload} disabled={isUploading || !logoFile} className="mt-2">
-                  {isUploading ? 'Enviando...' : 'Salvar Logomarca'}
-                </Button>
+                )}
+
+                {['splash', 'login', 'pwa'].map((type) => (
+                  activeLogoTab === type && (
+                    <div key={type} className="animate-fade-in">
+                      <div className="flex justify-between items-center mb-3 ml-1">
+                        <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest">Logo {type === 'pwa' ? 'Ícone PWA' : type.charAt(0).toUpperCase() + type.slice(1)}</label>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="w-24 h-24 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center p-2">
+                          {previews[type as 'splash' | 'login' | 'pwa'] ? (
+                            <img src={previews[type as 'splash' | 'login' | 'pwa']!} alt="Preview" className="max-w-full max-h-full object-contain" />
+                          ) : (
+                            <ImageIcon size={32} className="text-slate-300" />
+                          )}
+                        </div>
+                        <label className="flex-1 h-24 flex items-center justify-center px-6 bg-slate-50 text-slate-500 font-bold rounded-2xl border-2 border-dashed border-slate-200 cursor-pointer hover:bg-violet-50 hover:border-violet-200 hover:text-violet-600 transition-colors">
+                          <input type="file" className="hidden" onChange={(e) => handleGenericFileChange(e, type as any)} accept="image/png, image/jpeg, image/svg+xml" />
+                          <span>Escolher {type === 'pwa' ? 'Ícone' : 'Imagem'}</span>
+                        </label>
+                      </div>
+                      <Button fullWidth onClick={() => handleGenericUpload(type as any)} disabled={isUploading || !dataFiles[type as 'splash' | 'login' | 'pwa']} className="mt-2">
+                        {isUploading ? 'Enviando...' : `Salvar ${type === 'pwa' ? 'Ícone' : 'Logo'}`}
+                      </Button>
+                    </div>
+                  )
+                ))}
               </div>
 
               <div className="h-px bg-slate-100 my-6"></div>

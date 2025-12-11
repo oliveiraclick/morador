@@ -5,6 +5,7 @@ import { HashRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'r
 import { RegistrationProvider } from './context/RegistrationContext';
 import { CartProvider } from './context/CartContext';
 import { AuthProvider } from './context/AuthContext';
+import { supabase } from './supabaseClient';
 import { BottomNav } from './components/BottomNav';
 // Removed unused imports for Button, LayoutGrid, ShoppingBag, Zap, User, ShieldCheck as LandingPage is removed
 
@@ -38,13 +39,41 @@ const AppContent: React.FC = () => {
 
   useEffect(() => {
     // FORCE REDIRECT TO SPLASH ON LOAD/RELOAD
-    // This ensures the user always starts at the beginning for the demo flow
-    // We check if we are already at root to avoid infinite loops if Splash redirects elsewhere
-    // Exclude test-connection and saas-admin from forced redirect
     if (location.pathname !== '/' && location.pathname !== '/test-connection' && location.pathname !== '/saas-admin' && !sessionStorage.getItem('app_loaded')) {
       sessionStorage.setItem('app_loaded', 'true');
       navigate('/');
     }
+
+    // Dynamic PWA Icon / Favicon
+    const updateFavicon = async () => {
+      try {
+        const { data } = await supabase.from('app_settings').select('pwa_icon_url').eq('id', 1).single();
+        if (data?.pwa_icon_url) {
+          // Update generic icon
+          const links = document.querySelectorAll("link[rel*='icon']");
+          links.forEach((link: any) => {
+            link.href = data.pwa_icon_url;
+          });
+
+          // If no icon link exists, create one
+          if (links.length === 0) {
+            const link = document.createElement('link');
+            link.rel = 'icon';
+            link.href = data.pwa_icon_url;
+            document.head.appendChild(link);
+          }
+
+          // Update Apple Touch Icon
+          const appleLink = document.querySelector("link[rel='apple-touch-icon']") as HTMLLinkElement;
+          if (appleLink) {
+            appleLink.href = data.pwa_icon_url;
+          }
+        }
+      } catch (error) {
+        console.error("Failed to update favicon:", error);
+      }
+    };
+    void updateFavicon();
   }, []);
 
   return (

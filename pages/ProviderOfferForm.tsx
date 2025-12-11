@@ -175,6 +175,7 @@ export const ProviderOfferForm: React.FC = () => {
               />
               {type === 'service' && (
                 <div className="flex items-center h-14 mt-6 px-4">
+                  <span className="text-xs font-bold text-slate-400">Valor pode variar conforme análise.</span>
                 </div>
               )}
               {type === 'product' && (

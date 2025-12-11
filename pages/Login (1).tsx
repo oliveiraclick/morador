@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { Input } from '../components/Input';
@@ -11,29 +11,22 @@ export const Login: React.FC = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  // Logo fetching removed as we are using static white-logo.png
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchLogo = async () => {
-      const { data } = await supabase
-        .from('app_settings')
-        .select('logo_url')
-        .eq('id', 1)
-        .single();
-
-      if (data?.logo_url) {
-        setLogoUrl(data.logo_url);
-      }
-    };
-    void fetchLogo();
-  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+
+    // --- SUPER ADMIN CHECK ---
+    // Trimming whitespaces to avoid copy-paste errors
+    if (email.trim().toLowerCase() === 'denys@morador.app' && password.trim() === 'Vendas@123') {
+      sessionStorage.setItem('app_loaded', 'true'); // Bypass splash redirect
+      navigate('/saas-admin');
+      return;
+    }
 
     const { data, error } = await signIn(email, password);
 
@@ -44,7 +37,19 @@ export const Login: React.FC = () => {
     }
 
     if (data.user) {
-      // Fetch user role from profiles table
+      // 1. Check if user is an ADMIN (in 'admins' table)
+      const { data: adminData } = await supabase
+        .from('admins')
+        .select('id')
+        .eq('email', data.user.email)
+        .single();
+
+      if (adminData) {
+        navigate('/saas-admin');
+        return;
+      }
+
+      // 2. Fetch user role from profiles table
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('user_type') // Changed from 'role' to 'user_type' based on schema
@@ -52,10 +57,7 @@ export const Login: React.FC = () => {
         .single();
 
       if (profileError) {
-        // Fallback or handle error - maybe user exists in auth but not profile?
-        // For now, let's assume if no profile, we might need to create one or show error
         console.error("Profile fetch error:", profileError);
-        // Try to infer role or default
       }
 
       const role = profileData?.user_type as 'resident' | 'provider';
@@ -78,11 +80,12 @@ export const Login: React.FC = () => {
       </div>
 
       <div className="relative z-10 p-8 text-center mb-6">
-        {logoUrl || true ? (
-          <img src={logoUrl || "/logo.png"} alt="App Logo" className="max-h-20 mx-auto mb-4" />
-        ) : (
-          <h1 className="text-5xl font-black text-white mb-2 tracking-tighter">Olá, Vizinho.</h1>
-        )}
+        <img
+          src="/white-logo.png"
+          alt="App Logo"
+          className={`mx-auto mb-4 object-contain transition-all h-${localStorage.getItem('logo_size') || '32'}`}
+          style={{ maxHeight: localStorage.getItem('logo_size') ? `${Number(localStorage.getItem('logo_size')) * 4}px` : '128px' }}
+        />
         <p className="text-violet-200 text-lg font-medium">Bem-vindo ao seu lar digital.</p>
       </div>
 
@@ -140,6 +143,7 @@ export const Login: React.FC = () => {
           <Link to="/register/type" className="text-sm font-black text-slate-800 border-b-2 border-fuchsia-400 pb-0.5 hover:text-fuchsia-600">
             Criar uma nova conta
           </Link>
+          <p className="mt-4 text-[10px] text-slate-400 font-mono">v1.1.0</p>
         </div>
       </div>
     </div>
