@@ -1,37 +1,100 @@
-import React from 'react';
-import { Bell, Search, MapPin, Plus, Calendar, FileText, Key, Megaphone, Heart, ChevronRight, Sparkles } from 'lucide-react';
+import React, { useState } from 'react';
+import { Bell, Search, MapPin, Plus, Calendar, FileText, Key, Megaphone, Heart, ChevronRight, ChevronLeft, Sparkles, QrCode, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import ReferralModal from '../components/ReferralModal';
 
 const ResidentHome: React.FC = () => {
   const navigate = useNavigate();
+  const [showReferral, setShowReferral] = useState(false);
+  const [activePros, setActivePros] = useState<any[]>([]);
+
+  const [latestBroadcast, setLatestBroadcast] = useState<any>(null);
+
+  // Check for broadcasts
+  React.useEffect(() => {
+    const checkBroadcasts = () => {
+      const stored = localStorage.getItem('system_broadcasts');
+      if (stored) {
+        try {
+          const broadcasts = JSON.parse(stored);
+          if (broadcasts.length > 0) {
+            setLatestBroadcast(broadcasts[0]);
+          }
+        } catch (e) {
+          console.error("Failed to parse system_broadcasts", e);
+        }
+      }
+    };
+
+    checkBroadcasts();
+    // Optional: Poll every few seconds if needed, but for now run once on mount
+  }, []);
+
+  // Check for pros on site
+  React.useEffect(() => {
+    const stored = localStorage.getItem('prof_on_site');
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        setActivePros(Array.isArray(parsed) ? parsed : [parsed]);
+      } catch (e) {
+        console.error("Failed to parse prof_on_siteData", e);
+        setActivePros([]);
+      }
+    } else {
+      setActivePros([]);
+    }
+  }, []);
+
+  // Mock User Name
+  const userName = "Ricardo";
+
+  const carouselRef = React.useRef<HTMLDivElement>(null);
+
+  const scrollLeft = () => {
+    if (carouselRef.current) {
+      carouselRef.current.scrollBy({ left: -200, behavior: 'smooth' });
+    }
+  };
+
+  const scrollRight = () => {
+    if (carouselRef.current) {
+      carouselRef.current.scrollBy({ left: 200, behavior: 'smooth' });
+    }
+  };
 
   return (
-    <div className="p-0">
+    <div className="p-0 bg-gray-50 min-h-screen pb-24">
       {/* Header */}
-      <div className="bg-white p-6 pb-4 rounded-b-3xl shadow-sm">
-        <div className="flex justify-between items-start mb-4">
-          <div className="flex items-center gap-3">
+      <div className="bg-gradient-to-b from-purple-600 to-indigo-600 p-6 pb-8 rounded-b-[40px] shadow-lg shadow-purple-200/50">
+
+        <div className="flex justify-between items-start mb-6">
+          <div className="flex items-center gap-4">
             <div className="relative">
-              <img src="https://picsum.photos/100/100" alt="Profile" className="w-12 h-12 rounded-full border-2 border-primary-100" />
-              <div className="absolute bottom-0 right-0 w-3 h-3 bg-primary-500 rounded-full border-2 border-white"></div>
+              <img src="https://picsum.photos/100/100" alt="Profile" className="w-14 h-14 rounded-full border-[3px] border-white/30" />
+              <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-400 rounded-full border-2 border-indigo-600"></div>
             </div>
             <div>
-              <div className="flex items-center text-primary-600 text-sm font-medium">
+              <div className="flex items-center text-purple-100 text-sm font-medium mb-0.5">
                 <MapPin size={14} className="mr-1" />
                 Condomínio Jardins do Sol
               </div>
-              <h1 className="text-2xl font-bold text-gray-900 mt-0.5">
-                Bom dia, <span className="text-primary-600">Ricardo!</span> 👋
+              <h1 className="text-2xl font-bold text-white">
+                Bom dia, {userName}! 👋
               </h1>
             </div>
           </div>
           <div className="flex gap-3">
-            <button className="p-2.5 bg-white border border-gray-100 shadow-sm rounded-full text-gray-600">
-              <Search size={20} />
+            <button
+              onClick={() => setShowReferral(true)}
+              className="p-2.5 bg-white/10 backdrop-blur-md border border-white/20 rounded-full text-white hover:bg-white/20 transition-colors"
+              title="Indicar Profissional"
+            >
+              <QrCode size={20} />
             </button>
-            <button className="p-2.5 bg-white border border-gray-100 shadow-sm rounded-full text-gray-600 relative">
+            <button className="p-2.5 bg-white/10 backdrop-blur-md border border-white/20 rounded-full text-white relative hover:bg-white/20 transition-colors">
               <Bell size={20} />
-              <span className="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full"></span>
+              <span className="absolute top-2 right-2.5 w-2 h-2 bg-red-400 rounded-full border border-indigo-600"></span>
             </button>
           </div>
         </div>
@@ -39,33 +102,16 @@ const ResidentHome: React.FC = () => {
         {/* Categories / Quick Actions */}
         <div className="flex justify-between gap-2 overflow-x-auto no-scrollbar py-2">
           {[
-            { name: 'Anunciar', icon: <Plus size={24} />, color: 'bg-primary-50 text-primary-600 border-primary-200', action: () => navigate('/sell') },
-            { name: 'Desapego', icon: <ShoppingBagIcon />, color: 'bg-pink-50 text-pink-600 border-pink-200', action: () => navigate('/market') },
-            { name: 'Beleza', icon: <SparklesIcon />, color: 'bg-teal-50 text-teal-600 border-teal-200', action: () => navigate('/beauty') },
-            { name: 'Comida', icon: <UtensilsIcon />, color: 'bg-orange-50 text-orange-600 border-orange-200', action: () => navigate('/food') },
+            { name: 'Anunciar', icon: <Plus size={24} />, color: 'bg-white/20 text-white border-white/30', action: () => navigate('/sell') },
+            { name: 'Desapego', icon: <ShoppingBagIcon />, color: 'bg-white/10 text-purple-100 border-white/10', action: () => navigate('/market', { state: { category: 'Todos' } }) },
+            { name: 'Beleza', icon: <SparklesIcon />, color: 'bg-white/10 text-purple-100 border-white/10', action: () => navigate('/market', { state: { category: 'Beleza' } }) },
+            { name: 'Comida', icon: <UtensilsIcon />, color: 'bg-white/10 text-purple-100 border-white/10', action: () => navigate('/market', { state: { category: 'Comida' } }) },
           ].map((cat, idx) => (
             <button onClick={cat.action} key={idx} className="flex flex-col items-center gap-2 min-w-[72px]">
-              <div className={`w-16 h-16 rounded-full flex items-center justify-center border ${cat.color} ${idx === 0 ? 'border-dashed border-2' : ''}`}>
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center border backdrop-blur-sm ${cat.color} ${idx === 0 ? 'border-dashed border-2' : ''}`}>
                 {cat.icon}
               </div>
-              <span className="text-xs font-medium text-gray-700">{cat.name}</span>
-            </button>
-          ))}
-        </div>
-
-        {/* Secondary Actions */}
-        <div className="grid grid-cols-4 gap-4 mt-6">
-          {[
-            { name: 'Reservas', icon: <Calendar size={20} />, color: 'text-purple-600 bg-purple-50', action: () => navigate('/booking') },
-            { name: 'Boletos', icon: <FileText size={20} />, color: 'text-blue-600 bg-blue-50', action: () => navigate('/slips') },
-            { name: 'Portaria', icon: <Key size={20} />, color: 'text-amber-600 bg-amber-50', action: () => navigate('/concierge') },
-            { name: 'Avisos', icon: <Megaphone size={20} />, color: 'text-rose-600 bg-rose-50', action: () => navigate('/notices') },
-          ].map((item, idx) => (
-            <button key={idx} onClick={item.action} className="flex flex-col items-center gap-2">
-              <div className={`w-14 h-12 rounded-xl flex items-center justify-center ${item.color}`}>
-                {item.icon}
-              </div>
-              <span className="text-[11px] font-medium text-gray-600">{item.name}</span>
+              <span className="text-xs font-medium text-white/90">{cat.name}</span>
             </button>
           ))}
         </div>
@@ -74,70 +120,194 @@ const ResidentHome: React.FC = () => {
       {/* Highlights */}
       <div className="px-6 mt-6">
 
-        {/* Pro Plan Banner */}
-        <div
-          onClick={() => navigate('/pro')}
-          className="mb-6 rounded-2xl bg-gradient-to-r from-[#7c3aed] to-[#9333ea] p-4 text-white shadow-lg shadow-purple-200 flex items-center justify-between cursor-pointer group"
-        >
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <div className="p-1 bg-white/20 rounded-lg">
-                <Sparkles size={14} className="text-yellow-300" fill="currentColor" />
-              </div>
-              <span className="text-xs font-bold uppercase tracking-wider text-purple-100">Morador Pro</span>
+        {/* Active Professionals on Site Section */}
+        {activePros.length > 0 && (
+          <div className="mb-8">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="relative flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+              </span>
+              <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wide">No condomínio agora</h2>
             </div>
-            <h3 className="font-bold text-lg leading-tight">Venda mais no<br />seu condomínio</h3>
-          </div>
-          <div className="h-10 w-10 bg-white/20 rounded-full flex items-center justify-center group-hover:bg-white group-hover:text-purple-600 transition-colors">
-            <ChevronRight size={24} />
-          </div>
-        </div>
 
-        <div className="flex justify-between items-end mb-4">
-          <h2 className="text-lg font-bold text-gray-900">Destaques</h2>
-          <button onClick={() => navigate('/notices')} className="text-sm text-primary-600 font-medium">Ver tudo</button>
-        </div>
+            <div className={`grid gap-3 ${activePros.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+              {activePros.map((prof, idx) => (
+                <div key={idx} className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-4 text-white shadow-lg shadow-blue-200 relative overflow-hidden group">
+                  {/* Decorative Circles */}
+                  <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -mr-8 -mt-8 blur-xl"></div>
 
-        {/* Maintenance Card */}
-        <div className="bg-white p-4 rounded-2xl shadow-sm border border-l-4 border-l-primary-500 border-gray-100 flex gap-4 mb-4">
-          <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center text-purple-600 flex-shrink-0">
-            <ToolIcon />
-          </div>
-          <div>
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-xs font-bold text-purple-600 uppercase tracking-wider">Manutenção</span>
-              <span className="text-xs text-gray-400">Hoje, 14:00</span>
+                  <div className={`flex ${activePros.length > 1 ? 'flex-col items-center text-center' : 'items-center gap-4'}`}>
+                    <div className="relative">
+                      <img src={prof.avatar} className="w-14 h-14 rounded-full border-2 border-white/30 shadow-md" />
+                      <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-400 border-2 border-blue-600 rounded-full"></span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-lg leading-tight truncate w-full">{prof.profession}</h3>
+                      <p className="text-xs text-blue-100 truncate w-full">{prof.name}</p>
+
+                      <button
+                        onClick={() => navigate('/chat', { state: { seller: prof.name, product: { title: `Serviço de ${prof.profession}`, price: 0 } } })}
+                        className={`mt-3 bg-white text-blue-600 rounded-xl text-xs font-bold hover:bg-blue-50 transition-colors shadow-sm ${activePros.length > 1 ? 'w-full py-2' : 'px-6 py-2 w-auto'}`}
+                      >
+                        Chamar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
-            <h3 className="font-bold text-gray-900">Manutenção na Piscina</h3>
-            <p className="text-sm text-gray-500 mt-1 leading-relaxed">
-              A piscina estará fechada para limpeza e tratamento químico até as 18:00.
-            </p>
           </div>
-        </div>
+        )}
 
-        {/* Sales Item */}
-        <div className="bg-white p-3 rounded-2xl shadow-sm border border-gray-100 flex gap-4">
-          <img src="https://picsum.photos/300/300" className="w-24 h-24 rounded-xl object-cover" alt="Bike" />
-          <div className="flex-1 flex flex-col justify-between py-1">
-            <div className="flex justify-between items-start">
-              <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-[10px] font-bold rounded">Venda</span>
-              <Heart size={18} className="text-gray-400" />
+        {/* Admin News / Offers Card - Dynamic */}
+        {latestBroadcast ? (
+          <div className="bg-white p-4 rounded-2xl shadow-sm border border-l-4 border-l-primary-500 border-gray-100 flex gap-4 mb-8 animate-in slide-in-from-bottom-2">
+            <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center text-purple-600 flex-shrink-0">
+              <Megaphone size={24} />
             </div>
             <div>
-              <h3 className="font-bold text-gray-900 leading-tight">Bicicleta Infantil Aro 20</h3>
-              <p className="text-xs text-gray-500 mt-0.5">Ótimo estado, pouco uso.</p>
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-xs font-bold text-purple-600 uppercase tracking-wider">Avisos e Ofertas</span>
+                <span className="text-xs text-gray-400">{new Date(latestBroadcast.timestamp).toLocaleDateString()}</span>
+              </div>
+              <h3 className="font-bold text-gray-900">{latestBroadcast.title}</h3>
+              <p className="text-sm text-gray-500 mt-1 leading-relaxed">
+                {latestBroadcast.message}
+              </p>
             </div>
-            <div className="flex justify-between items-center mt-2">
-              <span className="text-lg font-bold text-primary-700">R$ 200</span>
-              <div className="flex items-center text-xs text-gray-500">
-                <img src="https://picsum.photos/50/50" className="w-5 h-5 rounded-full mr-1" alt="Seller" />
-                Apto 302
+          </div>
+        ) : (
+          // Fallback (empty or default message if needed, or null to hide)
+          <div className="bg-white p-4 rounded-2xl shadow-sm border border-l-4 border-gray-200 border-gray-100 flex gap-4 mb-8 opacity-50">
+            <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-gray-400 flex-shrink-0">
+              <Megaphone size={24} />
+            </div>
+            <div className="flex items-center">
+              <p className="text-sm text-gray-400">Nenhum aviso no momento.</p>
+            </div>
+          </div>
+        )}
+
+        {/* Desapego Carousel */}
+        <div className="mb-8 relative group">
+          <div className="flex justify-between items-center mb-4 px-1">
+            <h2 className="text-lg font-bold text-gray-900">Destaques do Desapego</h2>
+            <button onClick={() => navigate('/market')} className="text-primary-600 text-sm font-bold flex items-center">
+              Ver tudo <ChevronRight size={16} />
+            </button>
+          </div>
+
+          {/* Navigation Arrows */}
+          <button
+            onClick={scrollLeft}
+            className="absolute left-0 top-[60%] -translate-y-1/2 z-10 p-2 bg-white/80 backdrop-blur-sm rounded-full shadow-lg text-gray-700 hover:bg-white transition-opacity disabled:opacity-0 hidden md:group-hover:block"
+          >
+            <ChevronLeft size={24} />
+          </button>
+
+          <button
+            onClick={scrollRight}
+            className="absolute right-0 top-[60%] -translate-y-1/2 z-10 p-2 bg-white/80 backdrop-blur-sm rounded-full shadow-lg text-gray-700 hover:bg-white transition-opacity hidden md:group-hover:block"
+          >
+            <ChevronRight size={24} />
+          </button>
+
+          <div
+            ref={carouselRef}
+            className="flex gap-4 overflow-x-auto pb-4 -mx-6 px-6 scrollbar-hide no-scrollbar"
+            style={{
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none'
+            }}
+          >
+            {(() => {
+              const stored = localStorage.getItem('marketplace_items');
+              const items = stored ? JSON.parse(stored) : [];
+              const desapegoItems = items.filter((i: any) => i.type === 'DESAPEGO');
+              const displayItems = desapegoItems.length > 0 ? desapegoItems : [
+                { title: 'Bicicleta Aro 29', price: 850, img: 'https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?auto=format&fit=crop&q=80&w=300', category: 'Esporte' },
+                { title: 'Sofá 2 Lugares', price: 400, img: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=300', category: 'Móveis' },
+                { title: 'Monitor 24"', price: 600, img: 'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&q=80&w=300', category: 'Eletrônicos' }
+              ];
+
+              return displayItems.map((item: any, idx: number) => (
+                <div key={idx} className="min-w-[200px] bg-white p-3 rounded-2xl shadow-sm border border-gray-100 flex flex-col shrink-0">
+                  <div className="relative mb-3">
+                    <img src={item.img} className="w-full h-32 rounded-xl object-cover" alt={item.title} />
+                    <span className="absolute top-2 left-2 bg-black/50 backdrop-blur-md text-white text-[10px] px-2 py-1 rounded-lg font-medium">
+                      {item.category}
+                    </span>
+                  </div>
+                  <h3 className="font-bold text-gray-900 leading-tight mb-1 truncate">{item.title}</h3>
+                  <div className="mt-auto flex justify-between items-center">
+                    <span className="font-bold text-primary-600">R$ {Number(item.price).toFixed(2).replace('.', ',')}</span>
+                    <button className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors">
+                      <Heart size={16} />
+                    </button>
+                  </div>
+                </div>
+              ));
+            })()}
+          </div>
+        </div>
+
+        {/* Ads / Services Section */}
+        <div>
+          <h2 className="text-lg font-bold text-gray-900 mb-4">Ofertas e Serviços</h2>
+          <div className="space-y-4">
+            {/* Dynamic Ads from localStorage */}
+            {(() => {
+              const storedAds = localStorage.getItem('ads_data');
+              const ads = storedAds ? JSON.parse(storedAds) : [];
+              return ads.filter((ad: any) => ad.active).map((ad: any) => (
+                <div key={ad.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex gap-4 mb-4 relative overflow-hidden group">
+                  <div className="w-20 h-20 rounded-xl bg-gray-100 flex-shrink-0">
+                    <img src={ad.imageUrl} className="w-full h-full object-cover rounded-xl" alt={ad.title} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-start">
+                      <h3 className="font-bold text-gray-900 truncate pr-2">{ad.title}</h3>
+                      <span className="text-[10px] bg-pink-100 text-pink-700 px-2 py-0.5 rounded-full font-bold">Oferta</span>
+                    </div>
+                    <p className="text-sm text-gray-500 mt-1 mb-2 line-clamp-2">{ad.description}</p>
+                    {ad.link && (
+                      <button onClick={() => navigate(ad.link)} className="text-xs font-bold text-pink-600 flex items-center gap-1 hover:underline">
+                        Ver detalhes <ChevronRight size={12} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ));
+            })()}
+
+            {/* Keeping the 'Limpeza Pós-Obra' as a static service example for now, or we can make it dynamic later too. User asked for 'Ads' integration first. */}\n
+            <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex gap-4">
+              <img src="https://images.unsplash.com/photo-1581578731117-104f2a8d23e9?auto=format&fit=crop&q=80&w=300" className="w-20 h-20 rounded-xl object-cover" alt="Service" />
+              <div className="flex-1">
+                <div className="flex justify-between items-start">
+                  <h3 className="font-bold text-gray-900">Limpeza Pós-Obra</h3>
+                  <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">Novo</span>
+                </div>
+                <p className="text-sm text-gray-500 mt-1 mb-2">Equipe especializada para seu apê novo.</p>
+                <div className="flex items-center gap-1 text-xs text-yellow-500 font-bold">
+                  <Star size={12} fill="currentColor" />
+                  <span>4.9</span>
+                  <span className="text-gray-400 font-normal">(32 avaliações)</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
+
       </div>
-    </div>
+
+      <ReferralModal
+        isOpen={showReferral}
+        onClose={() => setShowReferral(false)}
+        userName={userName}
+      />
+    </div >
   );
 };
 

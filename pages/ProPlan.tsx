@@ -181,7 +181,7 @@ const ProPlan: React.FC = () => {
         </div>
 
         {/* FAQ Dropdowns */}
-        <div className="mt-8 space-y-2">
+        <div className="mt-8 px-6 space-y-2 mb-10">
           <h3 className="font-bold text-gray-900 text-lg mb-4">Dúvidas Frequentes</h3>
           {['Preciso de cartão de crédito?', 'Posso cancelar quando quiser?', 'Como recebo os pagamentos?'].map((q, i) => (
             <div key={i} className="bg-gray-50 rounded-xl p-4 flex justify-between items-center cursor-pointer">
@@ -189,6 +189,23 @@ const ProPlan: React.FC = () => {
               <ChevronDown size={18} className="text-gray-400" />
             </div>
           ))}
+        </div>
+
+        {/* Coupon Input Section */}
+        <div className="px-6 mb-8">
+          <div className="bg-gray-50 border border-dashed border-gray-300 rounded-xl p-4">
+            <label className="text-xs font-bold text-gray-500 uppercase ml-1 block mb-2">Tem um cupom?</label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Código"
+                className="flex-1 bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm font-bold text-gray-900 uppercase focus:outline-none focus:border-purple-500"
+              />
+              <button className="bg-gray-900 text-white px-4 py-2 rounded-lg text-xs font-bold hover:opacity-80 transition-opacity">
+                Aplicar
+              </button>
+            </div>
+          </div>
         </div>
 
       </div>

@@ -1,79 +1,287 @@
-import React, { useState } from 'react';
-import { Search, Heart, MessageSquare, ArrowLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Search, Heart, MessageSquare, ArrowLeft, Store, Repeat, Utensils, Smartphone, Sparkles, ShoppingBag } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const Marketplace: React.FC = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('Todos');
+  const location = useLocation();
+  const [activeCategory, setActiveCategory] = useState(location.state?.category || 'Todos');
+  const [viewItem, setViewItem] = useState<any>(null);
 
-  const categories = ['Todos', 'Móveis', 'Eletrônicos', 'Infantil', 'Roupas'];
+  useEffect(() => {
+    if (location.state?.category) {
+      setActiveCategory(location.state.category);
+    }
+  }, [location.state]);
 
-  const items = [
-    { 
-      id: 1, 
-      title: 'Bicicleta Infantil Aro 16', 
-      price: 150.00, 
-      img: 'https://images.unsplash.com/photo-1511994298241-608e28f14fde?auto=format&fit=crop&q=80&w=800', 
-      description: 'Bicicleta em ótimo estado, pouco uso. Minha filha cresceu e não usa mais. Acompanha rodinhas. Precisa buscar no bloco A.',
-      seller: 'Ana Silva', 
-      sellerAvatar: 'AS',
-      sellerColor: 'bg-purple-500',
-      location: 'Bloco A, Ap 402', 
-      time: '2h atrás',
-      condition: 'Usado'
+  const categories = ['Todos', 'Móveis', 'Eletrônicos', 'Infantil', 'Roupas', 'Beleza', 'Comida'];
+
+  // Theme Logic
+  const themes: Record<string, any> = {
+    'Todos': {
+      gradient: 'bg-white',
+      text: 'text-gray-900',
+      accent: 'text-[#7c3aed]',
+      icon: ShoppingBag,
+      headerTitle: 'Explorar'
     },
-    { 
-      id: 2, 
-      title: 'Sofá 3 lugares Retrátil', 
-      price: 800.00, 
-      originalPrice: 950.00,
-      img: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=800', 
-      description: 'Sofá super confortável, retrátil e reclinável. Tecido Suede. Tem um pequeno detalhe no braço esquerdo, mas imperceptível. Motivo: mudança.',
-      seller: 'Carlos Souza', 
-      sellerAvatar: 'CS',
-      sellerColor: 'bg-blue-500',
-      location: 'Bloco C, Ap 101', 
-      time: '5h atrás',
-      condition: 'Seminovo'
+    'Comida': {
+      gradient: 'bg-gradient-to-r from-orange-500 to-red-500',
+      text: 'text-white',
+      accent: 'text-white',
+      icon: Utensils,
+      headerTitle: 'Sabores da Vila'
     },
-    { 
-      id: 3, 
-      title: 'Mesa de Jantar 4 Lugares', 
-      price: 450.00, 
-      img: 'https://images.unsplash.com/photo-1617806118233-18e1de247200?auto=format&fit=crop&q=80&w=800', 
-      description: 'Motivo da venda: mudança. Mesa em vidro temperado, muito resistente. Precisa vir buscar até sexta-feira.',
-      seller: 'Mariana Lima', 
-      sellerAvatar: 'ML',
-      sellerColor: 'bg-orange-500',
-      location: 'Bloco B, Ap 205', 
-      time: '1d atrás',
-      condition: 'Usado'
+    'Beleza': {
+      gradient: 'bg-gradient-to-r from-pink-400 to-rose-400',
+      text: 'text-white',
+      accent: 'text-white',
+      icon: Sparkles,
+      headerTitle: 'Espaço Beleza'
     },
-  ];
+    'Eletrônicos': {
+      gradient: 'bg-gradient-to-r from-blue-600 to-indigo-700',
+      text: 'text-white',
+      accent: 'text-white',
+      icon: Smartphone,
+      headerTitle: 'Tech & Gadgets'
+    }
+  };
+
+  const currentTheme = themes[activeCategory] || themes['Todos'];
+  const HeaderIcon = currentTheme.icon;
+
+  // State for items
+  const [items, setItems] = useState<any[]>([]);
+
+  useEffect(() => {
+    const storedItems = localStorage.getItem('marketplace_items');
+    if (storedItems) {
+      setItems(JSON.parse(storedItems));
+    } else {
+      // Seed initial data
+      const initialItems = [
+        // DESAPEGOS (Residents)
+        {
+          id: 1,
+          type: 'DESAPEGO',
+          title: 'Bicicleta Infantil Aro 16',
+          price: 150.00,
+          img: 'https://images.unsplash.com/photo-1511994298241-608e28f14fde?auto=format&fit=crop&q=80&w=800',
+          description: 'Bicicleta em ótimo estado, pouco uso. Minha filha cresceu e não usa mais. Acompanha rodinhas. Precisa buscar no bloco A.',
+          seller: 'Ana Silva',
+          sellerAvatar: 'AS',
+          sellerColor: 'bg-purple-500',
+          location: 'Bloco A, Ap 402',
+          time: '2h atrás',
+          condition: 'Usado',
+          category: 'Infantil'
+        },
+        {
+          id: 2,
+          type: 'DESAPEGO',
+          title: 'Sofá 3 lugares Retrátil',
+          price: 800.00,
+          originalPrice: 950.00,
+          img: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=800',
+          description: 'Sofá super confortável, retrátil e reclinável. Tecido Suede. Tem um pequeno detalhe no braço esquerdo, mas imperceptível.',
+          seller: 'Carlos Souza',
+          sellerAvatar: 'CS',
+          sellerColor: 'bg-blue-500',
+          location: 'Bloco C, Ap 101',
+          time: '5h atrás',
+          condition: 'Seminovo',
+          category: 'Móveis'
+        },
+        {
+          id: 3,
+          type: 'DESAPEGO',
+          title: 'Mesa de Jantar 4 Lugares',
+          price: 450.00,
+          img: 'https://images.unsplash.com/photo-1617806118233-18e1de247200?auto=format&fit=crop&q=80&w=800',
+          description: 'Motivo da venda: mudança. Mesa em vidro temperado, muito resistente.',
+          seller: 'Mariana Lima',
+          sellerAvatar: 'ML',
+          sellerColor: 'bg-orange-500',
+          location: 'Bloco B, Ap 205',
+          time: '1d atrás',
+          condition: 'Usado',
+          category: 'Móveis'
+        },
+        // LOJAS (Professionals)
+        {
+          id: 101,
+          type: 'LOJA',
+          title: 'Kit Body Infantil - 3 Peças (Novo)',
+          price: 89.90,
+          img: 'https://images.unsplash.com/photo-1522771930-78848d9293e8?auto=format&fit=crop&q=80&w=800',
+          description: 'Kit com 3 bodies 100% algodão. Tamanhos P, M e G. Várias estampas disponíveis. Produto novo, embalado.',
+          seller: 'Mundo Baby (Loja da Ana)',
+          sellerAvatar: 'MB',
+          sellerColor: 'bg-pink-500',
+          location: 'Loja Bloco A',
+          time: 'Loja',
+          condition: 'Novo',
+          category: 'Infantil'
+        },
+        {
+          id: 102,
+          type: 'LOJA',
+          title: 'Hidratante Facial Natural',
+          price: 45.00,
+          img: 'https://images.unsplash.com/photo-1608248597279-f99d160bfbc8?auto=format&fit=crop&q=80&w=800',
+          description: 'Hidratante vegano feito artesanalmente. Ideal para todos os tipos de pele. Pronta entrega no condomínio.',
+          seller: 'EcoBeleza (Loja)',
+          sellerAvatar: 'EB',
+          sellerColor: 'bg-green-500',
+          location: 'Loja Bloco C',
+          time: 'Loja',
+          condition: 'Novo',
+          category: 'Beleza'
+        }
+      ];
+      setItems(initialItems);
+      localStorage.setItem('marketplace_items', JSON.stringify(initialItems));
+    }
+  }, []);
+
+  // Filter Logic
+  const desapegoItems = items.filter(item =>
+    item.type === 'DESAPEGO' && (activeCategory === 'Todos' || item.category === activeCategory)
+  );
+
+  const lojaItems = items.filter(item =>
+    item.type === 'LOJA' && (activeCategory === 'Todos' || item.category === activeCategory)
+  );
+
+  const SectionHeader = ({ title, icon: Icon, count }: { title: string, icon: any, count: number }) => (
+    <div className="flex items-center justify-between px-4 mb-3 mt-6">
+      <div className="flex items-center gap-2 text-[#7c3aed]">
+        <Icon size={20} />
+        <h2 className="text-lg font-bold text-gray-900">{title}</h2>
+        <span className="bg-purple-100 text-purple-700 text-[10px] font-bold px-2 py-0.5 rounded-full">{count}</span>
+      </div>
+      <button className="text-xs text-gray-400 font-medium hover:text-[#7c3aed]">Ver todos</button>
+    </div>
+  );
+
+  const handleNegotiate = (item: any) => {
+    // 1. Get existing negotiations
+    const stored = localStorage.getItem('active_negotiations');
+    const negotiations = stored ? JSON.parse(stored) : [];
+
+    // 2. Check if already exists
+    const exists = negotiations.find((n: any) => n.id === item.id);
+
+    if (!exists) {
+      // 3. Add to list
+      const newItem = {
+        id: item.id,
+        title: item.title,
+        price: item.price,
+        seller: item.seller,
+        image: item.img,
+        status: 'Em negociação',
+        type: item.type,
+        timestamp: new Date().toISOString()
+      };
+      const updated = [newItem, ...negotiations];
+      localStorage.setItem('active_negotiations', JSON.stringify(updated));
+    }
+
+    // 4. Navigate
+    navigate('/chat', { state: { seller: item.seller, product: item } });
+  };
+
+  const HorizontalList = ({ items }: { items: any[] }) => (
+    <div className="flex gap-3 overflow-x-auto px-4 pb-4 no-scrollbar snap-x snap-mandatory w-full">
+      {items.length === 0 ? (
+        <div className="w-full text-center py-6 bg-white rounded-2xl border border-gray-100 border-dashed text-gray-400 text-sm">
+          Nenhum item nesta categoria
+        </div>
+      ) : (
+        items.map((item) => (
+          <div key={item.id} className="min-w-[220px] max-w-[220px] snap-center bg-white rounded-2xl p-3 shadow-sm border border-gray-100 flex-shrink-0">
+            {/* Seller Header */}
+            <div className="flex items-center justify-between mb-3 px-1">
+              <div className="flex items-center gap-2">
+                <div className={`w-6 h-6 rounded-full ${item.sellerColor} flex items-center justify-center text-white text-[9px] font-bold shadow-sm`}>
+                  {item.sellerAvatar}
+                </div>
+                <div>
+                  <h3 className="text-[10px] font-bold text-gray-900 leading-tight truncate max-w-[80px]">{item.seller}</h3>
+                </div>
+              </div>
+              <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-md ${item.condition === 'Novo' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
+                }`}>
+                {item.condition}
+              </span>
+            </div>
+
+            {/* Image */}
+            <div
+              onClick={() => setViewItem(item)}
+              className="relative h-32 rounded-xl overflow-hidden mb-2 bg-gray-100 group cursor-pointer"
+            >
+              <img src={item.img} className="w-full h-full object-cover transition-transform group-hover:scale-105" alt={item.title} />
+            </div>
+
+            {/* Content */}
+            <div className="px-1">
+              <h2 className="text-xs font-bold text-gray-800 line-clamp-1 mb-1">{item.title}</h2>
+
+              <div className="flex items-baseline gap-2 mb-2">
+                <span className="text-sm font-bold text-[#7c3aed]">R$ {item.price.toFixed(2).replace('.', ',')}</span>
+                {item.originalPrice && (
+                  <span className="text-[9px] text-gray-400 line-through">R$ {item.originalPrice}</span>
+                )}
+              </div>
+
+              <button
+                onClick={() => handleNegotiate(item)}
+                className="w-full bg-white border border-[#7c3aed] text-[#7c3aed] py-2 rounded-lg font-bold text-[10px] hover:bg-[#7c3aed] hover:text-white transition-colors flex items-center justify-center gap-1.5"
+              >
+                <MessageSquare size={12} />
+                Negociar
+              </button>
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  );
 
   return (
     <div className="bg-gray-50 min-h-screen pb-24">
-      {/* Header */}
-      <div className="bg-white p-4 sticky top-0 z-20 border-b border-gray-100">
-        <div className="flex justify-between items-center mb-4">
-           <button onClick={() => navigate(-1)} className="p-2 -ml-2 hover:bg-gray-100 rounded-full">
-             <ArrowLeft size={24} className="text-gray-900" />
-           </button>
-           <h1 className="text-lg font-bold text-gray-900">Bazar do Condomínio</h1>
-           <button className="p-2 -mr-2 hover:bg-gray-100 rounded-full">
-             <Search size={24} className="text-gray-900" />
-           </button>
+      {/* Dynamic Header */}
+      <div className={`${currentTheme.gradient} sticky top-0 z-20 shadow-sm pb-2 transition-colors duration-500`}>
+
+        {/* Top Bar */}
+        <div className="p-4 flex justify-between items-center">
+          <button onClick={() => navigate(-1)} className={`p-2 -ml-2 rounded-full ${currentTheme.text === 'text-white' ? 'hover:bg-white/20 text-white' : 'hover:bg-gray-100 text-gray-900'}`}>
+            <ArrowLeft size={24} />
+          </button>
+
+          <div className={`flex items-center gap-2 ${currentTheme.text}`}>
+            <HeaderIcon size={20} />
+            <h1 className="text-lg font-bold">{currentTheme.headerTitle}</h1>
+          </div>
+
+          <button className={`p-2 -mr-2 rounded-full ${currentTheme.text === 'text-white' ? 'hover:bg-white/20 text-white' : 'hover:bg-gray-100 text-gray-900'}`}>
+            <Search size={24} />
+          </button>
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-2 overflow-x-auto no-scrollbar">
+        {/* Category Chips */}
+        <div className="flex gap-2 px-4 overflow-x-auto no-scrollbar">
           {categories.map((cat) => (
-            <button 
+            <button
               key={cat}
-              onClick={() => setActiveTab(cat)}
-              className={`px-5 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-                activeTab === cat ? 'bg-[#7c3aed] text-white shadow-md shadow-purple-200' : 'bg-white border border-gray-200 text-gray-600'
-              }`}
+              onClick={() => setActiveCategory(cat)}
+              className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${activeCategory === cat
+                ? 'bg-white text-gray-900 shadow-lg scale-105'
+                : `${currentTheme.text === 'text-white' ? 'bg-white/20 text-white border-white/30 hover:bg-white/30' : 'bg-gray-100 text-gray-500 border-gray-200'}`
+                }`}
             >
               {cat}
             </button>
@@ -81,73 +289,99 @@ const Marketplace: React.FC = () => {
         </div>
       </div>
 
-      <div className="p-4 space-y-6">
-        {items.map((item) => (
-           <div key={item.id} className="bg-white rounded-3xl p-4 shadow-sm border border-gray-100 overflow-hidden">
-             
-             {/* Seller Header */}
-             <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                   <div className={`w-10 h-10 rounded-full ${item.sellerColor} flex items-center justify-center text-white text-xs font-bold`}>
-                      {item.sellerAvatar}
-                   </div>
-                   <div>
-                      <h3 className="text-sm font-bold text-gray-900 leading-none">{item.seller}</h3>
-                      <p className="text-[11px] text-gray-500 mt-0.5">{item.location}</p>
-                   </div>
-                </div>
-                <span className="text-[10px] text-gray-400 font-medium">{item.time}</span>
-             </div>
+      <div className="space-y-2">
+        {/* Section 1: Desapegos */}
+        <SectionHeader title="Desapegos da Vila" icon={Repeat} count={desapegoItems.length} />
+        <HorizontalList items={desapegoItems} />
 
-             {/* Image */}
-             <div className="relative h-64 rounded-2xl overflow-hidden mb-4 bg-gray-100">
-                <img src={item.img} className="w-full h-full object-cover" alt={item.title} />
-                <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-md px-2 py-1 rounded-lg text-white text-[10px] font-bold uppercase tracking-wide">
-                   {item.condition}
-                </div>
-             </div>
-
-             {/* Content */}
-             <div>
-                <div className="flex justify-between items-start mb-1">
-                   <h2 className="text-lg font-bold text-gray-900">{item.title}</h2>
-                   <button className="text-gray-400 hover:text-red-500 transition-colors">
-                      <Heart size={24} />
-                   </button>
-                </div>
-                
-                <div className="flex items-baseline gap-2 mb-3">
-                   <span className="text-xl font-bold text-[#7c3aed]">R$ {item.price.toFixed(2).replace('.', ',')}</span>
-                   {item.originalPrice && (
-                     <span className="text-sm text-gray-400 line-through decoration-gray-400">R$ {item.originalPrice}</span>
-                   )}
-                </div>
-
-                <p className="text-sm text-gray-500 mb-4 leading-relaxed line-clamp-3">
-                   {item.description}
-                </p>
-
-                <button 
-                  onClick={() => alert('Chat iniciado com o vendedor!')}
-                  className="w-full bg-[#7c3aed] text-white py-3 rounded-xl font-bold text-sm shadow-lg shadow-purple-100 hover:bg-[#6d28d9] transition-colors flex items-center justify-center gap-2"
-                >
-                   <MessageSquare size={18} fill="currentColor" className="text-white" />
-                   Tenho Interesse
-                </button>
-             </div>
-
-           </div>
-        ))}
-        
-        {/* Floating Add Button */}
-        <button 
-          onClick={() => navigate('/sell')}
-          className="fixed bottom-24 right-4 w-14 h-14 bg-[#7c3aed] rounded-full shadow-xl shadow-purple-300 flex items-center justify-center text-white z-20 hover:scale-105 transition-transform"
-        >
-           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-        </button>
+        {/* Section 2: Lojas */}
+        <SectionHeader title="Lojas & Vitrines" icon={Store} count={lojaItems.length} />
+        <HorizontalList items={lojaItems} />
       </div>
-    </div>
+
+
+
+
+
+      {/* Product Detail Modal */}
+      {
+        viewItem && (
+          <div className="fixed inset-0 z-50 bg-white animate-in slide-in-from-bottom-5 duration-300 flex flex-col">
+            {/* Header Image */}
+            <div className="relative h-1/2 bg-gray-100">
+              <img src={viewItem.img} className="w-full h-full object-cover" alt={viewItem.title} />
+              <button
+                onClick={() => setViewItem(null)}
+                className="absolute top-4 left-4 p-2 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white/40 transition-colors"
+              >
+                <ArrowLeft size={24} />
+              </button>
+              <div className="absolute bottom-4 right-4 flex gap-2">
+                <span className="px-3 py-1 bg-black/50 backdrop-blur-md text-white text-xs font-bold rounded-full">
+                  {viewItem.condition}
+                </span>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 p-6 bg-white -mt-6 rounded-t-3xl relative overflow-y-auto pb-24">
+              <div className="w-12 h-1 bg-gray-200 rounded-full mx-auto mb-6"></div>
+
+              <div className="flex justify-between items-start mb-2">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900 leading-tight mb-1">{viewItem.title}</h2>
+                  <p className="text-sm text-gray-500">{viewItem.category} • {viewItem.time}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-[#7c3aed]">R$ {viewItem.price.toFixed(2).replace('.', ',')}</p>
+                  {viewItem.originalPrice && <p className="text-sm text-gray-400 line-through">R$ {viewItem.originalPrice}</p>}
+                </div>
+              </div>
+
+              <hr className="border-gray-100 my-6" />
+
+              {/* Seller Info */}
+              <div className="flex items-center gap-3 mb-6 bg-gray-50 p-4 rounded-2xl">
+                <div className={`w-12 h-12 rounded-full ${viewItem.sellerColor} flex items-center justify-center text-white font-bold text-lg shadow-sm`}>
+                  {viewItem.sellerAvatar}
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-900">{viewItem.seller}</h3>
+                  <p className="text-xs text-gray-500">{viewItem.location}</p>
+                </div>
+                <div className="ml-auto">
+                  <button className="p-2 bg-white rounded-full text-gray-400 shadow-sm border border-gray-100">
+                    <Heart size={20} />
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-bold text-gray-900 mb-2">Descrição</h3>
+                <p className="text-gray-600 leading-relaxed text-sm">
+                  {viewItem.description}
+                </p>
+              </div>
+            </div>
+
+            {/* Bottom Action */}
+            <div className="bg-white p-4 border-t border-gray-100 absolute bottom-0 left-0 right-0">
+              <button
+                onClick={() => {
+                  handleNegotiate(viewItem);
+                  setViewItem(null);
+                }}
+                className="w-full bg-[#7c3aed] text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-purple-200 hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+              >
+                <MessageSquare size={20} />
+                Negociar Agora
+              </button>
+            </div>
+          </div>
+        )
+      }
+
+    </div >
   );
 };
 

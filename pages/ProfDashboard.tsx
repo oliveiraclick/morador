@@ -1,10 +1,79 @@
 import React, { useState } from 'react';
-import { Bell, Eye, EyeOff, TrendingUp, Star, MoreVertical, Wallet, Calendar, MessageSquare, Settings, Hammer, Plug, Paintbrush, Check } from 'lucide-react';
+import { Bell, Eye, EyeOff, TrendingUp, Star, MoreVertical, Wallet, Calendar, MessageSquare, Settings, Hammer, Plug, Paintbrush, Check, Store, MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const ProfDashboard: React.FC = () => {
    const navigate = useNavigate();
    const [isAvailable, setIsAvailable] = useState(true);
+   const [isVacation, setIsVacation] = useState(false);
+   const [isOnSite, setIsOnSite] = useState(false);
+
+   // Mock Professional User
+   const currentUser = {
+      name: "Carlos Silva",
+      profession: "Eletricista",
+      avatar: "https://randomuser.me/api/portraits/men/32.jpg"
+   };
+
+   // Paywall Check
+   React.useEffect(() => {
+      // If user is professional but hasn't paid (simulated flag)
+      const hasPaid = localStorage.getItem('professional_payment_active') === 'true';
+      // Optional: Bypass for existing mock user "Carlos Silva" to avoid locking you out during demo, 
+      // BUT for new flow usage we reinforce it. 
+      // Let's assume Carlos needs to pay too or we manually set the flag in testing.
+      if (!hasPaid) {
+         navigate('/plan/professional');
+      }
+   }, []);
+
+   // Check status on load
+   React.useEffect(() => {
+      const stored = localStorage.getItem('prof_on_site');
+      if (stored) {
+         try {
+            const list = JSON.parse(stored);
+            // Handle both single object (legacy) and array
+            const exists = Array.isArray(list)
+               ? list.find((p: any) => p.name === currentUser.name)
+               : (list.name === currentUser.name);
+            setIsOnSite(!!exists);
+         } catch (e) {
+            console.error("Error parsing prof_on_site", e);
+         }
+      }
+   }, []);
+
+   const toggleStatus = () => {
+      const newState = !isOnSite;
+      setIsOnSite(newState);
+
+      const stored = localStorage.getItem('prof_on_site');
+      let list = stored ? JSON.parse(stored) : [];
+      if (!Array.isArray(list)) list = list ? [list] : []; // Normalize to array if needed
+
+      if (newState) {
+         // Check-in: Add to list
+         list.push(currentUser);
+      } else {
+         // Check-out: Remove from list
+         list = list.filter((p: any) => p.name !== currentUser.name);
+      }
+
+      localStorage.setItem('prof_on_site', JSON.stringify(list));
+   };
+
+   const handleToggleVacation = () => {
+      const newState = !isVacation;
+      setIsVacation(newState);
+
+      if (newState) {
+         // Turn off availability when entering vacation
+         setIsAvailable(false);
+         // Also check out if on site
+         if (isOnSite) toggleStatus();
+      }
+   };
 
    return (
       <div className="bg-gray-50 min-h-screen">
@@ -12,10 +81,13 @@ const ProfDashboard: React.FC = () => {
          <div className="bg-white p-6 pb-2">
             <div className="flex justify-between items-center mb-6">
                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center overflow-hidden border-2 border-primary-200">
-                     <img src="https://picsum.photos/150/150" alt="Prof" className="w-full h-full object-cover" />
+                  <div onClick={() => navigate('/professional-profile')} className="w-12 h-12 rounded-full flex items-center justify-center overflow-hidden border-2 border-primary-200 cursor-pointer">
+                     <img src={currentUser.avatar} alt="Prof" className="w-full h-full object-cover" />
                   </div>
-                  <h1 className="font-bold text-lg text-gray-900">Painel do Profissional</h1>
+                  <div>
+                     <h1 className="font-bold text-lg text-gray-900">Olá, {currentUser.name.split(' ')[0]}!</h1>
+                     <p className="text-xs text-gray-500">{currentUser.profession}</p>
+                  </div>
                </div>
                <div className="relative">
                   <Bell size={24} className="text-gray-700" />
@@ -23,16 +95,48 @@ const ProfDashboard: React.FC = () => {
                </div>
             </div>
 
-            {/* Status Card */}
-            <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm mb-6">
-               <h3 className="font-bold text-gray-900 mb-1">Status de Disponibilidade</h3>
-               <p className="text-xs text-gray-500 mb-4">Visível para novos serviços.</p>
-               <button
-                  onClick={() => setIsAvailable(!isAvailable)}
-                  className={`w-14 h-8 rounded-full p-1 transition-colors duration-300 flex items-center ${isAvailable ? 'bg-primary-600 justify-end' : 'bg-gray-300 justify-start'}`}
-               >
-                  <div className="w-6 h-6 rounded-full bg-white shadow-md"></div>
-               </button>
+            {/* Vacation Mode Card */}
+            <div className={`mb-4 rounded-2xl p-4 shadow-sm border transition-all ${isVacation ? 'bg-purple-600 text-white border-purple-600' : 'bg-white border-gray-100'}`}>
+               <div className="flex justify-between items-center">
+                  <div>
+                     <h3 className={`font-bold ${isVacation ? 'text-white' : 'text-gray-900'}`}>Modo Férias / Offline</h3>
+                     <p className={`text-xs ${isVacation ? 'text-purple-100' : 'text-gray-500'}`}>
+                        {isVacation ? 'Você está invisível no app.' : 'Pause todas as atividades.'}
+                     </p>
+                  </div>
+                  <button
+                     onClick={handleToggleVacation}
+                     className={`w-12 h-7 rounded-full p-1 transition-colors duration-300 flex items-center ${isVacation ? 'bg-white/30 justify-end' : 'bg-gray-200 justify-start'}`}
+                  >
+                     <div className="w-5 h-5 rounded-full bg-white shadow-sm"></div>
+                  </button>
+               </div>
+            </div>
+
+            {/* Status Card (CHECK-IN) */}
+            <div className={`rounded-2xl p-4 shadow-sm mb-6 border transition-all duration-300 ${isOnSite ? 'bg-green-50 border-green-200' : 'bg-white border-gray-100'}`}>
+               <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                     <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isOnSite ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
+                        <MapPin size={20} />
+                     </div>
+                     <div>
+                        <h3 className={`font-bold ${isOnSite ? 'text-green-800' : 'text-gray-900'}`}>{isOnSite ? 'No Condomínio' : 'Fora do Condomínio'}</h3>
+                        <p className={`text-xs ${isOnSite ? 'text-green-600' : 'text-gray-500'}`}>{isOnSite ? 'Disponível para chamados' : 'Faça check-in ao chegar'}</p>
+                     </div>
+                  </div>
+
+                  <button
+                     disabled={isVacation}
+                     onClick={toggleStatus}
+                     className={`w-14 h-8 rounded-full p-1 transition-colors duration-300 flex items-center ${isVacation
+                        ? 'bg-gray-100 cursor-not-allowed justify-start'
+                        : (isOnSite ? 'bg-green-500 justify-end' : 'bg-gray-300 justify-start')
+                        }`}
+                  >
+                     <div className="w-6 h-6 rounded-full bg-white shadow-md"></div>
+                  </button>
+               </div>
             </div>
          </div>
 
@@ -94,7 +198,7 @@ const ProfDashboard: React.FC = () => {
                <h2 className="font-bold text-xl text-gray-900 mb-3">Ações Rápidas</h2>
                <div className="grid grid-cols-4 gap-3">
                   {[
-                     { name: 'Orçamento', icon: <Wallet size={20} />, bg: 'bg-primary-50 text-primary-600', action: () => navigate('/orders') },
+                     { name: 'Loja', icon: <Store size={20} />, bg: 'bg-primary-50 text-primary-600', action: () => navigate('/create-offer') },
                      { name: 'Agenda', icon: <Calendar size={20} />, bg: 'bg-pink-50 text-pink-600', action: () => navigate('/agenda') },
                      { name: 'Avaliações', icon: <MessageSquare size={20} />, bg: 'bg-purple-50 text-purple-600', action: () => navigate('/reviews') },
                      { name: 'Ajustes', icon: <Settings size={20} />, bg: 'bg-gray-50 text-gray-600', action: () => navigate('/settings') },

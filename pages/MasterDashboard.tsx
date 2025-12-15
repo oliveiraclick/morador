@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bell, Settings, TrendingUp, TrendingDown, Users, Building, DollarSign, Store, BarChart3, ShieldCheck, FileText } from 'lucide-react';
+import { Bell, Settings, TrendingUp, TrendingDown, Users, Building, DollarSign, Store, BarChart3, ShieldCheck, FileText, Ticket } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const MasterDashboard: React.FC = () => {
@@ -64,6 +64,27 @@ const MasterDashboard: React.FC = () => {
             <p className="text-xl font-bold text-gray-900">124</p>
           </div>
 
+          <div className="col-span-2 bg-white p-4 rounded-3xl shadow-sm border border-gray-100">
+            <h3 className="font-bold text-gray-900 text-sm mb-3">Prestadores por Setor</h3>
+            <div className="space-y-3">
+              {[
+                { name: 'Limpeza', count: 45, color: 'bg-blue-500' },
+                { name: 'Manutenção', count: 32, color: 'bg-orange-500' },
+                { name: 'Beleza', count: 28, color: 'bg-pink-500' },
+                { name: 'Aulas', count: 15, color: 'bg-purple-500' }
+              ].map((sec, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <span className={`w-2 h-2 rounded-full ${sec.color}`}></span>
+                  <span className="text-xs text-gray-500 flex-1">{sec.name}</span>
+                  <span className="text-xs font-bold text-gray-900">{sec.count}</span>
+                  <div className="w-24 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <div className={`h-full ${sec.color}`} style={{ width: `${(sec.count / 45) * 100}%` }}></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
           <div className="bg-white p-4 rounded-3xl shadow-sm border border-gray-100">
             <div className="flex justify-between items-start mb-4">
               <div className="w-10 h-10 rounded-2xl bg-blue-100 flex items-center justify-center text-blue-600">
@@ -95,9 +116,9 @@ const MasterDashboard: React.FC = () => {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <button onClick={() => navigate('/admin/users')} className="h-32 rounded-3xl p-4 relative overflow-hidden flex items-end group">
-              <div className="absolute inset-0 bg-gradient-to-br from-[#6d28d9] to-[#4c1d95]"></div>
-              {/* Abstract shape decoration */}
-              <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full -mr-10 -mt-10 blur-xl"></div>
+              <div className="absolute inset-0 bg-gray-900"></div>
+              <img src="https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&q=80&w=400" className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-500" alt="Users" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
 
               <div className="relative z-10 text-left">
                 <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center mb-2">
@@ -107,23 +128,39 @@ const MasterDashboard: React.FC = () => {
               </div>
             </button>
 
-            <button onClick={() => navigate('/admin/settings')} className="h-32 rounded-3xl p-4 relative overflow-hidden flex items-end">
-              <div className="absolute inset-0 bg-black"></div>
-              <div className="absolute inset-0 bg-gradient-to-tr from-black to-purple-900/50"></div>
-              {/* Lines decoration */}
-              <div className="absolute inset-0 opacity-30" style={{ backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, #ffffff 10px, #ffffff 11px)' }}></div>
+            <button onClick={() => navigate('/admin/broadcast')} className="h-32 rounded-3xl p-4 relative overflow-hidden flex items-end group shadow-lg shadow-purple-200">
+              <div className="absolute inset-0 bg-[#7c3aed]"></div>
+              <div className="absolute inset-0 bg-gradient-to-tr from-[#6d28d9] to-[#8b5cf6] opacity-50"></div>
+              <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/20 rounded-full blur-2xl group-hover:bg-white/30 transition-colors"></div>
 
-              <div className="relative z-10 text-left">
-                <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center mb-2">
-                  <Settings size={16} className="text-white" />
+              <div className="relative z-10 text-left w-full">
+                <div className="flex justify-between items-start">
+                  <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center mb-2">
+                    <Bell size={16} className="text-white fill-white" />
+                  </div>
+                  <span className="bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">Novo</span>
                 </div>
-                <span className="text-white font-bold text-sm leading-tight block">Config. White Label</span>
+                <span className="text-white font-bold text-sm leading-tight block">Enviar Avisos</span>
               </div>
             </button>
 
-            <button onClick={() => navigate('/admin/condos')} className="h-32 rounded-3xl p-4 relative overflow-hidden flex items-end">
+            <button onClick={() => navigate('/admin/plans')} className="h-32 rounded-3xl p-4 relative overflow-hidden flex items-end group">
               <div className="absolute inset-0 bg-gray-900"></div>
-              <img src="https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&q=80&w=400" className="absolute inset-0 w-full h-full object-cover opacity-50 mix-blend-overlay" alt="bg" />
+              <img src="https://images.unsplash.com/photo-1556742049-0cfed4f7a07d?auto=format&fit=crop&q=80&w=400" className="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:scale-105 transition-transform duration-500" alt="Plans" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+
+              <div className="relative z-10 text-left">
+                <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center mb-2">
+                  <Ticket size={16} className="text-white" />
+                </div>
+                <span className="text-white font-bold text-sm leading-tight block">Planos & Cupons</span>
+              </div>
+            </button>
+
+            <button onClick={() => navigate('/admin/condos')} className="h-32 rounded-3xl p-4 relative overflow-hidden flex items-end group">
+              <div className="absolute inset-0 bg-gray-900"></div>
+              <img src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80&w=400" className="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:scale-105 transition-transform duration-500" alt="Condos" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
 
               <div className="relative z-10 text-left">
                 <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center mb-2">
@@ -133,21 +170,31 @@ const MasterDashboard: React.FC = () => {
               </div>
             </button>
 
-            <button onClick={() => navigate('/admin/financial')} className="h-32 rounded-3xl p-4 relative overflow-hidden flex items-end">
-              <div className="absolute inset-0 bg-purple-950"></div>
-              {/* Bar chart decoration */}
-              <div className="absolute bottom-0 right-0 flex items-end gap-1 p-4 opacity-30">
-                <div className="w-2 h-8 bg-purple-400 rounded-t"></div>
-                <div className="w-2 h-12 bg-purple-300 rounded-t"></div>
-                <div className="w-2 h-6 bg-purple-500 rounded-t"></div>
-                <div className="w-2 h-16 bg-white rounded-t"></div>
-              </div>
+            <button onClick={() => navigate('/admin/financial')} className="h-32 rounded-3xl p-4 relative overflow-hidden flex items-end group col-span-1">
+              <div className="absolute inset-0 bg-gray-900"></div>
+              <img src="https://images.unsplash.com/photo-1554224155-98406f588c26?auto=format&fit=crop&q=80&w=800" className="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:scale-105 transition-transform duration-500" alt="Finance" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 to-transparent"></div>
 
-              <div className="relative z-10 text-left">
-                <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center mb-2">
+              <div className="relative z-10 text-left flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
                   <BarChart3 size={16} className="text-white" />
                 </div>
-                <span className="text-white font-bold text-sm leading-tight block">Relatórios Financeiros</span>
+                <div>
+                  <span className="text-white font-bold text-sm leading-tight block">Relatórios</span>
+                  <p className="text-white/60 text-xs text-nowrap">Financeiro</p>
+                </div>
+              </div>
+            </button>
+
+            <button onClick={() => navigate('/admin/ads')} className="h-32 rounded-3xl p-4 relative overflow-hidden flex items-end group col-span-1 bg-pink-600">
+              <div className="absolute inset-0 bg-gradient-to-br from-pink-500 to-rose-600"></div>
+              <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/20 rounded-full blur-2xl group-hover:bg-white/30 transition-colors"></div>
+
+              <div className="relative z-10 text-left w-full">
+                <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center mb-2">
+                  <Store size={16} className="text-white" />
+                </div>
+                <span className="text-white font-bold text-sm leading-tight block">Gerenciar Anúncios</span>
               </div>
             </button>
           </div>
@@ -202,29 +249,7 @@ const MasterDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Bottom Nav Placeholder for Master */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-6 py-4 flex justify-between items-center text-gray-400 text-[10px] font-medium z-50">
-        <div onClick={() => navigate('/admin')} className="flex flex-col items-center gap-1 text-purple-600 cursor-pointer">
-          <Store size={24} />
-          <span>Painel</span>
-        </div>
-        <div onClick={() => navigate('/admin/condos')} className="flex flex-col items-center gap-1 cursor-pointer hover:text-purple-600 transition-colors">
-          <Building size={24} />
-          <span>Condos</span>
-        </div>
-        <div onClick={() => navigate('/admin/users')} className="flex flex-col items-center gap-1 cursor-pointer hover:text-purple-600 transition-colors">
-          <Users size={24} />
-          <span>Usuários</span>
-        </div>
-        <div onClick={() => navigate('/admin/financial')} className="flex flex-col items-center gap-1 cursor-pointer hover:text-purple-600 transition-colors">
-          <DollarSign size={24} />
-          <span>Financeiro</span>
-        </div>
-        <div onClick={() => navigate('/admin/settings')} className="flex flex-col items-center gap-1 cursor-pointer hover:text-purple-600 transition-colors">
-          <Settings size={24} />
-          <span>Ajustes</span>
-        </div>
-      </div>
+
     </div>
   );
 };

@@ -1,35 +1,67 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
-import ResidentHome from './pages/ResidentHome';
-import Marketplace from './pages/Marketplace';
-import Booking from './pages/Booking';
-import ProfDashboard from './pages/ProfDashboard';
-import SellItem from './pages/SellItem';
-import MasterDashboard from './pages/MasterDashboard';
-import ProPlan from './pages/ProPlan';
-import Splash from './pages/Splash';
+import ProtectedRoute from './components/ProtectedRoute';
 import { UserRole } from './types';
 
+// Pages
+import Splash from './pages/Splash';
 import RoleSelection from './pages/RoleSelection';
 import Login from './pages/Login';
 import RegisterResident from './pages/RegisterResident';
 import RegisterProfessional from './pages/RegisterProfessional';
+import Chat from './pages/Chat';
+
+// Resident Pages
+import ResidentHome from './pages/ResidentHome';
+import Marketplace from './pages/Marketplace';
+import Booking from './pages/Booking';
+import SellItem from './pages/SellItem';
+import ProPlan from './pages/ProPlan';
+import ResidentProfile from './pages/ResidentProfile';
+import ProfessionalProfile from './pages/ProfessionalProfile';
+import Orders from './pages/Orders';
+
+// Professional Pages
+import ProfDashboard from './pages/ProfDashboard';
+import CreateOffer from './pages/CreateOffer';
+import Agenda from './pages/Agenda';
+import Reviews from './pages/Reviews';
+
+// Admin Pages
+import MasterDashboard from './pages/MasterDashboard';
+import AdminUsers from './pages/AdminUsers';
+import AdminCondos from './pages/AdminCondos';
+import AdminFinancial from './pages/AdminFinancial';
+import AdminPlans from './pages/AdminPlans';
+import AdminBroadcast from './pages/AdminBroadcast';
+import AdminAds from './pages/AdminAds';
+
+import ProfessionalPaywall from './pages/ProfessionalPaywall';
 
 const App = () => {
-  const [userRole, setUserRole] = useState<UserRole>(UserRole.RESIDENT);
+  const [userRole, setUserRole] = useState<UserRole>(() => {
+    const stored = localStorage.getItem('user_role');
+    if (stored === UserRole.ADMIN || stored === UserRole.RESIDENT || stored === UserRole.PROFESSIONAL) {
+      return stored as UserRole;
+    }
+    return UserRole.RESIDENT;
+  });
 
   // Sync Role on load
   useEffect(() => {
-    const stored = localStorage.getItem('user_role') as UserRole;
-    if (stored) setUserRole(stored);
+    const stored = localStorage.getItem('user_role');
+    if (stored === UserRole.ADMIN || stored === UserRole.RESIDENT || stored === UserRole.PROFESSIONAL) {
+      setUserRole(stored as UserRole);
+    }
   }, []);
 
   return (
     <BrowserRouter>
       <Layout role={userRole}>
         <Routes>
+          {/* Public Routes */}
           <Route path="/" element={<Splash />} />
           <Route path="/role-selection" element={<RoleSelection />} />
           <Route path="/register/resident" element={<RegisterResident />} />
@@ -37,38 +69,133 @@ const App = () => {
           <Route path="/login" element={<Login setRole={setUserRole} />} />
 
           {/* Resident Routes */}
-          <Route path="/home" element={<ResidentHome />} />
-          <Route path="/market" element={<Marketplace />} />
-          <Route path="/booking" element={<Booking />} />
-          <Route path="/sell" element={<SellItem />} />
-          <Route path="/pro" element={<ProPlan />} />
-          <Route path="/services" element={<div className="p-8 text-center text-gray-500">Tela de Pedidos (Em breve)</div>} />
-          <Route path="/profile" element={<div className="p-8 text-center text-gray-500">Perfil do Usuário (Em breve)</div>} />
+          <Route path="/home" element={
+            <ProtectedRoute allowedRoles={[UserRole.RESIDENT]}>
+              <ResidentHome />
+            </ProtectedRoute>
+          } />
+          <Route path="/market" element={
+            <ProtectedRoute allowedRoles={[UserRole.RESIDENT]}>
+              <Marketplace />
+            </ProtectedRoute>
+          } />
+          <Route path="/booking" element={
+            <ProtectedRoute allowedRoles={[UserRole.RESIDENT]}>
+              <Booking />
+            </ProtectedRoute>
+          } />
+          <Route path="/sell" element={
+            <ProtectedRoute allowedRoles={[UserRole.RESIDENT]}>
+              <SellItem />
+            </ProtectedRoute>
+          } />
+          <Route path="/pro" element={
+            <ProtectedRoute allowedRoles={[UserRole.RESIDENT]}>
+              <ProPlan />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/profile" element={
+            <ProtectedRoute allowedRoles={[UserRole.RESIDENT]}>
+              <ResidentProfile />
+            </ProtectedRoute>
+          } />
+          <Route path="/professional-profile" element={
+            <ProtectedRoute allowedRoles={[UserRole.RESIDENT]}>
+              <ProfessionalProfile />
+            </ProtectedRoute>
+          } />
 
           {/* Professional Routes */}
-          <Route path="/dashboard" element={<ProfDashboard />} />
-          <Route path="/orders" element={<div className="p-8 text-center text-gray-500">Gerenciar Pedidos (Em breve)</div>} />
-          <Route path="/create-offer" element={<div className="p-8 text-center text-gray-500">Criar Oferta (Em breve)</div>} />
-          <Route path="/store" element={<div className="p-8 text-center text-gray-500">Minha Loja (Em breve)</div>} />
-          <Route path="/agenda" element={<div className="p-8 text-center text-gray-500">Minha Agenda (Em breve)</div>} />
+          <Route path="/plan/professional" element={
+            <ProtectedRoute allowedRoles={[UserRole.PROFESSIONAL]}>
+              <ProfessionalPaywall />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/dashboard" element={
+            <ProtectedRoute allowedRoles={[UserRole.PROFESSIONAL]}>
+              <ProfDashboard />
+            </ProtectedRoute>
+          } />
+
+          {/* Shared Routes */}
+          <Route path="/orders" element={
+            <ProtectedRoute allowedRoles={[UserRole.RESIDENT, UserRole.PROFESSIONAL]}>
+              <Orders />
+            </ProtectedRoute>
+          } />
+          <Route path="/chat" element={
+            <ProtectedRoute allowedRoles={[UserRole.RESIDENT, UserRole.PROFESSIONAL, UserRole.ADMIN]}>
+              <Chat />
+            </ProtectedRoute>
+          } />
+          <Route path="/create-offer" element={
+            <ProtectedRoute allowedRoles={[UserRole.PROFESSIONAL]}>
+              <CreateOffer />
+            </ProtectedRoute>
+          } />
+          <Route path="/store" element={
+            <ProtectedRoute allowedRoles={[UserRole.PROFESSIONAL]}>
+              <div className="p-8 text-center text-gray-500">Minha Loja (Em breve)</div>
+            </ProtectedRoute>
+          } />
+          <Route path="/agenda" element={
+            <ProtectedRoute allowedRoles={[UserRole.PROFESSIONAL]}>
+              <Agenda />
+            </ProtectedRoute>
+          } />
+          <Route path="/reviews" element={
+            <ProtectedRoute allowedRoles={[UserRole.PROFESSIONAL]}>
+              <Reviews />
+            </ProtectedRoute>
+          } />
+
+          {/* Legacy/Shortcut Routes */}
+          <Route path="/beauty" element={<Navigate to="/market" state={{ category: 'Beleza' }} replace />} />
+          <Route path="/food" element={<Navigate to="/market" state={{ category: 'Comida' }} replace />} />
 
           {/* Admin Routes */}
-          <Route path="/admin" element={<MasterDashboard />} />
-
-          {/* New Placeholders for Navigation */}
-          <Route path="/slips" element={<div className="p-8 text-center text-gray-500">Boletos (Em breve)</div>} />
-          <Route path="/concierge" element={<div className="p-8 text-center text-gray-500">Portaria (Em breve)</div>} />
-          <Route path="/notices" element={<div className="p-8 text-center text-gray-500">Avisos (Em breve)</div>} />
-          <Route path="/beauty" element={<div className="p-8 text-center text-gray-500">Serviços de Beleza (Em breve)</div>} />
-          <Route path="/food" element={<div className="p-8 text-center text-gray-500">Comida e Bebida (Em breve)</div>} />
-          <Route path="/reviews" element={<div className="p-8 text-center text-gray-500">Minhas Avaliações (Em breve)</div>} />
-          <Route path="/performance" element={<div className="p-8 text-center text-gray-500">Desempenho Profissional (Em breve)</div>} />
-          <Route path="/settings" element={<div className="p-8 text-center text-gray-500">Configurações (Em breve)</div>} />
-
-          <Route path="/admin/condos" element={<div className="p-8 text-center text-gray-500">Gerenciar Condomínios (Em breve)</div>} />
-          <Route path="/admin/users" element={<div className="p-8 text-center text-gray-500">Gerenciar Usuários (Em breve)</div>} />
-          <Route path="/admin/financial" element={<div className="p-8 text-center text-gray-500">Financeiro Master (Em breve)</div>} />
-          <Route path="/admin/settings" element={<div className="p-8 text-center text-gray-500">Ajustes Master (Em breve)</div>} />
+          <Route path="/admin" element={
+            <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+              <MasterDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/users" element={
+            <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+              <AdminUsers />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/condos" element={
+            <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+              <AdminCondos />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/financial" element={
+            <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+              <AdminFinancial />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/plans" element={
+            <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+              <AdminPlans />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/broadcast" element={
+            <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+              <AdminBroadcast />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/settings" element={
+            <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+              <AdminPlans />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/ads" element={
+            <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+              <AdminAds />
+            </ProtectedRoute>
+          } />
         </Routes>
       </Layout>
     </BrowserRouter>
