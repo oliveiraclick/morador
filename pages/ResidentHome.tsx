@@ -35,7 +35,12 @@ const ResidentHome: React.FC = () => {
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
-        setActivePros(Array.isArray(parsed) ? parsed : [parsed]);
+        if (parsed) {
+          const pros = Array.isArray(parsed) ? parsed : [parsed];
+          setActivePros(pros.filter(p => p && typeof p === 'object'));
+        } else {
+          setActivePros([]);
+        }
       } catch (e) {
         console.error("Failed to parse prof_on_siteData", e);
         setActivePros([]);
