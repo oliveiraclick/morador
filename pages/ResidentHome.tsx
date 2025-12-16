@@ -290,32 +290,37 @@ const ResidentHome: React.FC = () => {
             }}
           >
             {(() => {
-              const stored = localStorage.getItem('marketplace_items');
-              const items = stored ? JSON.parse(stored) : [];
-              const desapegoItems = items.filter((i: any) => i.type === 'DESAPEGO');
-              const displayItems = desapegoItems.length > 0 ? desapegoItems : [
-                { title: 'Bicicleta Aro 29', price: 850, img: 'https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?auto=format&fit=crop&q=80&w=300', category: 'Esporte' },
-                { title: 'Sofá 2 Lugares', price: 400, img: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=300', category: 'Móveis' },
-                { title: 'Monitor 24"', price: 600, img: 'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&q=80&w=300', category: 'Eletrônicos' }
-              ];
+              try {
+                const stored = localStorage.getItem('marketplace_items');
+                const items = stored ? JSON.parse(stored) : [];
+                const desapegoItems = Array.isArray(items) ? items.filter((i: any) => i.type === 'DESAPEGO') : [];
+                const displayItems = desapegoItems.length > 0 ? desapegoItems : [
+                  { title: 'Bicicleta Aro 29', price: 850, img: 'https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?auto=format&fit=crop&q=80&w=300', category: 'Esporte' },
+                  { title: 'Sofá 2 Lugares', price: 400, img: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=300', category: 'Móveis' },
+                  { title: 'Monitor 24"', price: 600, img: 'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&q=80&w=300', category: 'Eletrônicos' }
+                ];
 
-              return displayItems.map((item: any, idx: number) => (
-                <div key={idx} className="min-w-[200px] bg-white p-3 rounded-2xl shadow-sm border border-gray-100 flex flex-col shrink-0">
-                  <div className="relative mb-3">
-                    <img src={item.img} className="w-full h-32 rounded-xl object-cover" alt={item.title} />
-                    <span className="absolute top-2 left-2 bg-black/50 backdrop-blur-md text-white text-[10px] px-2 py-1 rounded-lg font-medium">
-                      {item.category}
-                    </span>
+                return displayItems.map((item: any, idx: number) => (
+                  <div key={idx} className="min-w-[200px] bg-white p-3 rounded-2xl shadow-sm border border-gray-100 flex flex-col shrink-0">
+                    <div className="relative mb-3">
+                      <img src={item.img} className="w-full h-32 rounded-xl object-cover" alt={item.title} />
+                      <span className="absolute top-2 left-2 bg-black/50 backdrop-blur-md text-white text-[10px] px-2 py-1 rounded-lg font-medium">
+                        {item.category}
+                      </span>
+                    </div>
+                    <h3 className="font-bold text-gray-900 leading-tight mb-1 truncate">{item.title}</h3>
+                    <div className="mt-auto flex justify-between items-center">
+                      <span className="font-bold text-primary-600">R$ {Number(item.price).toFixed(2).replace('.', ',')}</span>
+                      <button className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors">
+                        <Heart size={16} />
+                      </button>
+                    </div>
                   </div>
-                  <h3 className="font-bold text-gray-900 leading-tight mb-1 truncate">{item.title}</h3>
-                  <div className="mt-auto flex justify-between items-center">
-                    <span className="font-bold text-primary-600">R$ {Number(item.price).toFixed(2).replace('.', ',')}</span>
-                    <button className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors">
-                      <Heart size={16} />
-                    </button>
-                  </div>
-                </div>
-              ));
+                ));
+              } catch (e) {
+                console.error('Error parsing marketplace items:', e);
+                return null;
+              }
             })()}
           </div>
         </div>
@@ -326,27 +331,32 @@ const ResidentHome: React.FC = () => {
           <div className="space-y-4">
             {/* Dynamic Ads from localStorage */}
             {(() => {
-              const storedAds = localStorage.getItem('ads_data');
-              const ads = storedAds ? JSON.parse(storedAds) : [];
-              return ads.filter((ad: any) => ad.active).map((ad: any) => (
-                <div key={ad.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex gap-4 mb-4 relative overflow-hidden group">
-                  <div className="w-20 h-20 rounded-xl bg-gray-100 flex-shrink-0">
-                    <img src={ad.imageUrl} className="w-full h-full object-cover rounded-xl" alt={ad.title} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-start">
-                      <h3 className="font-bold text-gray-900 truncate pr-2">{ad.title}</h3>
-                      <span className="text-[10px] bg-pink-100 text-pink-700 px-2 py-0.5 rounded-full font-bold">Oferta</span>
+              try {
+                const storedAds = localStorage.getItem('ads_data');
+                const ads = storedAds ? JSON.parse(storedAds) : [];
+                return Array.isArray(ads) ? ads.filter((ad: any) => ad.active).map((ad: any) => (
+                  <div key={ad.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex gap-4 mb-4 relative overflow-hidden group">
+                    <div className="w-20 h-20 rounded-xl bg-gray-100 flex-shrink-0">
+                      <img src={ad.imageUrl} className="w-full h-full object-cover rounded-xl" alt={ad.title} />
                     </div>
-                    <p className="text-sm text-gray-500 mt-1 mb-2 line-clamp-2">{ad.description}</p>
-                    {ad.link && (
-                      <button onClick={() => navigate(ad.link)} className="text-xs font-bold text-pink-600 flex items-center gap-1 hover:underline">
-                        Ver detalhes <ChevronRight size={12} />
-                      </button>
-                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-start">
+                        <h3 className="font-bold text-gray-900 truncate pr-2">{ad.title}</h3>
+                        <span className="text-[10px] bg-pink-100 text-pink-700 px-2 py-0.5 rounded-full font-bold">Oferta</span>
+                      </div>
+                      <p className="text-sm text-gray-500 mt-1 mb-2 line-clamp-2">{ad.description}</p>
+                      {ad.link && (
+                        <button onClick={() => navigate(ad.link)} className="text-xs font-bold text-pink-600 flex items-center gap-1 hover:underline">
+                          Ver detalhes <ChevronRight size={12} />
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ));
+                )) : null;
+              } catch (e) {
+                console.error('Error parsing ads data:', e);
+                return null;
+              }
             })()}
 
             {/* Keeping the 'Limpeza Pós-Obra' as a static service example for now, or we can make it dynamic later too. User asked for 'Ads' integration first. */}\n
