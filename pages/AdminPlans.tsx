@@ -1,48 +1,71 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Ticket, Plus, CreditCard, Trash2, Edit2, Copy } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 
 const AdminPlans: React.FC = () => {
     const navigate = useNavigate();
 
-    const [coupons, setCoupons] = useState([
-        { id: 1, code: 'BEMVINDO20', discount: '20%', uses: 12, status: 'active' },
-        { id: 2, code: 'VERAO10', discount: '10%', uses: 45, status: 'active' },
-        { id: 3, code: 'NATAL50', discount: '50%OFF', uses: 0, status: 'inactive' },
-    ]);
-
-    const plans = [
-        { id: 1, name: 'Morador Pro', price: 'R$ 14,90', features: ['Sem anúncios', 'Clube de Descontos', 'Suporte Prioritário'], color: 'bg-purple-600' },
-        { id: 2, name: 'Condomínio Digital', price: 'R$ 299,00', features: ['Gestão Completa', 'App White Label', 'Portaria Remota'], color: 'bg-indigo-600' },
-    ];
+    const [coupons, setCoupons] = useState<any[]>([]);
+    const [plans, setPlans] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
 
     const [showCouponModal, setShowCouponModal] = useState(false);
     const [newCoupon, setNewCoupon] = useState({ code: '', discount: '', duration: '' });
 
-    // Load from localStorage on mount
-    React.useEffect(() => {
-        const stored = localStorage.getItem('system_coupons');
-        if (stored) {
-            setCoupons(JSON.parse(stored));
-        }
+    useEffect(() => {
+        fetchData();
     }, []);
 
-    const handleAddCoupon = () => {
-        const durationText = newCoupon.duration ? `${newCoupon.duration} meses` : 'Indefinido';
-        const coupon = {
-            id: Date.now(),
-            code: newCoupon.code.toUpperCase(),
-            discount: '100% OFF', // Locking to 100% for now or we can make dynamic
-            duration: parseInt(newCoupon.duration || '1'),
-            visualLabel: `${newCoupon.duration} Meses Grátis`,
-            uses: 0,
-            status: 'active'
-        };
-        const updatedCoupons = [...coupons, coupon];
-        setCoupons(updatedCoupons);
-        localStorage.setItem('system_coupons', JSON.stringify(updatedCoupons));
-        setShowCouponModal(false);
-        setNewCoupon({ code: '', discount: '', duration: '' });
+    const fetchData = async () => {
+        try {
+            const [couponsRes, plansRes] = await Promise.all([
+                supabase.from('coupons').select('*').order('created_at', { ascending: false }),
+                supabase.from('plans').select('*').order('price', { ascending: true })
+            ]);
+
+            if (couponsRes.data) setCoupons(couponsRes.data);
+            if (plansRes.data && plansRes.data.length > 0) {
+                setPlans(plansRes.data);
+            } else {
+                // Return default plans if DB is empty to avoid broken UI
+                setPlans([
+                    { id: 1, name: 'Morador Pro', price: 'R$ 14,90', features: ['Sem anúncios', 'Clube de Descontos', 'Suporte Prioritário'], color: 'bg-purple-600' },
+                    { id: 2, name: 'Condomínio Digital', price: 'R$ 299,00', features: ['Gestão Completa', 'App White Label', 'Portaria Remota'], color: 'bg-indigo-600' },
+                ]);
+            }
+        } catch (error) {
+            console.error('Error fetching data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleAddCoupon = async () => {
+        try {
+            const { error } = await supabase.from('coupons').insert([{
+                code: newCoupon.code.toUpperCase(),
+                discount: '100% OFF',
+                duration: parseInt(newCoupon.duration || '1'),
+                uses: 0,
+                status: 'active'
+            }]);
+
+            if (error) throw error;
+
+            fetchData();
+            setShowCouponModal(false);
+            setNewCoupon({ code: '', discount: '', duration: '' });
+        } catch (error) {
+            alert('Erro ao criar cupom');
+        }
+    };
+
+    const handleDeleteCoupon = async (id: number) => {
+        if (window.confirm('Excluir cupom?')) {
+            await supabase.from('coupons').delete().eq('id', id);
+            fetchData();
+        }
     };
 
     return (
@@ -132,7 +155,7 @@ const AdminPlans: React.FC = () => {
                                     <button className="p-2 hover:bg-gray-50 rounded-full text-gray-400">
                                         <Copy size={18} />
                                     </button>
-                                    <button className="p-2 hover:bg-red-50 rounded-full text-gray-400 hover:text-red-500">
+                                    <button onClick={() => handleDeleteCoupon(coupon.id)} className="p-2 hover:bg-red-50 rounded-full text-gray-400 hover:text-red-500">
                                         <Trash2 size={18} />
                                     </button>
                                 </div>

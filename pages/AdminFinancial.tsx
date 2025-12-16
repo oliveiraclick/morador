@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, ArrowUpRight, ArrowDownLeft, Filter, DollarSign, Calendar, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 
 type FinancialTab = 'receivables' | 'payables';
 
@@ -8,14 +9,28 @@ const AdminFinancial: React.FC = () => {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState<FinancialTab>('receivables');
 
-    // Mock Transactions
-    const transactions = [
-        { id: 1, type: 'in', title: 'Mensalidade Cond. Jardins', amount: 4500.00, date: '12/12/2024', status: 'paid' },
-        { id: 2, type: 'in', title: 'Taxa Profissional (João)', amount: 29.90, date: '12/12/2024', status: 'paid' },
-        { id: 3, type: 'out', title: 'Servidor AWS', amount: 120.00, date: '10/12/2024', status: 'paid' },
-        { id: 4, type: 'in', title: 'Mensalidade Cond. Flores', amount: 3200.00, date: '15/12/2024', status: 'pending' },
-        { id: 5, type: 'out', title: 'Marketing Google Ads', amount: 500.00, date: '01/12/2024', status: 'paid' },
-    ];
+    const [transactions, setTransactions] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetchTransactions();
+    }, []);
+
+    const fetchTransactions = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('financial_transactions')
+                .select('*')
+                .order('date', { ascending: false });
+
+            if (error) throw error;
+            if (data) setTransactions(data);
+        } catch (error) {
+            console.error('Error fetching transactions:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const filteredTransactions = transactions.filter(t =>
         activeTab === 'receivables' ? t.type === 'in' : t.type === 'out'
