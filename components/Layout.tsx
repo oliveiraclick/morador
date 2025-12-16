@@ -59,7 +59,7 @@ const Layout: React.FC<LayoutProps> = ({ children, role }) => {
         </div>
 
         {/* Bottom Navigation */}
-        <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100 h-20 px-4 pb-4 rounded-t-2xl z-50">
+        <div className="fixed bottom-0 left-0 right-0 max-w-[480px] mx-auto bg-white border-t border-gray-100 h-20 px-4 pb-4 rounded-t-2xl z-50">
           <div className="flex items-center justify-between h-full">
 
             {normalizedRole === UserRole.RESIDENT ? (
