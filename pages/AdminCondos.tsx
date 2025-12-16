@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Plus, MapPin, Building, Trash2, Edit2, Search, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 
 interface Condo {
     id: number;
@@ -16,12 +17,31 @@ const AdminCondos: React.FC = () => {
     const [showModal, setShowModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
 
-    // Mock Data
-    const [condos, setCondos] = useState<Condo[]>([
-        { id: 1, name: 'Residencial Jardins do Sol', address: 'Rua das Flores, 123 - Centro', units: 48, manager: 'Síndico Pedro', status: 'active' },
-        { id: 2, name: 'Edifício Blue Tower', address: 'Av. Oceanica, 880 - Praia', units: 120, manager: 'Administradora Viva', status: 'active' },
-        { id: 3, name: 'Condomínio Vila Verde', address: 'Estrada do Campo, km 4', units: 24, manager: 'Síndica Maria', status: 'inactive' },
-    ]);
+    // Data State
+    const [condos, setCondos] = useState<Condo[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    const fetchCondos = async () => {
+        try {
+            setLoading(true);
+            const { data, error } = await supabase
+                .from('condos')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            if (data) setCondos(data);
+        } catch (error) {
+            console.error('Error fetching condos:', error);
+            alert('Erro ao carregar condomínios');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchCondos();
+    }, []);
 
     // List State
     const [editingId, setEditingId] = useState<number | null>(null);
@@ -40,40 +60,63 @@ const AdminCondos: React.FC = () => {
         setShowModal(true);
     };
 
-    const handleDelete = (id: number) => {
+    const handleDelete = async (id: number) => {
         if (window.confirm('Tem certeza que deseja excluir este condomínio?')) {
-            setCondos(condos.filter(c => c.id !== id));
+            try {
+                const { error } = await supabase
+                    .from('condos')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) throw error;
+                fetchCondos(); // Refresh list
+            } catch (error) {
+                console.error('Error deleting condo:', error);
+                alert('Erro ao excluir condomínio');
+            }
         }
     };
 
-    const handleSaveCondo = () => {
+    const handleSaveCondo = async () => {
         if (!newCondo.name || !newCondo.address) return;
 
-        if (editingId) {
-            // Update existing
-            setCondos(condos.map(c => c.id === editingId ? {
-                ...c,
-                name: newCondo.name,
-                address: newCondo.address,
-                units: Number(newCondo.units) || 0,
-                manager: newCondo.manager
-            } : c));
-        } else {
-            // Create new
-            const condo: Condo = {
-                id: condos.length + 1,
-                name: newCondo.name,
-                address: newCondo.address,
-                units: Number(newCondo.units) || 0,
-                manager: newCondo.manager,
-                status: 'active'
-            };
-            setCondos([...condos, condo]);
-        }
+        try {
+            if (editingId) {
+                // Update existing
+                const { error } = await supabase
+                    .from('condos')
+                    .update({
+                        name: newCondo.name,
+                        address: newCondo.address,
+                        units: Number(newCondo.units) || 0,
+                        manager: newCondo.manager
+                    })
+                    .eq('id', editingId);
 
-        setNewCondo({ name: '', address: '', units: '', manager: '' });
-        setEditingId(null);
-        setShowModal(false);
+                if (error) throw error;
+            } else {
+                // Create new
+                const { error } = await supabase
+                    .from('condos')
+                    .insert([{
+                        name: newCondo.name,
+                        address: newCondo.address,
+                        units: Number(newCondo.units) || 0,
+                        manager: newCondo.manager,
+                        status: 'active'
+                    }]);
+
+                if (error) throw error;
+            }
+
+            fetchCondos(); // Refresh list
+            setNewCondo({ name: '', address: '', units: '', manager: '' });
+            setEditingId(null);
+            setShowModal(false);
+        } catch (error) {
+            console.error('Error saving condo:', error);
+            alert('Erro ao salvar condomínio');
+        }
     };
 
     const handleCloseModal = () => {
