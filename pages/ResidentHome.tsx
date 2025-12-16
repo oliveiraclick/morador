@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bell, Search, MapPin, Plus, Calendar, FileText, Key, Megaphone, Heart, ChevronRight, ChevronLeft, Sparkles, QrCode, Star } from 'lucide-react';
+import { Bell, Search, MapPin, Plus, Calendar, FileText, Key, Megaphone, Heart, ChevronRight, ChevronLeft, Sparkles, QrCode, Star, Building, Home } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ReferralModal from '../components/ReferralModal';
 
@@ -49,23 +49,66 @@ const ResidentHome: React.FC = () => {
   const [userName, setUserName] = React.useState("Vizinho(a)");
   const [condoName, setCondoName] = React.useState("Seu Condomínio");
 
+  // Profile Completion State
+  const [showCompleteProfileModal, setShowCompleteProfileModal] = useState(false);
+  const [condos, setCondos] = useState<any[]>([]);
+  const [selectedCondo, setSelectedCondo] = useState('');
+  const [street, setStreet] = useState('');
+  const [number, setNumber] = useState('');
+  const [userId, setUserId] = useState('');
+
   React.useEffect(() => {
     const fetchUser = async () => {
       const { data: { user } } = await import('../lib/supabase').then(m => m.supabase.auth.getUser());
       if (user) {
+        setUserId(user.id);
         if (user.user_metadata?.full_name) {
           setUserName(user.user_metadata.full_name.split(' ')[0]);
         }
 
-        // Fetch Profile for Condo Name
-        const { data: profile } = await import('../lib/supabase').then(m => m.supabase.from('profiles').select('condos(name)').eq('id', user.id).single());
-        if (profile?.condos?.name) {
-          setCondoName(profile.condos.name);
+        // Fetch Profile for Condo Name and Completeness Check
+        const { data: profile } = await import('../lib/supabase').then(m => m.supabase.from('profiles').select('condo_id, unit, condos(name)').eq('id', user.id).single());
+
+        if (profile) {
+          if (profile.condos?.name) {
+            setCondoName(profile.condos.name);
+          }
+
+          // Check if profile is incomplete (missing condo or unit)
+          if (!profile.condo_id || !profile.unit) {
+            // Fetch condos for selection
+            const { data: condosData } = await import('../lib/supabase').then(m => m.supabase.from('condos').select('*'));
+            if (condosData) setCondos(condosData);
+            setShowCompleteProfileModal(true);
+          }
         }
       }
     };
     fetchUser();
   }, []);
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedCondo || !street || !number) {
+      alert("Preencha todos os campos!");
+      return;
+    }
+
+    const { error } = await import('../lib/supabase').then(m => m.supabase.from('profiles').update({
+      condo_id: selectedCondo,
+      unit: `${street}, ${number}`
+    }).eq('id', userId));
+
+    if (error) {
+      alert("Erro ao salvar: " + error.message);
+    } else {
+      // Refresh local state to close modal and update UI
+      const { data: condo } = await import('../lib/supabase').then(m => m.supabase.from('condos').select('name').eq('id', selectedCondo).single());
+      if (condo) setCondoName(condo.name);
+      setShowCompleteProfileModal(false);
+      alert("Perfil atualizado com sucesso!");
+    }
+  };
 
   const carouselRef = React.useRef<HTMLDivElement>(null);
 
@@ -321,6 +364,61 @@ const ResidentHome: React.FC = () => {
         </div>
 
       </div>
+
+      {/* Complete Profile Modal */}
+      {showCompleteProfileModal && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Home size={32} className="text-purple-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900">Complete seu Cadastro</h2>
+              <p className="text-gray-500 mt-2">Para conectarmos você ao seu condomínio, precisamos de alguns dados.</p>
+            </div>
+
+            <form onSubmit={handleSaveProfile} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-gray-500 uppercase ml-1">Condomínio</label>
+                <div className="relative">
+                  <Building size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <select
+                    required
+                    value={selectedCondo}
+                    onChange={e => setSelectedCondo(e.target.value)}
+                    className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:border-purple-500 focus:outline-none appearance-none bg-white text-gray-700 font-medium"
+                  >
+                    <option value="" disabled>Selecione seu condomínio</option>
+                    {condos.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    <option value="splendido-test-id">Residencial Splendido</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div className="col-span-2 space-y-1">
+                  <label className="text-xs font-bold text-gray-500 uppercase ml-1">Rua/Bloco</label>
+                  <div className="relative">
+                    <MapPin size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input required type="text" value={street} onChange={e => setStreet(e.target.value)} className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:border-purple-500 focus:outline-none font-medium" placeholder="Ex: Bloco A" />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-500 uppercase ml-1">Nº / Apto</label>
+                  <div className="relative">
+                    <Home size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input required type="text" value={number} onChange={e => setNumber(e.target.value)} className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:border-purple-500 focus:outline-none font-medium" placeholder="101" />
+                  </div>
+                </div>
+              </div>
+
+              <button type="submit" className="w-full bg-[#7c3aed] text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-purple-200 hover:opacity-90 transition-all mt-4 transform active:scale-95">
+                Confirmar e Entrar
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
       <ReferralModal
         isOpen={showReferral}
