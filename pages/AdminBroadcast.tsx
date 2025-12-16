@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Send, Users, Bell, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 
 const AdminBroadcast: React.FC = () => {
     const navigate = useNavigate();
@@ -8,34 +9,54 @@ const AdminBroadcast: React.FC = () => {
     const [message, setMessage] = useState('');
     const [target, setTarget] = useState<'all' | 'residents' | 'professionals'>('all');
     const [sent, setSent] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [history, setHistory] = useState<any[]>([]);
 
-    const handleSend = () => {
+    useEffect(() => {
+        fetchHistory();
+    }, []);
+
+    const fetchHistory = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('broadcasts')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(5);
+
+            if (data) setHistory(data);
+        } catch (error) {
+            console.error('Error fetching broadcasts:', error);
+        }
+    };
+
+    const handleSend = async () => {
         if (!title || !message) return;
+        setLoading(true);
 
-        // Create notification object
-        const newBroadcast = {
-            id: Date.now().toString(),
-            title,
-            message,
-            target,
-            timestamp: new Date().toISOString(),
-            read: false
-        };
+        try {
+            const { error } = await supabase.from('broadcasts').insert([{
+                title,
+                message,
+                target,
+                read: false
+            }]);
 
-        // Save to LocalStorage
-        const existing = localStorage.getItem('system_broadcasts');
-        const broadcasts = existing ? JSON.parse(existing) : [];
-        const updated = [newBroadcast, ...broadcasts];
+            if (error) throw error;
 
-        localStorage.setItem('system_broadcasts', JSON.stringify(updated));
+            setSent(true);
+            fetchHistory();
 
-        // Simulation of sending
-        setSent(true);
-        setTimeout(() => {
-            setSent(false);
-            setTitle('');
-            setMessage('');
-        }, 3000);
+            setTimeout(() => {
+                setSent(false);
+                setTitle('');
+                setMessage('');
+            }, 3000);
+        } catch (error) {
+            alert('Erro ao enviar mensagem');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -129,20 +150,24 @@ const AdminBroadcast: React.FC = () => {
                     )}
                 </div>
 
-                {/* History (Mock) */}
+                {/* History (Real Logic) */}
                 <div className="mt-8">
                     <h3 className="font-bold text-gray-900 mb-4 px-2">Histórico Recente</h3>
                     <div className="space-y-3">
-                        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 opacity-60">
-                            <div className="flex justify-between items-start mb-1">
-                                <h4 className="text-sm font-bold text-gray-900">Aviso: Limpeza da Caixa d'Água</h4>
-                                <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">Ontem</span>
+                        {history.map(item => (
+                            <div key={item.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 opacity-60">
+                                <div className="flex justify-between items-start mb-1">
+                                    <h4 className="text-sm font-bold text-gray-900">{item.title}</h4>
+                                    <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
+                                        {new Date(item.created_at).toLocaleDateString()}
+                                    </span>
+                                </div>
+                                <p className="text-xs text-gray-500 line-clamp-1">{item.message}</p>
+                                <div className="flex items-center gap-1 mt-2 text-[10px] font-bold text-indigo-600">
+                                    <Users size={12} /> Enviado para {item.target === 'all' ? 'Todos' : item.target}
+                                </div>
                             </div>
-                            <p className="text-xs text-gray-500 line-clamp-1">Informamos que amanhã haverá interrupção no fornecimento...</p>
-                            <div className="flex items-center gap-1 mt-2 text-[10px] font-bold text-indigo-600">
-                                <Users size={12} /> Enviado para Todos
-                            </div>
-                        </div>
+                        ))}
                     </div>
                 </div>
             </div>

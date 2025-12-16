@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Plus, Trash2, Store, Image as ImageIcon, Link as LinkIcon, Eye, EyeOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 
 interface Ad {
     id: number;
@@ -16,57 +17,57 @@ const AdminAds: React.FC = () => {
     const [ads, setAds] = useState<Ad[]>([]);
     const [showModal, setShowModal] = useState(false);
     const [newAd, setNewAd] = useState<Partial<Ad>>({ title: '', description: '', imageUrl: '', link: '', active: true });
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const storedAds = localStorage.getItem('ads_data');
-        if (storedAds) {
-            setAds(JSON.parse(storedAds));
-        } else {
-            // Seed initial data if empty
-            const initialAds: Ad[] = [
-                { id: 1, title: 'Promoção de Pizza', description: '50% de desconto na Pizzaria do Bairro', imageUrl: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&q=80&w=400', link: '/market', active: true },
-                { id: 2, title: 'Limpeza de Sofá', description: 'Agende agora e ganhe impermeabilização grátis', imageUrl: 'https://images.unsplash.com/photo-1581553698125-0d32e65c9285?auto=format&fit=crop&q=80&w=400', link: '/market', active: true }
-            ];
-            setAds(initialAds);
-            localStorage.setItem('ads_data', JSON.stringify(initialAds));
-        }
+        fetchAds();
     }, []);
 
-    const saveAds = (updatedAds: Ad[]) => {
-        setAds(updatedAds);
-        localStorage.setItem('ads_data', JSON.stringify(updatedAds));
-    };
-
-    const handleAddAd = () => {
-        if (!newAd.title || !newAd.description) return;
-
-        const ad: Ad = {
-            id: Date.now(),
-            title: newAd.title,
-            description: newAd.description,
-            imageUrl: newAd.imageUrl || 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&q=80&w=400',
-            link: newAd.link || '#',
-            active: newAd.active ?? true
-        };
-
-        const updatedAds = [...ads, ad];
-        saveAds(updatedAds);
-        setShowModal(false);
-        setNewAd({ title: '', description: '', imageUrl: '', link: '', active: true });
-    };
-
-    const handleDeleteAd = (id: number) => {
-        if (window.confirm('Tem certeza que deseja remover este anúncio?')) {
-            const updatedAds = ads.filter(ad => ad.id !== id);
-            saveAds(updatedAds);
+    const fetchAds = async () => {
+        try {
+            setLoading(true);
+            const { data, error } = await supabase.from('ads').select('*').order('created_at', { ascending: false });
+            if (error) throw error;
+            if (data) setAds(data);
+        } catch (error) {
+            console.error('Error fetching ads:', error);
+        } finally {
+            setLoading(false);
         }
     };
 
-    const toggleActive = (id: number) => {
-        const updatedAds = ads.map(ad =>
-            ad.id === id ? { ...ad, active: !ad.active } : ad
-        );
-        saveAds(updatedAds);
+    const handleAddAd = async () => {
+        if (!newAd.title || !newAd.description) return;
+
+        try {
+            const { error } = await supabase.from('ads').insert([{
+                title: newAd.title,
+                description: newAd.description,
+                image_url: newAd.imageUrl || 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&q=80&w=400',
+                link: newAd.link || '#',
+                active: newAd.active ?? true
+            }]);
+
+            if (error) throw error;
+
+            fetchAds();
+            setShowModal(false);
+            setNewAd({ title: '', description: '', imageUrl: '', link: '', active: true });
+        } catch (error) {
+            alert('Erro ao criar anúncio');
+        }
+    };
+
+    const handleDeleteAd = async (id: number) => {
+        if (window.confirm('Tem certeza que deseja remover este anúncio?')) {
+            await supabase.from('ads').delete().eq('id', id);
+            fetchAds();
+        }
+    };
+
+    const toggleActive = async (id: number, currentStatus: boolean) => {
+        await supabase.from('ads').update({ active: !currentStatus }).eq('id', id);
+        fetchAds();
     };
 
     return (
@@ -104,7 +105,7 @@ const AdminAds: React.FC = () => {
                                     <div className="flex justify-between items-start">
                                         <h3 className="font-bold text-gray-900 truncate pr-2">{ad.title}</h3>
                                         <div className="flex gap-1">
-                                            <button onClick={() => toggleActive(ad.id)} className={`p-1.5 rounded-lg ${ad.active ? 'text-green-600 bg-green-50' : 'text-gray-400 bg-gray-100'}`} title={ad.active ? "Ocultar" : "Mostrar"}>
+                                            <button onClick={() => toggleActive(ad.id, ad.active)} className={`p-1.5 rounded-lg ${ad.active ? 'text-green-600 bg-green-50' : 'text-gray-400 bg-gray-100'}`} title={ad.active ? "Ocultar" : "Mostrar"}>
                                                 {ad.active ? <Eye size={16} /> : <EyeOff size={16} />}
                                             </button>
                                             <button onClick={() => handleDeleteAd(ad.id)} className="p-1.5 rounded-lg text-red-400 bg-red-50 hover:bg-red-100 hover:text-red-600">
