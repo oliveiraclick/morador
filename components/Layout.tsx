@@ -79,31 +79,24 @@ const Layout: React.FC<LayoutProps> = ({ children, role }) => {
               <>
                 <button onClick={() => navigate('/admin')} className={navItemClass('/admin')}>
                   <Store size={24} strokeWidth={location.pathname === '/admin' ? 2.5 : 2} />
-                  <span className="text-[10px] font-medium">Painel</span>
                 </button>
                 <button onClick={() => navigate('/admin/condos')} className={navItemClass('/admin/condos')}>
                   <Building size={24} strokeWidth={location.pathname === '/admin/condos' ? 2.5 : 2} />
-                  <span className="text-[10px] font-medium">Condos</span>
                 </button>
                 <button onClick={() => navigate('/admin/users')} className={navItemClass('/admin/users')}>
                   <Users size={24} strokeWidth={location.pathname === '/admin/users' ? 2.5 : 2} />
-                  <span className="text-[10px] font-medium">Usuários</span>
                 </button>
                 <button onClick={() => navigate('/admin/financial')} className={navItemClass('/admin/financial')}>
                   <DollarSign size={24} strokeWidth={location.pathname === '/admin/financial' ? 2.5 : 2} />
-                  <span className="text-[10px] font-medium">Financeiro</span>
                 </button>
                 <button onClick={() => navigate('/admin/broadcast')} className={navItemClass('/admin/broadcast')}>
                   <Bell size={24} strokeWidth={location.pathname === '/admin/broadcast' ? 2.5 : 2} />
-                  <span className="text-[10px] font-medium">Avisos</span>
                 </button>
                 <button onClick={() => navigate('/admin/settings')} className={navItemClass('/admin/settings')}>
                   <Settings size={24} strokeWidth={location.pathname === '/admin/settings' ? 2.5 : 2} />
-                  <span className="text-[10px] font-medium">Ajustes</span>
                 </button>
                 <button onClick={handleLogout} className="flex flex-col items-center justify-center w-full h-full space-y-1 text-red-400 hover:text-red-600">
                   <LogOut size={24} strokeWidth={2} />
-                  <span className="text-[10px] font-medium">Sair</span>
                 </button>
               </>
             ) : (
