@@ -1,7 +1,7 @@
 {
-    "name": "Comunidade Connect",
-    "short_name": "Comunidade",
-    "description": "App para moradores e prestadores",
+    "name": "Morador",
+    "short_name": "Morador",
+    "description": "App para moradores",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#ffffff",
