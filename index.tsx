@@ -53,11 +53,41 @@ const App = () => {
   });
 
   // Sync Role on load
+  // Sync Role on load and Setup Auth Listener
   useEffect(() => {
+    // 1. Initial Local Storage Sync
     const stored = localStorage.getItem('user_role');
     if (stored === UserRole.ADMIN || stored === UserRole.RESIDENT || stored === UserRole.PROFESSIONAL) {
       setUserRole(stored as UserRole);
     }
+
+    // 2. Supabase Auth Listener (Handles Google Redirects)
+    import('./lib/supabase').then(({ supabase }) => {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+          // Fetch Profile to get Role
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', session.user.id)
+            .single();
+
+          const role = profile?.role || UserRole.RESIDENT;
+
+          localStorage.setItem('user_role', role);
+          localStorage.setItem('user_registered', 'true');
+          setUserRole(role as UserRole);
+
+          // Redirect Logic (Naive but effective for now)
+          if (window.location.pathname === '/login' || window.location.pathname === '/register/resident' || window.location.pathname === '/register/professional') {
+            if (role === UserRole.ADMIN) window.location.href = '/admin';
+            else if (role === UserRole.PROFESSIONAL) window.location.href = '/dashboard';
+            else window.location.href = '/home';
+          }
+        }
+      });
+      return () => subscription.unsubscribe();
+    });
   }, []);
 
   return (
