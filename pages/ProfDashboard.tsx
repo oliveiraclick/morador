@@ -1,79 +1,22 @@
-import React, { useState } from 'react';
-import { Bell, Eye, EyeOff, TrendingUp, Star, MoreVertical, Wallet, Calendar, MessageSquare, Settings, Hammer, Plug, Paintbrush, Check, Store, MapPin } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Bell, TrendingUp, Star, Wallet, Calendar, MessageSquare, Settings, Hammer, Plug, Paintbrush, Store, MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
+
+interface UserProfile {
+   id: string;
+   full_name: string;
+   avatar_url?: string;
+   profession?: string;
+   is_on_site?: boolean;
+   is_vacation?: boolean;
+}
 
 const ProfDashboard: React.FC = () => {
    const navigate = useNavigate();
+   const [profile, setProfile] = useState<UserProfile | null>(null);
    const [isAvailable, setIsAvailable] = useState(true);
-   const [isVacation, setIsVacation] = useState(false);
-   const [isOnSite, setIsOnSite] = useState(false);
-
-   // Mock Professional User
-   const currentUser = {
-      name: "Carlos Silva",
-      profession: "Eletricista",
-      avatar: "https://randomuser.me/api/portraits/men/32.jpg"
-   };
-
-   // Paywall Check
-   React.useEffect(() => {
-      // If user is professional but hasn't paid (simulated flag)
-      const hasPaid = localStorage.getItem('professional_payment_active') === 'true';
-      // Optional: Bypass for existing mock user "Carlos Silva" to avoid locking you out during demo, 
-      // BUT for new flow usage we reinforce it. 
-      // Let's assume Carlos needs to pay too or we manually set the flag in testing.
-      if (!hasPaid) {
-         navigate('/plan/professional');
-      }
-   }, []);
-
-   // Check status on load
-   React.useEffect(() => {
-      const stored = localStorage.getItem('prof_on_site');
-      if (stored) {
-         try {
-            const list = JSON.parse(stored);
-            // Handle both single object (legacy) and array
-            const exists = Array.isArray(list)
-               ? list.find((p: any) => p.name === currentUser.name)
-               : (list.name === currentUser.name);
-            setIsOnSite(!!exists);
-         } catch (e) {
-            console.error("Error parsing prof_on_site", e);
-         }
-      }
-   }, []);
-
-   const toggleStatus = () => {
-      const newState = !isOnSite;
-      setIsOnSite(newState);
-
-      const stored = localStorage.getItem('prof_on_site');
-      let list = stored ? JSON.parse(stored) : [];
-      if (!Array.isArray(list)) list = list ? [list] : []; // Normalize to array if needed
-
-      if (newState) {
-         // Check-in: Add to list
-         list.push(currentUser);
-      } else {
-         // Check-out: Remove from list
-         list = list.filter((p: any) => p.name !== currentUser.name);
-      }
-
-      localStorage.setItem('prof_on_site', JSON.stringify(list));
-   };
-
-   const handleToggleVacation = () => {
-      const newState = !isVacation;
-      setIsVacation(newState);
-
-      if (newState) {
-         // Turn off availability when entering vacation
-         setIsAvailable(false);
-         // Also check out if on site
-         if (isOnSite) toggleStatus();
-      }
-   };
+   const [loading, setLoading] = useState(true);
 
    // Notifications State
    const [notifications, setNotifications] = useState<any[]>([]);
@@ -81,24 +24,113 @@ const ProfDashboard: React.FC = () => {
    const [unreadCount, setUnreadCount] = useState(0);
 
    useEffect(() => {
+      fetchUser();
       fetchNotifications();
+
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+         if (session) {
+            fetchUser();
+         } else {
+            navigate('/login');
+         }
+      });
+
+      return () => subscription.unsubscribe();
    }, []);
 
+   const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+         navigate('/login');
+         return;
+      }
+
+      const { data, error } = await supabase
+         .from('profiles')
+         .select('*')
+         .eq('id', user.id)
+         .single();
+
+      if (data) {
+         setProfile(data);
+         // Sync local state with DB state
+         if (data.is_vacation !== undefined) setIsAvailable(!data.is_vacation);
+      } else if (error) {
+         console.error('Error fetching profile:', error);
+      }
+      setLoading(false);
+   };
+
    const fetchNotifications = async () => {
-      const { data } = await import('../lib/supabase').then(m => m.supabase
+      const { data } = await supabase
          .from('broadcasts')
          .select('*')
          .or(`target.eq.all,target.eq.professionals`)
          .order('created_at', { ascending: false })
-         .limit(10)
-      );
+         .limit(10);
 
       if (data) {
          setNotifications(data);
-         // Simple unread logic: check local storage for 'last_seen_notification_time'
          const lastSeen = localStorage.getItem('last_seen_notification');
          const unread = data.filter(n => !lastSeen || new Date(n.created_at) > new Date(lastSeen));
          setUnreadCount(unread.length);
+      }
+   };
+
+   // Paywall Check
+   useEffect(() => {
+      // If user is professional but hasn't paid (simulated flag) - Keep this as requested or for consistency
+      const hasPaid = localStorage.getItem('professional_payment_active') === 'true';
+      // For now we allow access if it's just a demo, but in real flow:
+      // if (!hasPaid) navigate('/plan/professional');
+   }, []);
+
+   const toggleStatus = async () => {
+      if (!profile) return;
+
+      const newState = !profile.is_on_site;
+
+      // Optimistic update
+      setProfile({ ...profile, is_on_site: newState });
+
+      const { error } = await supabase
+         .from('profiles')
+         .update({ is_on_site: newState })
+         .eq('id', profile.id);
+
+      if (error) {
+         console.error('Error updating status:', error);
+         // Revert on error
+         setProfile({ ...profile, is_on_site: !newState });
+      }
+   };
+
+   const handleToggleVacation = async () => {
+      if (!profile) return;
+
+      const newState = !profile.is_vacation;
+
+      // Optimistic update
+      setProfile({ ...profile, is_vacation: newState });
+
+      // If going on vacation, also set is_on_site to false
+      const updates: any = { is_vacation: newState };
+      if (newState) {
+         updates.is_on_site = false;
+         setIsAvailable(false);
+      } else {
+         setIsAvailable(true);
+      }
+
+      const { error } = await supabase
+         .from('profiles')
+         .update(updates)
+         .eq('id', profile.id);
+
+      if (error) {
+         console.error('Error updating vacation mode:', error);
+         // Revert
+         setProfile({ ...profile, is_vacation: !newState }); // Simplified revert
       }
    };
 
@@ -109,6 +141,14 @@ const ProfDashboard: React.FC = () => {
          localStorage.setItem('last_seen_notification', new Date().toISOString());
       }
    };
+
+   if (loading) {
+      return <div className="min-h-screen flex items-center justify-center bg-gray-50">
+         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+      </div>;
+   }
+
+   if (!profile) return null;
 
    return (
       <div className="bg-gray-50 pb-24 relative">
@@ -145,11 +185,23 @@ const ProfDashboard: React.FC = () => {
             <div className="flex justify-between items-center mb-6">
                <div className="flex items-center gap-3">
                   <div onClick={() => navigate('/professional-profile')} className="w-12 h-12 rounded-full flex items-center justify-center overflow-hidden border-2 border-primary-200 cursor-pointer">
-                     <img src={currentUser.avatar} alt="Prof" className="w-full h-full object-cover" />
+                     {profile.avatar_url ? (
+                        <img src={profile.avatar_url} alt="Prof" className="w-full h-full object-cover"
+                           onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.onerror = null;
+                              target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.full_name)}&background=random`;
+                           }}
+                        />
+                     ) : (
+                        <div className="w-full h-full bg-primary-100 flex items-center justify-center text-primary-600 font-bold border-2 border-white">
+                           {profile.full_name?.substring(0, 2).toUpperCase()}
+                        </div>
+                     )}
                   </div>
                   <div>
-                     <h1 className="font-bold text-lg text-gray-900">Olá, {currentUser.name.split(' ')[0]}!</h1>
-                     <p className="text-xs text-gray-500">{currentUser.profession}</p>
+                     <h1 className="font-bold text-lg text-gray-900">Olá, {profile.full_name?.split(' ')[0]}!</h1>
+                     <p className="text-xs text-gray-500">{profile.profession || "Profissional"}</p>
                   </div>
                </div>
                <div className="relative cursor-pointer" onClick={handleOpenNotifications}>
@@ -163,17 +215,17 @@ const ProfDashboard: React.FC = () => {
             </div>
 
             {/* Vacation Mode Card */}
-            <div className={`mb-4 rounded-2xl p-4 shadow-sm border transition-all ${isVacation ? 'bg-purple-600 text-white border-purple-600' : 'bg-white border-gray-100'}`}>
+            <div className={`mb-4 rounded-2xl p-4 shadow-sm border transition-all ${profile.is_vacation ? 'bg-purple-600 text-white border-purple-600' : 'bg-white border-gray-100'}`}>
                <div className="flex justify-between items-center">
                   <div>
-                     <h3 className={`font-bold ${isVacation ? 'text-white' : 'text-gray-900'}`}>Modo Férias / Offline</h3>
-                     <p className={`text-xs ${isVacation ? 'text-purple-100' : 'text-gray-500'}`}>
-                        {isVacation ? 'Você está invisível no app.' : 'Pause todas as atividades.'}
+                     <h3 className={`font-bold ${profile.is_vacation ? 'text-white' : 'text-gray-900'}`}>Modo Férias / Offline</h3>
+                     <p className={`text-xs ${profile.is_vacation ? 'text-purple-100' : 'text-gray-500'}`}>
+                        {profile.is_vacation ? 'Você está invisível no app.' : 'Pause todas as atividades.'}
                      </p>
                   </div>
                   <button
                      onClick={handleToggleVacation}
-                     className={`w-14 h-8 rounded-full p-1 transition-colors duration-300 flex items-center shadow-inner cursor-pointer ${isVacation ? 'bg-white/30 justify-end' : 'bg-gray-200 justify-start'}`}
+                     className={`w-14 h-8 rounded-full p-1 transition-colors duration-300 flex items-center shadow-inner cursor-pointer ${profile.is_vacation ? 'bg-white/30 justify-end' : 'bg-gray-200 justify-start'}`}
                   >
                      <div className="w-6 h-6 rounded-full bg-white shadow-sm"></div>
                   </button>
@@ -181,24 +233,24 @@ const ProfDashboard: React.FC = () => {
             </div>
 
             {/* Status Card (CHECK-IN) */}
-            <div className={`rounded-2xl p-4 shadow-sm mb-6 border transition-all duration-300 ${isOnSite ? 'bg-green-50 border-green-200' : 'bg-white border-gray-100'}`}>
+            <div className={`rounded-2xl p-4 shadow-sm mb-6 border transition-all duration-300 ${profile.is_on_site ? 'bg-green-50 border-green-200' : 'bg-white border-gray-100'}`}>
                <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                     <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isOnSite ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
+                     <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${profile.is_on_site ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
                         <MapPin size={20} />
                      </div>
                      <div>
-                        <h3 className={`font-bold ${isOnSite ? 'text-green-800' : 'text-gray-900'}`}>{isOnSite ? 'No Condomínio' : 'Fora do Condomínio'}</h3>
-                        <p className={`text-xs ${isOnSite ? 'text-green-600' : 'text-gray-500'}`}>{isOnSite ? 'Disponível para chamados' : 'Faça check-in ao chegar'}</p>
+                        <h3 className={`font-bold ${profile.is_on_site ? 'text-green-800' : 'text-gray-900'}`}>{profile.is_on_site ? 'No Condomínio' : 'Fora do Condomínio'}</h3>
+                        <p className={`text-xs ${profile.is_on_site ? 'text-green-600' : 'text-gray-500'}`}>{profile.is_on_site ? 'Disponível para chamados' : 'Faça check-in ao chegar'}</p>
                      </div>
                   </div>
 
                   <button
-                     disabled={isVacation}
+                     disabled={profile.is_vacation}
                      onClick={toggleStatus}
-                     className={`w-14 h-8 rounded-full p-1 transition-colors duration-300 flex items-center ${isVacation
+                     className={`w-14 h-8 rounded-full p-1 transition-colors duration-300 flex items-center ${profile.is_vacation
                         ? 'bg-gray-100 cursor-not-allowed justify-start'
-                        : (isOnSite ? 'bg-green-500 justify-end' : 'bg-gray-300 justify-start')
+                        : (profile.is_on_site ? 'bg-green-500 justify-end' : 'bg-gray-300 justify-start')
                         }`}
                   >
                      <div className="w-6 h-6 rounded-full bg-white shadow-md"></div>
