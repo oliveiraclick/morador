@@ -55,7 +55,20 @@ const RegisterResident: React.FC = () => {
     };
 
     const handleGoogleLogin = async () => {
-        await supabase.auth.signInWithOAuth({ provider: 'google' });
+        try {
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    queryParams: {
+                        access_type: 'offline',
+                        prompt: 'consent',
+                    },
+                },
+            });
+            if (error) throw error;
+        } catch (error: any) {
+            alert('Erro ao conectar com Google: ' + error.message);
+        }
     };
 
     return (
