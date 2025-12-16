@@ -29,6 +29,9 @@ const RegisterProfessional: React.FC = () => {
                 options: {
                     data: {
                         full_name: name,
+                        role: UserRole.PROFESSIONAL,
+                        profession: profession,
+                        service_history: serviceHistory
                     }
                 }
             });

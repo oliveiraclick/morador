@@ -34,6 +34,7 @@ const RegisterResident: React.FC = () => {
                 options: {
                     data: {
                         full_name: name,
+                        role: UserRole.RESIDENT,
                         condo_id: condo, // Storing ID
                         unit: `${street}, ${number}` // Simple aggregation for now
                     }
