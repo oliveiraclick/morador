@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Search, User, Briefcase, CheckCircle, XCircle, MoreVertical, Filter, MapPin, Building, Shield, Slash, Award, DollarSign } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 
 type Tab = 'residents' | 'professionals';
 
@@ -8,29 +9,109 @@ const AdminUsers: React.FC = () => {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState<Tab>('residents');
 
-    // Mock Data State
-    const [residents, setResidents] = useState([
-        { id: 1, name: 'Ana Silva', condo: 'Condomínio Jardins do Sol', unit: 'Bl A, Ap 101', street: 'Rua das Flores, 123', status: 'active', email: 'ana@email.com' },
-        { id: 2, name: 'Carlos Oliveira', condo: 'Residencial Flores do Campo', unit: 'Bl C, Ap 44', street: 'Av. Principal, 500', status: 'pending', email: 'carlos@email.com' },
-        { id: 3, name: 'Mariana Santos', condo: 'Edifício Blue Tower', unit: 'Ap 902', street: 'Rua do Porto, 88', status: 'active', email: 'mari@email.com' },
-    ]);
+    // Data State
+    const [residents, setResidents] = useState<any[]>([]);
+    const [professionals, setProfessionals] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    const [professionals, setProfessionals] = useState([
-        { id: 1, name: 'João Elétrica', profession: 'Eletricista', serviceHistory: 'Já atendi a Dona Maria do Bloco A. Troquei a fiação do chuveiro.', status: 'pending', email: 'joao@eletrica.com', isFree: false, isVerified: false },
-        { id: 2, name: 'Limpeza Total', profession: 'Diarista', serviceHistory: 'Trabalho fixo na casa do Sr. Pedro, Bloco B, toda terça.', status: 'active', email: 'contato@limpezatotal.com', isFree: true, isVerified: true },
-        { id: 3, name: 'Marcos Reparos', profession: 'Pedreiro', serviceHistory: 'Fiz a reforma da portaria mês passado.', status: 'blocked', email: 'marcos@obr.com', isFree: false, isVerified: false },
-    ]);
+    useEffect(() => {
+        fetchUsers();
+    }, []);
 
-    const toggleStatus = (id: number, type: 'residents' | 'professionals', newStatus: string) => {
-        if (type === 'residents') {
-            setResidents(prev => prev.map(u => u.id === id ? { ...u, status: newStatus } : u));
-        } else {
-            setProfessionals(prev => prev.map(u => u.id === id ? { ...u, status: newStatus } : u));
+    const fetchUsers = async () => {
+        try {
+            setLoading(true);
+
+            // 1. Fetch Profiles
+            const { data: profiles, error: profError } = await supabase
+                .from('profiles')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            // 2. Fetch Condos (for mapping names)
+            const { data: condos, error: condoError } = await supabase
+                .from('condos')
+                .select('id, name');
+
+            if (profError) throw profError;
+
+            // 3. Process Data
+            if (profiles) {
+                const resList = profiles
+                    .filter(p => p.role === 'resident')
+                    .map(p => ({
+                        id: p.id,
+                        name: p.full_name || 'Sem Nome',
+                        condo: condos?.find(c => c.id === p.condo_id)?.name || 'Condomínio',
+                        unit: p.unit || '-',
+                        street: p.unit?.split(',')[0] || '-', // Attempt to extract street
+                        status: p.status || 'pending',
+                        email: p.email || 'email@oculto.com'
+                    }));
+
+                const profList = profiles
+                    .filter(p => p.role === 'professional')
+                    .map(p => ({
+                        id: p.id,
+                        name: p.full_name || 'Sem Nome',
+                        profession: p.profession || 'Geral',
+                        serviceHistory: p.service_history || 'Sem histórico',
+                        status: p.status || 'pending',
+                        email: p.email || 'email@oculto.com',
+                        isFree: p.is_free || false,
+                        isVerified: p.is_verified || false
+                    }));
+
+                setResidents(resList);
+                setProfessionals(profList);
+            }
+        } catch (error) {
+            console.error('Error fetching users:', error);
+        } finally {
+            setLoading(false);
         }
     };
 
-    const toggleProp = (id: number, prop: 'isFree' | 'isVerified') => {
-        setProfessionals(prev => prev.map(u => u.id === id ? { ...u, [prop]: !u[prop] } : u));
+    const toggleStatus = async (id: any, type: 'residents' | 'professionals', newStatus: string) => {
+        try {
+            const { error } = await supabase
+                .from('profiles')
+                .update({ status: newStatus })
+                .eq('id', id);
+
+            if (error) throw error;
+
+            // Optimistic UI Update
+            if (type === 'residents') {
+                setResidents(prev => prev.map(u => u.id === id ? { ...u, status: newStatus } : u));
+            } else {
+                setProfessionals(prev => prev.map(u => u.id === id ? { ...u, status: newStatus } : u));
+            }
+        } catch (error) {
+            alert('Erro ao atualizar status');
+        }
+    };
+
+    const toggleProp = async (id: any, prop: 'isFree' | 'isVerified') => {
+        // Map UI prop to DB column
+        const dbCol = prop === 'isFree' ? 'is_free' : 'is_verified';
+        const currentList = professionals.find(u => u.id === id);
+        if (!currentList) return;
+
+        const newVal = !currentList[prop];
+
+        try {
+            const { error } = await supabase
+                .from('profiles')
+                .update({ [dbCol]: newVal })
+                .eq('id', id);
+
+            if (error) throw error;
+
+            setProfessionals(prev => prev.map(u => u.id === id ? { ...u, [prop]: newVal } : u));
+        } catch (error) {
+            alert('Erro ao atualizar propriedade');
+        }
     };
 
     return (
