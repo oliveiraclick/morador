@@ -208,15 +208,15 @@ const AdminCondos: React.FC = () => {
             {/* Add Modal */}
             {showModal && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4">
-                    <div className="bg-white w-full max-w-md rounded-3xl p-6 animate-in slide-in-from-bottom-10 duration-200">
+                    <div className="bg-white w-full max-w-md rounded-3xl p-6 animate-in slide-in-from-bottom-10 duration-200 max-h-[90vh] overflow-y-auto">
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-lg font-bold text-gray-900">{editingId ? 'Editar Condomínio' : 'Novo Condomínio'}</h2>
                             <button onClick={handleCloseModal} className="p-2 hover:bg-gray-100 rounded-full text-gray-500">
-                                <ArrowLeft size={20} className="rotate-[-90deg]" /> {/* Close icon visual using arrow */}
+                                <ArrowLeft size={20} className="rotate-[-90deg]" />
                             </button>
                         </div>
 
-                        <div className="space-y-4">
+                        <div className="space-y-4 pb-8"> {/* Added bottom padding */}
                             <div>
                                 <label className="block text-xs font-bold text-gray-600 uppercase mb-1">Nome do Condomínio</label>
                                 <input
@@ -259,7 +259,7 @@ const AdminCondos: React.FC = () => {
                             <button
                                 onClick={handleSaveCondo}
                                 disabled={!newCondo.name || !newCondo.address}
-                                className="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-indigo-700 disabled:opacity-50 mt-4"
+                                className="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-indigo-700 disabled:opacity-50 mt-4 mb-2"
                             >
                                 <CheckCircle size={20} /> {editingId ? 'Salvar Alterações' : 'Salvar Cadastro'}
                             </button>

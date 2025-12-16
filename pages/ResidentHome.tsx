@@ -17,7 +17,7 @@ const ResidentHome: React.FC = () => {
       if (stored) {
         try {
           const broadcasts = JSON.parse(stored);
-          if (broadcasts.length > 0) {
+          if (Array.isArray(broadcasts) && broadcasts.length > 0) {
             setLatestBroadcast(broadcasts[0]);
           }
         } catch (e) {
@@ -27,7 +27,6 @@ const ResidentHome: React.FC = () => {
     };
 
     checkBroadcasts();
-    // Optional: Poll every few seconds if needed, but for now run once on mount
   }, []);
 
   // Check for pros on site
@@ -46,8 +45,27 @@ const ResidentHome: React.FC = () => {
     }
   }, []);
 
-  // Mock User Name
-  const userName = "Ricardo";
+  // Fetch User & Profile
+  const [userName, setUserName] = React.useState("Vizinho(a)");
+  const [condoName, setCondoName] = React.useState("Seu Condomínio");
+
+  React.useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user } } = await import('../lib/supabase').then(m => m.supabase.auth.getUser());
+      if (user) {
+        if (user.user_metadata?.full_name) {
+          setUserName(user.user_metadata.full_name.split(' ')[0]);
+        }
+
+        // Fetch Profile for Condo Name
+        const { data: profile } = await import('../lib/supabase').then(m => m.supabase.from('profiles').select('condos(name)').eq('id', user.id).single());
+        if (profile?.condos?.name) {
+          setCondoName(profile.condos.name);
+        }
+      }
+    };
+    fetchUser();
+  }, []);
 
   const carouselRef = React.useRef<HTMLDivElement>(null);
 
@@ -77,7 +95,7 @@ const ResidentHome: React.FC = () => {
             <div>
               <div className="flex items-center text-purple-100 text-sm font-medium mb-0.5">
                 <MapPin size={14} className="mr-1" />
-                Condomínio Jardins do Sol
+                {condoName}
               </div>
               <h1 className="text-2xl font-bold text-white">
                 Bom dia, {userName}! 👋
@@ -169,7 +187,9 @@ const ResidentHome: React.FC = () => {
             <div>
               <div className="flex justify-between items-center mb-1">
                 <span className="text-xs font-bold text-purple-600 uppercase tracking-wider">Avisos e Ofertas</span>
-                <span className="text-xs text-gray-400">{new Date(latestBroadcast.timestamp).toLocaleDateString()}</span>
+                <span className="text-xs text-gray-400">
+                  {latestBroadcast?.timestamp ? new Date(latestBroadcast.timestamp).toLocaleDateString() : 'Hoje'}
+                </span>
               </div>
               <h3 className="font-bold text-gray-900">{latestBroadcast.title}</h3>
               <p className="text-sm text-gray-500 mt-1 leading-relaxed">

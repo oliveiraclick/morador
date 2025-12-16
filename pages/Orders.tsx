@@ -8,27 +8,63 @@ const Orders: React.FC = () => {
 
     // State for items
     const [negotiations, setNegotiations] = useState<any[]>([]);
+    const [services, setServices] = useState<any[]>([]);
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        // Load negotiations from localStorage
+        // Load negotiations from localStorage (Keep as is for now, or move to DB if time permits)
         const stored = localStorage.getItem('active_negotiations');
         if (stored) {
             setNegotiations(JSON.parse(stored));
         }
+
+        // Fetch Real Services (Appointments)
+        fetchServices();
     }, []);
 
-    // Mock Services (Keep for now until we have booking logic)
-    const services = [
-        {
-            id: 1,
-            title: 'Limpeza Residencial',
-            provider: 'Maria Santos',
-            date: '15 Mai',
-            time: '14:00',
-            status: 'Agendado',
-            price: 120.00,
+    const fetchServices = async () => {
+        setLoading(true);
+        try {
+            const { data: { user } } = await import('../lib/supabase').then(m => m.supabase.auth.getUser());
+            if (!user) return;
+
+            // Determine if user is Pro or Resident to fetch correct column?
+            // For now, assuming this is "Minha Sacolinha" for the RESIDENT.
+            // But we didn't strictly link resident_id in the appointments table creation (it was nullable).
+            // We will fetch where client_name matches user name OR purely all appointments if we can't filter easily yet 
+            // (In a real app, we MUST use resident_id).
+
+            // PROVISORY: Fetching all appointments where I am the creator (if I requested it?) 
+            // Actually, appointments are created BY THE PRO in the current flow. 
+            // So the Resident sees appointments linked to their unit/name.
+            // Let's filter by nothing for now to show ALL demo appointments, or try to match name.
+
+            const { data } = await import('../lib/supabase').then(m => m.supabase
+                .from('appointments')
+                .select('*')
+                // .eq('resident_id', user.id) // Enable this when we pass resident_id correctly
+                .order('date', { ascending: true })
+            );
+
+            if (data) {
+                const formatted = data.map(apt => ({
+                    id: apt.id,
+                    title: apt.service_title,
+                    provider: 'Prestador', // We could join with profiles to get name
+                    date: new Date(apt.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) + ' ' + (new Date(apt.date).getFullYear()),
+                    time: apt.start_time.substring(0, 5),
+                    status: apt.status === 'AGENDADO' ? 'Agendado' : apt.status,
+                    price: 0, // Not currently in appointments table
+                }));
+                setServices(formatted);
+            }
+
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
         }
-    ];
+    };
 
     return (
         <div className="bg-gray-50 min-h-screen pb-24">
@@ -89,35 +125,45 @@ const Orders: React.FC = () => {
                         ))
                     )
                 ) : (
-                    services.map(item => (
-                        <div key={item.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-                            <div className="flex justify-between items-start mb-3">
-                                <h3 className="font-bold text-gray-900">{item.title}</h3>
-                                <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-blue-100 text-blue-700">{item.status}</span>
-                            </div>
-
-                            <div className="flex gap-4 mb-4">
-                                <div className="text-center bg-gray-50 rounded-xl p-2 min-w-[60px]">
-                                    <span className="block text-xl font-bold text-gray-900">{item.date.split(' ')[0]}</span>
-                                    <span className="text-[10px] text-gray-500 uppercase">{item.date.split(' ')[1]}</span>
-                                </div>
-                                <div>
-                                    <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
-                                        <Clock size={14} />
-                                        {item.time}
-                                    </div>
-                                    <div className="flex items-center gap-2 text-xs text-gray-500">
-                                        <MapPin size={14} />
-                                        Profissional: <span className="font-bold text-gray-700">{item.provider}</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <button className="w-full py-2 border border-gray-200 rounded-lg text-xs font-bold text-gray-600 hover:bg-gray-50">
-                                Ver Detalhes
-                            </button>
+                    loading ? (
+                        <div className="text-center py-10 text-gray-400">Carregando serviços...</div>
+                    ) : services.length === 0 ? (
+                        <div className="text-center py-12 text-gray-400">
+                            <p>Nenhum serviço agendado.</p>
                         </div>
-                    ))
+                    ) : (
+                        services.map(item => (
+                            <div key={item.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+                                <div className="flex justify-between items-start mb-3">
+                                    <h3 className="font-bold text-gray-900">{item.title}</h3>
+                                    <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-blue-100 text-blue-700">{item.status}</span>
+                                </div>
+
+                                <div className="flex gap-4 mb-4">
+                                    <div className="text-center bg-gray-50 rounded-xl p-2 min-w-[60px]">
+                                        <span className="block text-xl font-bold text-gray-900">{item.date.split(' ')[0]}</span>
+                                        <span className="text-[10px] text-gray-500 uppercase">{item.date.split(' ')[1]}</span>
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
+                                            <Clock size={14} />
+                                            {item.time}
+                                        </div>
+                                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                                            <MapPin size={14} />
+                                            Profissional: <span className="font-bold text-gray-700">{item.provider}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button
+                                    onClick={() => alert('Em breve você verá os detalhes do agendamento aqui!')}
+                                    className="w-full py-2 border border-gray-200 rounded-lg text-xs font-bold text-gray-600 hover:bg-gray-50"
+                                >
+                                    Ver Detalhes
+                                </button>
+                            </div>
+                        )))
                 )}
             </div>
 

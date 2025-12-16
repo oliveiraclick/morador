@@ -9,14 +9,29 @@ const SellItem: React.FC = () => {
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
   const [category, setCategory] = useState('Móveis');
+  const [condition, setCondition] = useState(''); // Added state
   const [isGenerating, setIsGenerating] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  // Lazy Registration Check
+  React.useEffect(() => {
+    const checkRegistration = async () => {
+      const { data: { user } } = await import('../lib/supabase').then(m => m.supabase.auth.getUser());
+      if (user) {
+        const { data: profile } = await import('../lib/supabase').then(m => m.supabase.from('profiles').select('condo_id, unit').eq('id', user.id).single());
+        if (!profile?.condo_id || !profile?.unit) {
+          navigate('/complete-registration');
+        }
+      }
+    };
+    checkRegistration();
+  }, []);
 
   const categories = ['Móveis', 'Eletrônicos', 'Roupas', 'Brinquedos', 'Livros', 'Outros'];
 
   const handleGenerateDescription = async () => {
     if (!title) return alert("Por favor, digite o nome do item primeiro para a IA criar a descrição.");
-    
+
     setIsGenerating(true);
     const desc = await generateItemDescription(title, category);
     setDescription(desc);
@@ -35,20 +50,20 @@ const SellItem: React.FC = () => {
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen flex flex-col pb-24">
+    <div className="bg-gray-50 min-h-screen flex flex-col pb-32">
       {/* Header */}
-      <div className="bg-white p-4 flex items-center shadow-sm justify-between sticky top-0 z-10">
+      <div className="bg-white p-4 flex items-center shadow-sm justify-between sticky top-0 z-50">
         <div className="flex items-center gap-3">
-            <button onClick={() => navigate(-1)} className="p-2 hover:bg-gray-100 rounded-full">
+          <button onClick={() => navigate('/home')} className="p-2 hover:bg-gray-100 rounded-full">
             <ArrowLeft size={24} className="text-gray-700" />
-            </button>
-            <h1 className="font-bold text-lg text-gray-900">Vender Item</h1>
+          </button>
+          <h1 className="font-bold text-lg text-gray-900">Vender Item</h1>
         </div>
         <button className="text-primary-600 font-semibold text-sm">Limpar</button>
       </div>
 
       <div className="p-4 space-y-6">
-        
+
         {/* Image Upload */}
         <div className="w-full aspect-[4/3] bg-white rounded-2xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center relative overflow-hidden group">
           {imagePreview ? (
@@ -62,8 +77,8 @@ const SellItem: React.FC = () => {
               <span className="text-xs opacity-70">0/5 fotos</span>
             </div>
           )}
-          <input 
-            type="file" 
+          <input
+            type="file"
             accept="image/*"
             className="absolute inset-0 opacity-0 cursor-pointer"
             onChange={handleImageUpload}
@@ -73,8 +88,8 @@ const SellItem: React.FC = () => {
         {/* Title */}
         <div className="space-y-1">
           <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">O que você está vendendo?</label>
-          <input 
-            type="text" 
+          <input
+            type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Ex: Bicicleta Aro 29"
@@ -87,7 +102,7 @@ const SellItem: React.FC = () => {
           <div className="space-y-1">
             <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Categoria</label>
             <div className="relative">
-              <select 
+              <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
                 className="w-full bg-white p-4 rounded-xl border border-gray-200 text-gray-900 appearance-none focus:outline-none focus:border-primary-500"
@@ -99,8 +114,8 @@ const SellItem: React.FC = () => {
           </div>
           <div className="space-y-1">
             <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Valor (R$)</label>
-            <input 
-              type="number" 
+            <input
+              type="number"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
               placeholder="0,00"
@@ -111,49 +126,56 @@ const SellItem: React.FC = () => {
 
         {/* Description with AI */}
         <div className="space-y-1 relative">
-           <div className="flex justify-between items-end mb-1">
-             <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Descrição</label>
-             <button 
-               onClick={handleGenerateDescription}
-               disabled={isGenerating}
-               className="flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white rounded-full text-xs font-bold shadow-sm hover:shadow-md transition-all active:scale-95 disabled:opacity-70"
-             >
-               {isGenerating ? <Loader2 size={12} className="animate-spin"/> : <Wand2 size={12} />}
-               {isGenerating ? 'Gerando...' : 'IA Mágica'}
-             </button>
-           </div>
-           <textarea 
-             value={description}
-             onChange={(e) => setDescription(e.target.value)}
-             placeholder="Descreva os detalhes do seu item..."
-             rows={5}
-             className="w-full bg-white p-4 rounded-xl border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-primary-500 resize-none"
-           />
-           <p className="text-[10px] text-gray-400 mt-1 text-right">{description.length}/300 caracteres</p>
+          <div className="flex justify-between items-end mb-1">
+            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Descrição</label>
+            <button
+              onClick={handleGenerateDescription}
+              disabled={isGenerating}
+              className="flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white rounded-full text-xs font-bold shadow-sm hover:shadow-md transition-all active:scale-95 disabled:opacity-70"
+            >
+              {isGenerating ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />}
+              {isGenerating ? 'Gerando...' : 'IA Mágica'}
+            </button>
+          </div>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Descreva os detalhes do seu item..."
+            rows={5}
+            className="w-full bg-white p-4 rounded-xl border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-primary-500 resize-none"
+          />
+          <p className="text-[10px] text-gray-400 mt-1 text-right">{description.length}/300 caracteres</p>
         </div>
 
-        {/* Condition - Simplified */}
+        {/* Condition - Fixed */}
         <div className="space-y-2">
-           <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Estado de conservação</label>
-           <div className="flex gap-2">
-             {['Novo', 'Seminovo', 'Usado'].map((cond) => (
-               <button key={cond} className="flex-1 py-2.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 focus:bg-primary-50 focus:border-primary-200 focus:text-primary-700 transition-colors">
-                 {cond}
-               </button>
-             ))}
-           </div>
+          <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Estado de conservação</label>
+          <div className="flex gap-2">
+            {['Novo', 'Seminovo', 'Usado'].map((cond) => (
+              <button
+                key={cond}
+                onClick={() => setCondition(cond)}
+                className={`flex-1 py-2.5 rounded-lg border text-sm font-medium transition-colors ${condition === cond
+                  ? 'bg-purple-100 border-purple-500 text-purple-700'
+                  : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                  }`}
+              >
+                {cond}
+              </button>
+            ))}
+          </div>
         </div>
 
       </div>
 
-      {/* Footer Actions */}
-      <div className="bg-white p-4 border-t border-gray-100 fixed bottom-0 left-0 right-0 md:max-w-[480px] md:mx-auto z-40">
-        <button 
+      {/* Footer Actions - Ensured Visibility */}
+      <div className="bg-white p-4 border-t border-gray-100 fixed bottom-0 left-0 right-0 md:max-w-[480px] md:mx-auto z-50">
+        <button
           onClick={() => {
             alert('Anúncio criado com sucesso!');
-            navigate('/market');
+            navigate('/home'); // Redirect to home/market
           }}
-          className="w-full bg-gray-900 text-white py-4 rounded-xl font-bold text-lg hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
+          className="w-full bg-[#7c3aed] text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
         >
           <CheckCircle2 size={20} />
           Publicar Anúncio

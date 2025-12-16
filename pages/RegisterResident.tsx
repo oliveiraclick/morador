@@ -132,6 +132,7 @@ const RegisterResident: React.FC = () => {
                                 <option value="" disabled>Selecione seu condomínio</option>
                                 {condos.length === 0 && <option disabled>Carregando condomínios...</option>}
                                 {condos.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                <option value="splendido-test-id">Residencial Splendido</option>
                             </select>
                         </div>
                     </div>
@@ -172,6 +173,12 @@ const RegisterResident: React.FC = () => {
                     <button type="submit" className="w-full bg-[#7c3aed] text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-purple-200 hover:opacity-90 transition-opacity mt-6">
                         Cadastrar
                     </button>
+
+                    <div className="mt-6 text-center">
+                        <p className="text-sm text-gray-500">
+                            Já tem conta? <button type="button" onClick={() => navigate('/login')} className="text-purple-600 font-bold hover:underline">Faça Login</button>
+                        </p>
+                    </div>
                 </form>
             </div>
         </div>

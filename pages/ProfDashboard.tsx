@@ -75,10 +75,73 @@ const ProfDashboard: React.FC = () => {
       }
    };
 
+   // Notifications State
+   const [notifications, setNotifications] = useState<any[]>([]);
+   const [showNotifications, setShowNotifications] = useState(false);
+   const [unreadCount, setUnreadCount] = useState(0);
+
+   useEffect(() => {
+      fetchNotifications();
+   }, []);
+
+   const fetchNotifications = async () => {
+      const { data } = await import('../lib/supabase').then(m => m.supabase
+         .from('broadcasts')
+         .select('*')
+         .or(`target.eq.all,target.eq.professionals`)
+         .order('created_at', { ascending: false })
+         .limit(10)
+      );
+
+      if (data) {
+         setNotifications(data);
+         // Simple unread logic: check local storage for 'last_seen_notification_time'
+         const lastSeen = localStorage.getItem('last_seen_notification');
+         const unread = data.filter(n => !lastSeen || new Date(n.created_at) > new Date(lastSeen));
+         setUnreadCount(unread.length);
+      }
+   };
+
+   const handleOpenNotifications = () => {
+      setShowNotifications(!showNotifications);
+      if (notifications.length > 0) {
+         setUnreadCount(0);
+         localStorage.setItem('last_seen_notification', new Date().toISOString());
+      }
+   };
+
    return (
-      <div className="bg-gray-50 min-h-screen">
+      <div className="bg-gray-50 min-h-screen relative">
+         {/* Notifications Modal/Dropdown */}
+         {showNotifications && (
+            <div className="absolute top-20 right-4 w-80 bg-white rounded-2xl shadow-xl border border-gray-100 z-50 overflow-hidden animate-in fade-in slide-in-from-top-4">
+               <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                  <h3 className="font-bold text-gray-900">Notificações</h3>
+                  <button onClick={() => setShowNotifications(false)} className="text-gray-400 hover:text-gray-600 text-xs font-bold">Fechar</button>
+               </div>
+               <div className="max-h-80 overflow-y-auto">
+                  {notifications.length === 0 ? (
+                     <div className="p-8 text-center text-gray-400 text-sm">Nenhuma notificação recente.</div>
+                  ) : (
+                     notifications.map(n => (
+                        <div key={n.id} className="p-4 border-b border-gray-50 hover:bg-gray-50">
+                           <div className="flex justify-between items-start mb-1">
+                              <h4 className="font-bold text-sm text-gray-900 line-clamp-1">{n.title}</h4>
+                              <span className="text-[10px] text-gray-400 whitespace-nowrap">{new Date(n.created_at).toLocaleDateString()}</span>
+                           </div>
+                           <p className="text-xs text-gray-500 line-clamp-3">{n.message}</p>
+                        </div>
+                     ))
+                  )}
+               </div>
+            </div>
+         )}
+
+         {/* Backdrop for notifications */}
+         {showNotifications && <div className="fixed inset-0 z-40" onClick={() => setShowNotifications(false)}></div>}
+
          {/* Header */}
-         <div className="bg-white p-6 pb-2">
+         <div className="bg-white p-6 pb-2 relative z-30">
             <div className="flex justify-between items-center mb-6">
                <div className="flex items-center gap-3">
                   <div onClick={() => navigate('/professional-profile')} className="w-12 h-12 rounded-full flex items-center justify-center overflow-hidden border-2 border-primary-200 cursor-pointer">
@@ -89,9 +152,13 @@ const ProfDashboard: React.FC = () => {
                      <p className="text-xs text-gray-500">{currentUser.profession}</p>
                   </div>
                </div>
-               <div className="relative">
-                  <Bell size={24} className="text-gray-700" />
-                  <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+               <div className="relative cursor-pointer" onClick={handleOpenNotifications}>
+                  <Bell size={24} className="text-gray-700 hover:text-primary-600 transition-colors" />
+                  {unreadCount > 0 && (
+                     <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white flex items-center justify-center text-[8px] font-bold text-white">
+                        {unreadCount}
+                     </span>
+                  )}
                </div>
             </div>
 
@@ -106,9 +173,9 @@ const ProfDashboard: React.FC = () => {
                   </div>
                   <button
                      onClick={handleToggleVacation}
-                     className={`w-12 h-7 rounded-full p-1 transition-colors duration-300 flex items-center ${isVacation ? 'bg-white/30 justify-end' : 'bg-gray-200 justify-start'}`}
+                     className={`w-14 h-8 rounded-full p-1 transition-colors duration-300 flex items-center shadow-inner cursor-pointer ${isVacation ? 'bg-white/30 justify-end' : 'bg-gray-200 justify-start'}`}
                   >
-                     <div className="w-5 h-5 rounded-full bg-white shadow-sm"></div>
+                     <div className="w-6 h-6 rounded-full bg-white shadow-sm"></div>
                   </button>
                </div>
             </div>

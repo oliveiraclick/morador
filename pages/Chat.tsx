@@ -19,61 +19,117 @@ const Chat: React.FC = () => {
     const { seller, product } = location.state || { seller: 'Vendedor', product: null };
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const [inputText, setInputText] = useState('');
+    const [messages, setMessages] = useState<any[]>([]);
+    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-    const [messages, setMessages] = useState<Message[]>([
-        { id: 1, text: 'Olá! Ainda está disponível?', sender: 'me', time: '10:30', status: 'read' },
-        { id: 2, text: 'Oi! Sim, está disponível.', sender: 'them', time: '10:32', status: 'read' },
-    ]);
-
-    // Initial Context Message
     useEffect(() => {
-        if (product) {
-            const initialMsg = `Olá! Tenho interesse em: ${product.title}. Podemos negociar?`;
-            setMessages(prev => [
-                ...prev,
-                { id: Date.now(), text: initialMsg, sender: 'me', time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), status: 'sent' }
-            ]);
-        }
+        // 1. Get Current User
+        import('../lib/supabase').then(m => m.supabase.auth.getUser()).then(({ data: { user } }) => {
+            if (user) {
+                setCurrentUserId(user.id);
+                fetchMessages(user.id);
 
-        // Play sound on mount
-        const audio = new Audio(DING_SOUND);
-        audio.volume = 0.5;
-        audio.play().catch(e => console.log('Audio autoplay blocked', e));
+                // Realtime subscription
+                const subscription = import('../lib/supabase').then(m => m.supabase
+                    .channel('public:messages')
+                    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
+                        // Only add if it belongs to this chat context (simple check)
+                        if (payload.new.product_context === product?.title || !product) {
+                            fetchMessages(user.id); // Refresh to be safe/simple
+                        }
+                    })
+                    .subscribe());
 
+                return () => {
+                    subscription.then(sub => sub.unsubscribe());
+                };
+            }
+        });
     }, []);
+
+    // Initial Context Message (Optimistic / Check if exists)
+    useEffect(() => {
+        if (product && currentUserId && messages.length === 0) {
+            // Check if we already sent an initial hello? For now, we just let the user type.
+            // Or we can pre-fill the input
+            setInputText(`Olá! Tenho interesse em: ${product.title}. Podemos negociar?`);
+        }
+    }, [product, currentUserId]);
+
+    const fetchMessages = async (userId: string) => {
+        const { data, error } = await import('../lib/supabase').then(m => m.supabase
+            .from('messages')
+            .select('*')
+            .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
+            .order('created_at', { ascending: true })
+        );
+
+        if (error) console.error(error);
+
+        if (data) {
+            // Filter by "context" if we want to separate chats by product, 
+            // OR just show all for this specific seller/demo flow.
+            // For MVP, we'll try to match product_context if available, otherwise show all chronologically
+            const filtered = product
+                ? data.filter(m => m.product_context === product.title || !m.product_context)
+                : data;
+
+            const formatted = filtered.map(m => ({
+                id: m.id,
+                text: m.content,
+                sender: m.sender_id === userId ? 'me' : 'them',
+                time: new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                status: m.read ? 'read' : 'sent'
+            }));
+            setMessages(formatted);
+        }
+    };
 
     // Auto-scroll to bottom
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
-    const handleSend = () => {
-        if (!inputText.trim()) return;
+    const handleSend = async () => {
+        if (!inputText.trim() || !currentUserId) return;
 
-        const newMsg: Message = {
-            id: Date.now(),
-            text: inputText,
+        const text = inputText;
+        setInputText(''); // Optimistic clear
+
+        // 1. Optimistic UI update
+        const tempId = Date.now();
+        const newMsg = {
+            id: tempId,
+            text: text,
             sender: 'me',
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             status: 'sent'
         };
+        setMessages(prev => [...prev, newMsg]);
 
-        setMessages([...messages, newMsg]);
-        setInputText('');
+        // 2. Send to DB
+        // NOTE: In a real app we need the receiver_id. 
+        // For this Demo/MVP, since we don't always have the Seller's UUID (it might be a mock seller string),
+        // we will leave receiver_id NULL or try to find a professional user.
+        // If 'seller' string matches a user name, great. Else, leave null (it's a public/open msg for demo).
 
-        // Simulate auto-reply
-        setTimeout(() => {
-            const reply: Message = {
-                id: Date.now() + 1,
-                text: 'Combinado! Vou deixar reservado para você.',
-                sender: 'them',
-                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                status: 'read'
-            };
-            setMessages(prev => [...prev, reply]);
+        const { error } = await import('../lib/supabase').then(m => m.supabase
+            .from('messages')
+            .insert({
+                sender_id: currentUserId,
+                content: text,
+                product_context: product?.title || 'Geral',
+                // receiver_id: ... needs lookup logic
+            })
+        );
+
+        if (error) {
+            console.error('Error sending:', error);
+            // Rollback UI if needed
+        } else {
             const audio = new Audio(DING_SOUND);
             audio.play().catch(() => { });
-        }, 3000);
+        }
     };
 
     return (
@@ -103,8 +159,14 @@ const Chat: React.FC = () => {
             {/* Messages Area */}
             <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-[url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')] bg-repeat shadow-inner">
                 <div className="text-center text-[10px] bg-yellow-100/80 text-gray-600 py-1 px-3 rounded-lg w-fit mx-auto mb-4 shadow-sm">
-                    As mensagens são protegidas. Ninguém fora dessa conversa pode ler ou ouvir.
+                    As mensagens são protegidas.
                 </div>
+
+                {messages.length === 0 && (
+                    <div className="text-center text-gray-400 text-xs mt-10">
+                        Inicie a conversa com {seller}...
+                    </div>
+                )}
 
                 {messages.map((msg) => (
                     <div key={msg.id} className={`flex ${msg.sender === 'me' ? 'justify-end' : 'justify-start'}`}>

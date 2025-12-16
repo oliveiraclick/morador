@@ -10,9 +10,25 @@ const CreateOffer: React.FC = () => {
     const [price, setPrice] = useState('');
     const [category, setCategory] = useState('Móveis');
     const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
+
 
     const productCategories = ['Infantil', 'Beleza', 'Comida', 'Eletrônicos', 'Roupas', 'Outros'];
     const serviceCategories = ['Limpeza', 'Manutenção', 'Beleza', 'Aulas', 'Transporte', 'Outros'];
+
+    // Lazy Registration Check
+    React.useEffect(() => {
+        const checkRegistration = async () => {
+            const { data: { user } } = await import('../lib/supabase').then(m => m.supabase.auth.getUser());
+            if (user) {
+                const { data: profile } = await import('../lib/supabase').then(m => m.supabase.from('profiles').select('condo_id, unit').eq('id', user.id).single());
+                if (!profile?.condo_id || !profile?.unit) {
+                    navigate('/complete-registration');
+                }
+            }
+        };
+        checkRegistration();
+    }, []);
 
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -25,22 +41,62 @@ const CreateOffer: React.FC = () => {
         }
     };
 
-    const handlePublish = () => {
-        // Here would be the API call
-        alert('Oferta publicada com sucesso na sua Loja!');
-        navigate('/market'); // Or back to dashboard
+    const handlePublish = async () => {
+        if (!title || !price) {
+            alert('Preencha título e preço!');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const { data: { user } } = await import('../lib/supabase').then(m => m.supabase.auth.getUser());
+
+            if (!user) throw new Error('Usuário não autenticado');
+
+            const { error } = await import('../lib/supabase').then(m => m.supabase
+                .from('marketplace_items')
+                .insert({
+                    seller_id: user.id,
+                    title,
+                    description,
+                    price: parseFloat(price.replace('R$', '').replace('.', '').replace(',', '.').trim()),
+                    category: type === 'product' ? category : 'Serviços',
+                    type: type.toUpperCase(),
+                    image_url: imagePreview || 'https://images.unsplash.com/photo-1556228453-efd6c1ff04f6?auto=format&fit=crop&q=80&w=200', // Fallback or real upload
+                    condo_id: (user.user_metadata as any)?.condo_id
+                })
+            );
+
+            if (error) throw error;
+
+            alert('Oferta publicada com sucesso!');
+            navigate('/store'); // Redirect to My Store
+        } catch (error) {
+            console.error('Erro ao publicar:', error);
+            alert('Erro ao publicar oferta. Tente novamente.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
-        <div className="bg-gray-50 min-h-screen flex flex-col pb-24">
+        <div className="bg-gray-50 min-h-screen flex flex-col pb-32">
             {/* Header */}
-            <div className="bg-white p-4 flex items-center shadow-sm justify-between sticky top-0 z-10">
+            <div className="bg-white p-4 flex items-center shadow-sm justify-between sticky top-0 z-10 hidden md:flex">
                 <div className="flex items-center gap-3">
                     <button onClick={() => navigate(-1)} className="p-2 hover:bg-gray-100 rounded-full">
                         <ArrowLeft size={24} className="text-gray-700" />
                     </button>
                     <h1 className="font-bold text-lg text-gray-900">Nova Oferta</h1>
                 </div>
+            </div>
+
+            {/* Mobile Header (Back button in content) */}
+            <div className="md:hidden p-4 pb-0">
+                <button onClick={() => navigate(-1)} className="p-2 -ml-2 hover:bg-gray-200 rounded-full inline-flex">
+                    <ArrowLeft size={24} className="text-gray-900" />
+                </button>
+                <h1 className="text-2xl font-bold text-gray-900 mt-2">O que você vai ofertar?</h1>
             </div>
 
             <div className="p-4 space-y-6">
@@ -139,13 +195,20 @@ const CreateOffer: React.FC = () => {
             </div>
 
             {/* Footer Actions */}
-            <div className="bg-white p-4 border-t border-gray-100 fixed bottom-0 left-0 right-0 md:max-w-[480px] md:mx-auto z-40">
+            <div className="bg-white p-4 border-t border-gray-100 fixed bottom-0 left-0 right-0 md:max-w-[480px] md:mx-auto z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
                 <button
                     onClick={handlePublish}
-                    className="w-full bg-[#7c3aed] text-white py-4 rounded-xl font-bold text-lg hover:bg-[#6d28d9] transition-colors flex items-center justify-center gap-2"
+                    disabled={loading}
+                    className="w-full bg-[#7c3aed] text-white py-4 rounded-xl font-bold text-lg hover:bg-[#6d28d9] transition-colors flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                 >
-                    <CheckCircle2 size={20} />
-                    Publicar na Loja
+                    {loading ? (
+                        <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    ) : (
+                        <>
+                            <CheckCircle2 size={20} />
+                            Publicar na Loja
+                        </>
+                    )}
                 </button>
             </div>
 

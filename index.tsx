@@ -10,8 +10,11 @@ import Splash from './pages/Splash';
 import RoleSelection from './pages/RoleSelection';
 import Login from './pages/Login';
 import RegisterResident from './pages/RegisterResident';
+import CompleteRegistration from './pages/CompleteRegistration'; // Imported
 import RegisterProfessional from './pages/RegisterProfessional';
 import Chat from './pages/Chat';
+import Settings from './pages/Settings';
+import MyStore from './pages/MyStore';
 
 // Resident Pages
 import ResidentHome from './pages/ResidentHome';
@@ -67,6 +70,11 @@ const App = () => {
           <Route path="/register/resident" element={<RegisterResident />} />
           <Route path="/register/professional" element={<RegisterProfessional />} />
           <Route path="/login" element={<Login setRole={setUserRole} />} />
+          <Route path="/complete-registration" element={
+            <ProtectedRoute allowedRoles={[UserRole.RESIDENT, UserRole.PROFESSIONAL]}>
+              <CompleteRegistration />
+            </ProtectedRoute>
+          } />
 
           {/* Resident Routes */}
           <Route path="/home" element={
@@ -137,7 +145,7 @@ const App = () => {
           } />
           <Route path="/store" element={
             <ProtectedRoute allowedRoles={[UserRole.PROFESSIONAL]}>
-              <div className="p-8 text-center text-gray-500">Minha Loja (Em breve)</div>
+              <MyStore />
             </ProtectedRoute>
           } />
           <Route path="/agenda" element={
@@ -194,6 +202,13 @@ const App = () => {
           <Route path="/admin/ads" element={
             <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
               <AdminAds />
+            </ProtectedRoute>
+          } />
+
+          {/* Generic Settings Route (Accessible by Pro via Dashboard link) */}
+          <Route path="/settings" element={
+            <ProtectedRoute allowedRoles={[UserRole.PROFESSIONAL, UserRole.RESIDENT, UserRole.ADMIN]}>
+              <Settings />
             </ProtectedRoute>
           } />
         </Routes>
