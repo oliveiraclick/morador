@@ -12,7 +12,7 @@ const ProfessionalProfile: React.FC = () => {
     };
 
     return (
-        <div className="bg-white min-h-screen pb-24">
+        <div className="bg-white pb-24">
             {/* Cover Image */}
             <div className="h-48 relative bg-gray-200">
                 <img src="https://images.unsplash.com/photo-1581578731117-104f8a3d3dfa?auto=format&fit=crop&q=80&w=1000" className="w-full h-full object-cover" alt="Cover" />

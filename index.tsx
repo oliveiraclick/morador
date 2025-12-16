@@ -23,7 +23,9 @@ import Booking from './pages/Booking';
 import SellItem from './pages/SellItem';
 import ProPlan from './pages/ProPlan';
 import ResidentProfile from './pages/ResidentProfile';
+import Categories from './pages/Categories';
 import ProfessionalProfile from './pages/ProfessionalProfile';
+import ServiceSearch from './pages/ServiceSearch';
 import Orders from './pages/Orders';
 
 // Professional Pages
@@ -138,9 +140,24 @@ const AppContent = () => {
             <ResidentProfile />
           </ProtectedRoute>
         } />
+        <Route path="/my-store" element={
+          <ProtectedRoute allowedRoles={[UserRole.RESIDENT, UserRole.PROFESSIONAL]}>
+            <MyStore />
+          </ProtectedRoute>
+        } />
         <Route path="/professional-profile" element={
           <ProtectedRoute allowedRoles={[UserRole.RESIDENT]}>
             <ProfessionalProfile />
+          </ProtectedRoute>
+        } />
+        <Route path="/service-search" element={
+          <ProtectedRoute allowedRoles={[UserRole.RESIDENT]}>
+            <ServiceSearch />
+          </ProtectedRoute>
+        } />
+        <Route path="/categories" element={
+          <ProtectedRoute allowedRoles={[UserRole.RESIDENT]}>
+            <Categories />
           </ProtectedRoute>
         } />
 
@@ -246,11 +263,15 @@ const AppContent = () => {
   );
 };
 
+import ErrorBoundary from './components/ErrorBoundary';
+
 const App = () => {
   return (
-    <BrowserRouter>
-      <AppContent />
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <AppContent />
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 };
 

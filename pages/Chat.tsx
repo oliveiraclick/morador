@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, Send, Phone, Video, MoreVertical, Paperclip, Smile } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 
 // Simple "Ding" sound as Base64 to ensure it works without external assets
 const DING_SOUND = 'data:audio/mp3;base64,//uQRAAAAWMSLwUIYAAsYkXgoQwAEaYLWfkWgAI0wWs/ItAAAG1xisiYkL02ECq8/3Xzwj3/9f/////////5///////4zAAABAAAASAAIAAAAAEAAAMAAAAAAAABAAAA/////////wAAAAAA//uQRAAAAWMSLwUIYAAsYkXgoQwAEaYLWfkWgAI0wWs/ItAAAG1xisiYkL02ECq8/3Xzwj3/9f/////////5///////4zAAABAAAASAAIAAAAAEAAAMAAAAAAAABAAAA/////////wAAAAAA';
@@ -23,14 +24,14 @@ const Chat: React.FC = () => {
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
     useEffect(() => {
-        // 1. Get Current User
-        import('../lib/supabase').then(m => m.supabase.auth.getUser()).then(({ data: { user } }) => {
+        const initializeChat = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
             if (user) {
                 setCurrentUserId(user.id);
                 fetchMessages(user.id);
 
                 // Realtime subscription
-                const subscription = import('../lib/supabase').then(m => m.supabase
+                const subscription = supabase
                     .channel('public:messages')
                     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
                         // Only add if it belongs to this chat context (simple check)
@@ -38,13 +39,15 @@ const Chat: React.FC = () => {
                             fetchMessages(user.id); // Refresh to be safe/simple
                         }
                     })
-                    .subscribe());
+                    .subscribe();
 
                 return () => {
-                    subscription.then(sub => sub.unsubscribe());
+                    supabase.removeChannel(subscription);
                 };
             }
-        });
+        };
+
+        initializeChat();
     }, []);
 
     // Initial Context Message (Optimistic / Check if exists)
@@ -57,12 +60,11 @@ const Chat: React.FC = () => {
     }, [product, currentUserId]);
 
     const fetchMessages = async (userId: string) => {
-        const { data, error } = await import('../lib/supabase').then(m => m.supabase
+        const { data, error } = await supabase
             .from('messages')
             .select('*')
             .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
-            .order('created_at', { ascending: true })
-        );
+            .order('created_at', { ascending: true });
 
         if (error) console.error(error);
 
@@ -98,89 +100,84 @@ const Chat: React.FC = () => {
 
         // 1. Optimistic UI update
         const tempId = Date.now();
-        const newMsg = {
+        const newMessage = {
             id: tempId,
             text: text,
             sender: 'me',
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             status: 'sent'
         };
-        setMessages(prev => [...prev, newMsg]);
+        setMessages(prev => [...prev, newMessage]);
 
-        // 2. Send to DB
-        // NOTE: In a real app we need the receiver_id. 
-        // For this Demo/MVP, since we don't always have the Seller's UUID (it might be a mock seller string),
-        // we will leave receiver_id NULL or try to find a professional user.
-        // If 'seller' string matches a user name, great. Else, leave null (it's a public/open msg for demo).
+        // 2. Play Sound
+        try {
+            const audio = new Audio(DING_SOUND);
+            audio.play().catch(e => console.log('Audio play blocked', e));
+        } catch (e) {
+            console.log('Audio error', e);
+        }
 
-        const { error } = await import('../lib/supabase').then(m => m.supabase
-            .from('messages')
-            .insert({
-                sender_id: currentUserId,
-                content: text,
-                product_context: product?.title || 'Geral',
-                // receiver_id: ... needs lookup logic
-            })
-        );
+        // 3. Send to Supabase
+        const { error } = await supabase.from('messages').insert([{
+            sender_id: currentUserId,
+            // receiver_id: seller?.id ... we don't have seller ID easily in this mock flow unless passed.
+            // For now we leave receiver generic or null, or we assume seller has an ID if we passed it.
+            // In a real app we MUST pass seller_id.
+            content: text,
+            product_context: product?.title || null
+        }]);
 
         if (error) {
-            console.error('Error sending:', error);
-            // Rollback UI if needed
-        } else {
-            const audio = new Audio(DING_SOUND);
-            audio.play().catch(() => { });
+            console.error('Error sending message:', error);
+            // Optionally rollback UI
         }
     };
 
     return (
-        <div className="flex flex-col h-screen bg-[#e5ddd5]">
-            {/* WhatsApp Header */}
-            <div className="bg-[#008069] text-white p-2 px-4 flex items-center justify-between shadow-sm z-10">
-                <div className="flex items-center gap-2">
-                    <button onClick={() => navigate(-1)} className="p-1 rounded-full hover:bg-white/10">
-                        <ArrowLeft size={24} />
-                    </button>
-                    <div className="w-9 h-9 bg-gray-300 rounded-full overflow-hidden flex items-center justify-center text-gray-600 font-bold text-sm bg-white">
-                        {seller.charAt(0)}
+        <div className="bg-[#e5ddd5] min-h-screen flex flex-col">
+            {/* Header */}
+            <div className="bg-[#008069] text-white p-4 flex items-center gap-4 shadow-sm sticky top-0 z-10">
+                <button onClick={() => navigate(-1)} className="p-1 hover:bg-white/10 rounded-full">
+                    <ArrowLeft size={24} />
+                </button>
+                <div className="flex items-center gap-3 flex-1">
+                    <div className="w-10 h-10 bg-gray-300 rounded-full overflow-hidden">
+                        <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="User" className="w-full h-full object-cover" />
                     </div>
-                    <div className="ml-1 cursor-pointer">
-                        <h1 className="text-sm font-bold leading-tight">{seller}</h1>
-                        <p className="text-[10px] text-white/80">Online agora</p>
+                    <div>
+                        <h1 className="font-bold text-base leading-tight">{seller}</h1>
+                        <p className="text-xs text-white/80">Online agora</p>
                     </div>
                 </div>
-
                 <div className="flex gap-4">
-                    <Video size={22} className="cursor-pointer" />
-                    <Phone size={20} className="cursor-pointer" />
-                    <MoreVertical size={20} className="cursor-pointer" />
+                    <Video size={24} />
+                    <Phone size={24} />
+                    <MoreVertical size={24} />
                 </div>
             </div>
 
-            {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-[url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')] bg-repeat shadow-inner">
-                <div className="text-center text-[10px] bg-yellow-100/80 text-gray-600 py-1 px-3 rounded-lg w-fit mx-auto mb-4 shadow-sm">
-                    As mensagens são protegidas.
-                </div>
-
-                {messages.length === 0 && (
-                    <div className="text-center text-gray-400 text-xs mt-10">
-                        Inicie a conversa com {seller}...
+            {/* Product Context Banner */}
+            {product && (
+                <div className="bg-white p-3 flex gap-3 shadow-sm border-b border-gray-200 sticky top-[72px] z-10">
+                    <img src={product.image} className="w-12 h-12 bg-gray-100 rounded-lg object-cover" />
+                    <div className="flex-1">
+                        <h3 className="font-bold text-gray-900 text-sm">{product.title}</h3>
+                        <p className="text-xs text-[#008069] font-bold">R$ {product.price?.toFixed(2)}</p>
                     </div>
-                )}
+                </div>
+            )}
 
-                {messages.map((msg) => (
+            {/* Chat Area */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-20">
+                {messages.map((msg: any) => (
                     <div key={msg.id} className={`flex ${msg.sender === 'me' ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`
-                    max-w-[75%] rounded-lg px-3 py-1.5 shadow-sm text-sm relative
-                    ${msg.sender === 'me' ? 'bg-[#d9fdd3] rounded-tr-none' : 'bg-white rounded-tl-none'}
-                 `}>
-                            <p className="text-gray-900 leading-relaxed pb-1">{msg.text}</p>
+                        <div className={`max-w-[70%] p-3 rounded-lg shadow-sm text-sm relative ${msg.sender === 'me' ? 'bg-[#d9fdd3] text-gray-900 rounded-tr-none' : 'bg-white text-gray-900 rounded-tl-none'
+                            }`}>
+                            <p className="mb-1">{msg.text}</p>
                             <div className="flex justify-end items-center gap-1">
-                                <span className="text-[10px] text-gray-500 min-w-[30px] text-right">{msg.time}</span>
+                                <span className="text-[10px] text-gray-500">{msg.time}</span>
                                 {msg.sender === 'me' && (
-                                    <span className={`text-[10px] ${msg.status === 'read' ? 'text-blue-500' : 'text-gray-400'}`}>
-                                        ✓✓
-                                    </span>
+                                    <span className="text-[#53bdeb] font-bold text-[10px]">✓✓</span>
                                 )}
                             </div>
                         </div>
@@ -190,29 +187,26 @@ const Chat: React.FC = () => {
             </div>
 
             {/* Input Area */}
-            <div className="p-2 bg-[#f0f2f5] flex items-center gap-2">
-                <div className="bg-white p-2 rounded-full cursor-pointer text-gray-500">
-                    <Smile size={24} />
-                </div>
-                <div className="flex-1 bg-white rounded-full flex items-center px-4 py-2 border border-white focus-within:border-white">
+            <div className="p-2 bg-[#f0f2f5] flex items-center gap-2 fixed bottom-0 left-0 right-0">
+                <div className="bg-white flex-1 rounded-full flex items-center px-4 py-2 shadow-sm">
+                    <Smile size={24} className="text-gray-400 mr-2" />
                     <input
+                        type="text"
                         value={inputText}
                         onChange={(e) => setInputText(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                        type="text"
+                        onKeyPress={(e) => e.key === 'Enter' && handleSend()}
                         placeholder="Mensagem"
-                        className="flex-1 outline-none text-sm bg-transparent placeholder:text-gray-500"
+                        className="flex-1 bg-transparent outline-none text-gray-700 placeholder-gray-400"
                     />
-                    <Paperclip size={20} className="text-gray-500 ml-2 cursor-pointer rotate-45" />
+                    <Paperclip size={24} className="text-gray-400 ml-2" />
                 </div>
                 <button
                     onClick={handleSend}
-                    className="bg-[#008069] p-3 rounded-full text-white shadow-md hover:bg-[#006d59] transition-colors"
+                    className="w-12 h-12 bg-[#008069] rounded-full flex items-center justify-center text-white shadow-md transform active:scale-95 transition-transform"
                 >
-                    <Send size={20} className="ml-0.5" />
+                    <Send size={24} />
                 </button>
             </div>
-
         </div>
     );
 };

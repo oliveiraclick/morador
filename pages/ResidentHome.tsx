@@ -1,12 +1,54 @@
 import React, { useState } from 'react';
-import { Bell, Search, MapPin, Plus, Calendar, FileText, Key, Megaphone, Heart, ChevronRight, ChevronLeft, Sparkles, QrCode, Star, Building, Home } from 'lucide-react';
+import { Plus, Bell, Search, MapPin, QrCode, ShoppingBag as ShoppingBagIcon, Sparkles as SparklesIcon, Utensils as UtensilsIcon, LayoutGrid, Hammer as HammerIcon, Megaphone, ChevronRight, ChevronLeft, Heart, Building, Home, Star, Calendar, FileText, Key } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ReferralModal from '../components/ReferralModal';
 
 const ResidentHome: React.FC = () => {
   const navigate = useNavigate();
+
+  const AdLinkButton = (link: string) => (
+    <button onClick={() => navigate(link)} className="text-xs font-bold text-pink-600 flex items-center gap-1 hover:underline">
+      Ver detalhes <ChevronRight size={12} />
+    </button>
+  );
+
   const [showReferral, setShowReferral] = useState(false);
   const [activePros, setActivePros] = useState<any[]>([]);
+  const [desapegoItems, setDesapegoItems] = useState<any[]>([]);
+  const [ads, setAds] = useState<any[]>([]);
+
+  // Notification State
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  React.useEffect(() => {
+    const fetchNotifications = async () => {
+      const { data } = await import('../lib/supabase').then(m => m.supabase
+        .from('broadcasts')
+        .select('*')
+        .or(`target.eq.all,target.eq.residents`)
+        .order('created_at', { ascending: false })
+        .limit(10)
+      );
+
+      if (data) {
+        setNotifications(data);
+        const lastSeen = localStorage.getItem('last_seen_notification_resident');
+        const unread = data.filter(n => !lastSeen || new Date(n.created_at) > new Date(lastSeen));
+        setUnreadCount(unread.length);
+      }
+    };
+    fetchNotifications();
+  }, []);
+
+  const handleOpenNotifications = () => {
+    setShowNotifications(!showNotifications);
+    if (notifications.length > 0) {
+      setUnreadCount(0);
+      localStorage.setItem('last_seen_notification_resident', new Date().toISOString());
+    }
+  };
 
   const [latestBroadcast, setLatestBroadcast] = useState<any>(null);
 
@@ -82,7 +124,8 @@ const ResidentHome: React.FC = () => {
           // Check if profile is incomplete (missing condo or unit)
           if (!profile.condo_id || !profile.unit) {
             // Fetch condos for selection
-            const { data: condosData } = await import('../lib/supabase').then(m => m.supabase.from('condos').select('*'));
+            const { data: condosData, error: condosError } = await import('../lib/supabase').then(m => m.supabase.from('condos').select('*'));
+            if (condosError) console.error("Error fetching condos:", condosError);
             if (condosData) setCondos(condosData);
             setShowCompleteProfileModal(true);
           }
@@ -92,26 +135,73 @@ const ResidentHome: React.FC = () => {
     fetchUser();
   }, []);
 
+  // Fetch Desapego Items
+  React.useEffect(() => {
+    const fetchDesapego = async () => {
+      const { data } = await import('../lib/supabase').then(m => m.supabase
+        .from('marketplace_items')
+        .select('*')
+        .eq('type', 'desapego')
+        .order('created_at', { ascending: false })
+        .limit(20)
+      );
+
+      if (data) {
+        const shuffled = [...data].sort(() => 0.5 - Math.random());
+        setDesapegoItems(shuffled.slice(0, 5));
+      }
+    };
+    fetchDesapego();
+  }, []);
+
+  // Fetch Ads
+  React.useEffect(() => {
+    const fetchAds = async () => {
+      const { data } = await import('../lib/supabase').then(m => m.supabase
+        .from('ads')
+        .select('*')
+        .eq('active', true)
+        .order('created_at', { ascending: false })
+      );
+      if (data) setAds(data);
+    };
+    fetchAds();
+  }, []);
+
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("Saving profile...", { userId, selectedCondo, street, number });
+
     if (!selectedCondo || !street || !number) {
       alert("Preencha todos os campos!");
       return;
     }
 
-    const { error } = await import('../lib/supabase').then(m => m.supabase.from('profiles').update({
-      condo_id: selectedCondo,
-      unit: `${street}, ${number}`
-    }).eq('id', userId));
+    if (!userId) {
+      alert("Erro: UserID não encontrado. Tente recarregar a página.");
+      return;
+    }
 
-    if (error) {
-      alert("Erro ao salvar: " + error.message);
-    } else {
-      // Refresh local state to close modal and update UI
-      const { data: condo } = await import('../lib/supabase').then(m => m.supabase.from('condos').select('name').eq('id', selectedCondo).single());
-      if (condo) setCondoName(condo.name);
+    try {
+      const { error } = await import('../lib/supabase').then(m => m.supabase
+        .from('profiles')
+        .update({
+          condo_id: parseInt(selectedCondo),
+          unit: `${street}, ${number}` // Combining due to simple schema 
+          // In a real app we might have separate columns
+        })
+        .eq('id', userId)
+      );
+
+      if (error) throw error;
+
       setShowCompleteProfileModal(false);
-      alert("Perfil atualizado com sucesso!");
+      // Refresh page or state
+      window.location.reload();
+
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      alert("Erro ao salvar perfil. Tente novamente.");
     }
   };
 
@@ -130,132 +220,187 @@ const ResidentHome: React.FC = () => {
   };
 
   return (
-    <div className="p-0 bg-gray-50 min-h-screen pb-24">
-      {/* Header */}
-      <div className="bg-gradient-to-b from-purple-600 to-indigo-600 p-6 pb-8 rounded-b-[40px] shadow-lg shadow-purple-200/50">
+    <div className="p-0 bg-gray-50 min-h-screen pb-24 relative">
+      {/* Notifications Modal */}
+      {showNotifications && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setShowNotifications(false)}></div>
+          <div className="absolute top-20 right-4 w-80 bg-white rounded-2xl shadow-xl border border-gray-100 z-50 overflow-hidden animate-in fade-in slide-in-from-top-4">
+            <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+              <h3 className="font-bold text-gray-900">Notificações</h3>
+              <button onClick={() => setShowNotifications(false)} className="text-gray-400 hover:text-gray-600 text-xs font-bold">Fechar</button>
+            </div>
+            <div className="max-h-80 overflow-y-auto">
+              {notifications.length === 0 ? (
+                <div className="p-8 text-center text-gray-400 text-sm">Nenhuma notificação recente.</div>
+              ) : (
+                notifications.map(n => (
+                  <div key={n.id} className="p-4 border-b border-gray-50 hover:bg-gray-50">
+                    <div className="flex justify-between items-start mb-1">
+                      <h4 className="font-bold text-sm text-gray-900 line-clamp-1">{n.title}</h4>
+                      <span className="text-[10px] text-gray-400 whitespace-nowrap">{new Date(n.created_at).toLocaleDateString()}</span>
+                    </div>
+                    <p className="text-xs text-gray-500 line-clamp-3">{n.message}</p>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </>
+      )}
 
-        <div className="flex justify-between items-start mb-6">
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <img src="https://picsum.photos/100/100" alt="Profile" className="w-14 h-14 rounded-full border-[3px] border-white/30" />
-              <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-400 rounded-full border-2 border-indigo-600"></div>
+      {/* Header */}
+      <header className="bg-[#7c3aed] text-white pt-12 pb-24 rounded-b-[40px] px-6 relative overflow-hidden">
+        {/* Background Pattern */}
+        <div className="absolute top-0 left-0 w-full h-full opacity-10">
+          <div className="absolute right-0 top-0 w-64 h-64 bg-white rounded-full mix-blend-overlay blur-3xl -mr-16 -mt-16"></div>
+          <div className="absolute left-0 bottom-0 w-64 h-64 bg-pink-500 rounded-full mix-blend-overlay blur-3xl -ml-16 -mb-16"></div>
+        </div>
+
+        <div className="relative z-10 flex justify-between items-center mb-8">
+          <div className="flex items-center gap-3">
+            <div onClick={() => navigate('/resident-profile')} className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border-2 border-white/30 cursor-pointer">
+              <span className="font-bold text-lg">{userName.charAt(0)}</span>
             </div>
             <div>
-              <div className="flex items-center text-purple-100 text-sm font-medium mb-0.5">
-                <MapPin size={14} className="mr-1" />
-                {condoName}
-              </div>
-              <h1 className="text-2xl font-bold text-white">
-                Bom dia, {userName}! 👋
-              </h1>
+              <h1 className="font-bold text-2xl leading-tight text-white mb-0.5">Olá, {userName} 👋</h1>
+              <p className="text-sm text-purple-200 font-medium tracking-wide bg-white/10 px-2 py-0.5 rounded-md inline-block backdrop-blur-sm border border-white/5">{condoName}</p>
             </div>
           </div>
           <div className="flex gap-3">
-            <button
-              onClick={() => setShowReferral(true)}
-              className="p-2.5 bg-white/10 backdrop-blur-md border border-white/20 rounded-full text-white hover:bg-white/20 transition-colors"
-              title="Indicar Profissional"
-            >
-              <QrCode size={20} />
-            </button>
-            <button className="p-2.5 bg-white/10 backdrop-blur-md border border-white/20 rounded-full text-white relative hover:bg-white/20 transition-colors">
+            <button onClick={handleOpenNotifications} className="w-10 h-10 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center relative hover:bg-white/20 transition-colors">
               <Bell size={20} />
-              <span className="absolute top-2 right-2.5 w-2 h-2 bg-red-400 rounded-full border border-indigo-600"></span>
+              {unreadCount > 0 && (
+                <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-400 border-2 border-[#7c3aed] rounded-full"></span>
+              )}
+            </button>
+            <button onClick={() => setShowReferral(true)} className="w-10 h-10 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center hover:bg-white/20 transition-colors">
+              <QrCode size={20} />
             </button>
           </div>
         </div>
 
         {/* Categories / Quick Actions */}
-        <div className="flex justify-between gap-2 overflow-x-auto no-scrollbar py-2">
+        <div className="flex gap-4 overflow-x-auto no-scrollbar py-4 px-2 -mx-2">
           {[
             { name: 'Anunciar', icon: <Plus size={24} />, color: 'bg-white/20 text-white border-white/30', action: () => navigate('/sell') },
             { name: 'Desapego', icon: <ShoppingBagIcon />, color: 'bg-white/10 text-purple-100 border-white/10', action: () => navigate('/market', { state: { category: 'Todos' } }) },
             { name: 'Beleza', icon: <SparklesIcon />, color: 'bg-white/10 text-purple-100 border-white/10', action: () => navigate('/market', { state: { category: 'Beleza' } }) },
             { name: 'Comida', icon: <UtensilsIcon />, color: 'bg-white/10 text-purple-100 border-white/10', action: () => navigate('/market', { state: { category: 'Comida' } }) },
+            { name: 'Serviços', icon: <HammerIcon />, color: 'bg-white/10 text-purple-100 border-white/10', action: () => navigate('/service-search') },
+            { name: 'Ver todos', icon: <LayoutGrid size={24} />, color: 'bg-white/5 text-purple-200 border-white/5', action: () => navigate('/categories') },
           ].map((cat, idx) => (
-            <button onClick={cat.action} key={idx} className="flex flex-col items-center gap-2 min-w-[72px]">
-              <div className={`w-16 h-16 rounded-full flex items-center justify-center border backdrop-blur-sm ${cat.color} ${idx === 0 ? 'border-dashed border-2' : ''}`}>
+            <button onClick={cat.action} key={idx} className="flex flex-col items-center gap-2 min-w-[72px] flex-shrink-0 transition-transform active:scale-95">
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center border backdrop-blur-sm ${cat.color} ${idx === 0 ? 'border-dashed border-2' : ''} shadow-lg shadow-purple-900/10`}>
                 {cat.icon}
               </div>
-              <span className="text-xs font-medium text-white/90">{cat.name}</span>
+              <span className="text-xs font-medium text-white/90 whitespace-nowrap">{cat.name}</span>
             </button>
           ))}
         </div>
-      </div>
+      </header>
+
+      {/* Search Bar */}
+      <div className="px-6 -mt-6 mb-6 relative z-10">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const form = e.target as HTMLFormElement;
+            const input = form.elements.namedItem('search') as HTMLInputElement;
+            if (input.value.trim()) {
+              navigate(`/service-search?q=${encodeURIComponent(input.value)}`);
+            }
+          }}
+          className="bg-white p-2 rounded-2xl shadow-lg shadow-purple-200/50 flex items-center gap-2 border border-purple-50"
+        >
+          <Search className="text-purple-400 ml-2" size={20} />
+          <input
+            name="search"
+            type="text"
+            placeholder="Busque por encanador, eletricista..."
+            className="w-full p-2 outline-none text-gray-700 placeholder-gray-400 font-medium"
+          />
+          <button type="submit" className="bg-[#7c3aed] text-white p-2.5 rounded-xl hover:bg-[#6d28d9] transition-colors">
+            <Search size={18} />
+          </button>
+        </form>
+      </div >
 
       {/* Highlights */}
-      <div className="px-6 mt-6">
+      < div className="px-6 mt-2" >
 
         {/* Active Professionals on Site Section */}
-        {activePros.length > 0 && (
-          <div className="mb-8">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="relative flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-              </span>
-              <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wide">No condomínio agora</h2>
-            </div>
+        {
+          activePros.length > 0 && (
+            <div className="mb-8">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="relative flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                </span>
+                <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wide">No condomínio agora</h2>
+              </div>
 
-            <div className={`grid gap-3 ${activePros.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
-              {activePros.map((prof, idx) => (
-                <div key={idx} className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-4 text-white shadow-lg shadow-blue-200 relative overflow-hidden group">
-                  {/* Decorative Circles */}
-                  <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -mr-8 -mt-8 blur-xl"></div>
+              <div className={`grid gap-3 ${activePros.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                {activePros.map((prof, idx) => (
+                  <div key={idx} className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-4 text-white shadow-lg shadow-blue-200 relative overflow-hidden group">
+                    {/* Decorative Circles */}
+                    <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -mr-8 -mt-8 blur-xl"></div>
 
-                  <div className={`flex ${activePros.length > 1 ? 'flex-col items-center text-center' : 'items-center gap-4'}`}>
-                    <div className="relative">
-                      <img src={prof.avatar} className="w-14 h-14 rounded-full border-2 border-white/30 shadow-md" />
-                      <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-400 border-2 border-blue-600 rounded-full"></span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-lg leading-tight truncate w-full">{prof.profession}</h3>
-                      <p className="text-xs text-blue-100 truncate w-full">{prof.name}</p>
+                    <div className={`flex ${activePros.length > 1 ? 'flex-col items-center text-center' : 'items-center gap-4'}`}>
+                      <div className="relative">
+                        <img src={prof.avatar} className="w-14 h-14 rounded-full border-2 border-white/30 shadow-md" />
+                        <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-400 border-2 border-blue-600 rounded-full"></span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-bold text-lg leading-tight truncate w-full">{prof.profession}</h3>
+                        <p className="text-xs text-blue-100 truncate w-full">{prof.name}</p>
 
-                      <button
-                        onClick={() => navigate('/chat', { state: { seller: prof.name, product: { title: `Serviço de ${prof.profession}`, price: 0 } } })}
-                        className={`mt-3 bg-white text-blue-600 rounded-xl text-xs font-bold hover:bg-blue-50 transition-colors shadow-sm ${activePros.length > 1 ? 'w-full py-2' : 'px-6 py-2 w-auto'}`}
-                      >
-                        Chamar
-                      </button>
+                        <button
+                          onClick={() => navigate('/chat', { state: { seller: prof.name, product: { title: `Serviço de ${prof.profession}`, price: 0 } } })}
+                          className={`mt-3 bg-white text-blue-600 rounded-xl text-xs font-bold hover:bg-blue-50 transition-colors shadow-sm ${activePros.length > 1 ? 'w-full py-2' : 'px-6 py-2 w-auto'}`}
+                        >
+                          Chamar
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )
+        }
 
         {/* Admin News / Offers Card - Dynamic */}
-        {latestBroadcast ? (
-          <div className="bg-white p-4 rounded-2xl shadow-sm border border-l-4 border-l-primary-500 border-gray-100 flex gap-4 mb-8 animate-in slide-in-from-bottom-2">
-            <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center text-purple-600 flex-shrink-0">
-              <Megaphone size={24} />
-            </div>
-            <div>
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-xs font-bold text-purple-600 uppercase tracking-wider">Avisos e Ofertas</span>
-                <span className="text-xs text-gray-400">
-                  {latestBroadcast?.timestamp ? new Date(latestBroadcast.timestamp).toLocaleDateString() : 'Hoje'}
-                </span>
+        {
+          notifications.length > 0 ? (
+            <div className="bg-white p-4 rounded-2xl shadow-sm border border-l-4 border-l-primary-500 border-gray-100 flex gap-4 mb-8 animate-in slide-in-from-bottom-2">
+              <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center text-purple-600 flex-shrink-0">
+                <Megaphone size={24} />
               </div>
-              <h3 className="font-bold text-gray-900">{latestBroadcast.title}</h3>
-              <p className="text-sm text-gray-500 mt-1 leading-relaxed">
-                {latestBroadcast.message}
-              </p>
+              <div className="flex-1">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-xs font-bold text-purple-600 uppercase tracking-wider">Avisos e Ofertas</span>
+                  <span className="text-xs text-gray-400">
+                    {new Date(notifications[0].created_at).toLocaleDateString()}
+                  </span>
+                </div>
+                <h3 className="font-bold text-gray-900">{notifications[0].title}</h3>
+                <p className="text-sm text-gray-500 mt-1 leading-relaxed line-clamp-2">
+                  {notifications[0].message}
+                </p>
+              </div>
             </div>
-          </div>
-        ) : (
-          // Fallback (empty or default message if needed, or null to hide)
-          <div className="bg-white p-4 rounded-2xl shadow-sm border border-l-4 border-gray-200 border-gray-100 flex gap-4 mb-8 opacity-50">
-            <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-gray-400 flex-shrink-0">
-              <Megaphone size={24} />
+          ) : (
+            <div className="bg-white p-4 rounded-2xl shadow-sm border border-l-4 border-gray-200 border-gray-100 flex gap-4 mb-8 opacity-50">
+              <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-gray-400 flex-shrink-0">
+                <Megaphone size={24} />
+              </div>
+              <div className="flex items-center">
+                <p className="text-sm text-gray-400">Nenhum aviso no momento.</p>
+              </div>
             </div>
-            <div className="flex items-center">
-              <p className="text-sm text-gray-400">Nenhum aviso no momento.</p>
-            </div>
-          </div>
-        )}
+          )}
 
         {/* Desapego Carousel */}
         <div className="mb-8 relative group">
@@ -289,151 +434,149 @@ const ResidentHome: React.FC = () => {
               msOverflowStyle: 'none'
             }}
           >
-            {(() => {
-              try {
-                const stored = localStorage.getItem('marketplace_items');
-                const items = stored ? JSON.parse(stored) : [];
-                const desapegoItems = Array.isArray(items) ? items.filter((i: any) => i.type === 'DESAPEGO') : [];
-                const displayItems = desapegoItems.length > 0 ? desapegoItems : [
-                  { title: 'Bicicleta Aro 29', price: 850, img: 'https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?auto=format&fit=crop&q=80&w=300', category: 'Esporte' },
-                  { title: 'Sofá 2 Lugares', price: 400, img: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=300', category: 'Móveis' },
-                  { title: 'Monitor 24"', price: 600, img: 'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&q=80&w=300', category: 'Eletrônicos' }
-                ];
-
-                return displayItems.map((item: any, idx: number) => (
-                  <div key={idx} className="min-w-[200px] bg-white p-3 rounded-2xl shadow-sm border border-gray-100 flex flex-col shrink-0">
-                    <div className="relative mb-3">
-                      <img src={item.img} className="w-full h-32 rounded-xl object-cover" alt={item.title} />
-                      <span className="absolute top-2 left-2 bg-black/50 backdrop-blur-md text-white text-[10px] px-2 py-1 rounded-lg font-medium">
-                        {item.category}
-                      </span>
-                    </div>
-                    <h3 className="font-bold text-gray-900 leading-tight mb-1 truncate">{item.title}</h3>
-                    <div className="mt-auto flex justify-between items-center">
-                      <span className="font-bold text-primary-600">R$ {Number(item.price).toFixed(2).replace('.', ',')}</span>
-                      <button className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors">
-                        <Heart size={16} />
-                      </button>
-                    </div>
+            {desapegoItems.length === 0 ? (
+              <div className="w-full text-center py-8 text-gray-400 bg-gray-100 rounded-2xl mx-1">
+                <p>Nenhum item em destaque hoje.</p>
+              </div>
+            ) : (
+              desapegoItems.map((item) => (
+                <div key={item.id} className="min-w-[200px] bg-white p-3 rounded-2xl shadow-sm border border-gray-100 flex flex-col shrink-0 cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/market')}>
+                  <div className="relative mb-3">
+                    <img src={item.image_url} className="w-full h-32 rounded-xl object-cover" alt={item.title} />
+                    <span className="absolute top-2 left-2 bg-black/50 backdrop-blur-md text-white text-[10px] px-2 py-1 rounded-lg font-medium">
+                      {item.category}
+                    </span>
                   </div>
-                ));
-              } catch (e) {
-                console.error('Error parsing marketplace items:', e);
-                return null;
-              }
-            })()}
+                  <h3 className="font-bold text-gray-900 leading-tight mb-1 truncate">{item.title}</h3>
+                  <div className="mt-auto flex justify-between items-center">
+                    <span className="font-bold text-primary-600">R$ {Number(item.price).toFixed(2).replace('.', ',')}</span>
+                    <button className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:text-red-500 hover:text-red-500 hover:bg-red-50 transition-colors">
+                      <Heart size={16} />
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
         {/* Ads / Services Section */}
         <div>
-          <h2 className="text-lg font-bold text-gray-900 mb-4">Ofertas e Serviços</h2>
+          <div className="flex justify-between items-center mb-4 px-1">
+            <h2 className="text-lg font-bold text-gray-900">Ofertas e Serviços</h2>
+            <button onClick={() => navigate('/service-search')} className="text-primary-600 text-sm font-bold flex items-center">
+              Ver tudo <ChevronRight size={16} />
+            </button>
+          </div>
           <div className="space-y-4">
-            {/* Dynamic Ads from localStorage */}
-            {(() => {
-              try {
-                const storedAds = localStorage.getItem('ads_data');
-                const ads = storedAds ? JSON.parse(storedAds) : [];
-                return Array.isArray(ads) ? ads.filter((ad: any) => ad.active).map((ad: any) => (
-                  <div key={ad.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex gap-4 mb-4 relative overflow-hidden group">
-                    <div className="w-20 h-20 rounded-xl bg-gray-100 flex-shrink-0">
-                      <img src={ad.imageUrl} className="w-full h-full object-cover rounded-xl" alt={ad.title} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-start">
-                        <h3 className="font-bold text-gray-900 truncate pr-2">{ad.title}</h3>
-                        <span className="text-[10px] bg-pink-100 text-pink-700 px-2 py-0.5 rounded-full font-bold">Oferta</span>
-                      </div>
-                      <p className="text-sm text-gray-500 mt-1 mb-2 line-clamp-2">{ad.description}</p>
-                      {ad.link && (
-                        <button onClick={() => navigate(ad.link)} className="text-xs font-bold text-pink-600 flex items-center gap-1 hover:underline">
-                          Ver detalhes <ChevronRight size={12} />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                )) : null;
-              } catch (e) {
-                console.error('Error parsing ads data:', e);
-                return null;
-              }
-            })()}
-
-            {/* Keeping the 'Limpeza Pós-Obra' as a static service example for now, or we can make it dynamic later too. User asked for 'Ads' integration first. */}\n
-            <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex gap-4">
-              <img src="https://images.unsplash.com/photo-1581578731117-104f2a8d23e9?auto=format&fit=crop&q=80&w=300" className="w-20 h-20 rounded-xl object-cover" alt="Service" />
-              <div className="flex-1">
-                <div className="flex justify-between items-start">
-                  <h3 className="font-bold text-gray-900">Limpeza Pós-Obra</h3>
-                  <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">Novo</span>
-                </div>
-                <p className="text-sm text-gray-500 mt-1 mb-2">Equipe especializada para seu apê novo.</p>
-                <div className="flex items-center gap-1 text-xs text-yellow-500 font-bold">
-                  <Star size={12} fill="currentColor" />
-                  <span>4.9</span>
-                  <span className="text-gray-400 font-normal">(32 avaliações)</span>
-                </div>
+            {ads.length === 0 ? (
+              <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 text-center text-gray-400">
+                Nenhuma oferta no momento.
               </div>
-            </div>
+            ) : (
+              ads.map((ad) => (
+                <div key={ad.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex gap-4 mb-4 relative overflow-hidden group">
+                  <div className="w-20 h-20 rounded-xl bg-gray-100 flex-shrink-0">
+                    <img src={ad.image_url} className="w-full h-full object-cover rounded-xl" alt={ad.title} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-start">
+                      <h3 className="font-bold text-gray-900 truncate pr-2">{ad.title}</h3>
+                      <span className="text-[10px] bg-pink-100 text-pink-700 px-2 py-0.5 rounded-full font-bold">Oferta</span>
+                    </div>
+                    <p className="text-sm text-gray-500 mt-1 mb-2 line-clamp-2">{ad.description}</p>
+                    {ad.link && AdLinkButton(ad.link)}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
-
-      </div>
+      </div >
 
       {/* Complete Profile Modal */}
-      {showCompleteProfileModal && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl animate-in zoom-in-95 duration-200">
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Home size={32} className="text-purple-600" />
-              </div>
-              <h2 className="text-2xl font-bold text-gray-900">Complete seu Cadastro</h2>
-              <p className="text-gray-500 mt-2">Para conectarmos você ao seu condomínio, precisamos de alguns dados.</p>
-            </div>
-
-            <form onSubmit={handleSaveProfile} className="space-y-4">
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-500 uppercase ml-1">Condomínio</label>
-                <div className="relative">
-                  <Building size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <select
-                    required
-                    value={selectedCondo}
-                    onChange={e => setSelectedCondo(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:border-purple-500 focus:outline-none appearance-none bg-white text-gray-700 font-medium"
-                  >
-                    <option value="" disabled>Selecione seu condomínio</option>
-                    {condos.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    <option value="splendido-test-id">Residencial Splendido</option>
-                  </select>
+      {
+        showCompleteProfileModal && (
+          <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+            <div className="bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl animate-in zoom-in-95 duration-200">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Home size={32} className="text-purple-600" />
                 </div>
+                <h2 className="text-2xl font-bold text-gray-900">Complete seu Cadastro</h2>
+                <p className="text-gray-500 mt-2">Para conectarmos você ao seu condomínio, precisamos de alguns dados.</p>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
-                <div className="col-span-2 space-y-1">
-                  <label className="text-xs font-bold text-gray-500 uppercase ml-1">Rua/Bloco</label>
-                  <div className="relative">
-                    <MapPin size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input required type="text" value={street} onChange={e => setStreet(e.target.value)} className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:border-purple-500 focus:outline-none font-medium" placeholder="Ex: Bloco A" />
-                  </div>
-                </div>
+              <form onSubmit={handleSaveProfile} className="space-y-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-gray-500 uppercase ml-1">Nº / Apto</label>
+                  <label className="text-xs font-bold text-gray-500 uppercase ml-1">Condomínio</label>
                   <div className="relative">
-                    <Home size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input required type="text" value={number} onChange={e => setNumber(e.target.value)} className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:border-purple-500 focus:outline-none font-medium" placeholder="101" />
+                    <Building size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <select
+                      required
+                      value={selectedCondo}
+                      onChange={e => setSelectedCondo(e.target.value)}
+                      className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:border-purple-500 focus:outline-none appearance-none bg-white text-gray-700 font-medium"
+                    >
+                      <option value="" disabled>Selecione seu condomínio</option>
+                      {condos.length === 0 ? (
+                        <>
+                          <option value="" disabled>Nenhum condomínio encontrado...</option>
+                        </>
+                      ) : (
+                        condos.map(c => <option key={c.id} value={c.id}>{c.name}</option>)
+                      )}
+                    </select>
+                  </div>
+                  {condos.length === 0 && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const { data, error } = await import('../lib/supabase').then(m => m.supabase.from('condos').insert({
+                          name: 'Residencial Splendido',
+                          address: 'Rua Exemplo, 123',
+                          plan: 'PREMIUM'
+                        }).select());
+
+                        if (error) {
+                          alert("Erro ao criar condomínio: " + error.message);
+                        } else {
+                          alert("Condomínio criado! Selecione ele na lista.");
+                          setCondos(prev => [...prev, ...data]);
+                        }
+                      }}
+                      className="text-xs text-purple-600 underline mt-1 cursor-pointer hover:text-purple-800"
+                    >
+                      [DEBUG] Criar Condomínio Teste
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="col-span-2 space-y-1">
+                    <label className="text-xs font-bold text-gray-500 uppercase ml-1">Rua/Bloco</label>
+                    <div className="relative">
+                      <MapPin size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <input required type="text" value={street} onChange={e => setStreet(e.target.value)} className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:border-purple-500 focus:outline-none font-medium" placeholder="Ex: Bloco A" />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-gray-500 uppercase ml-1">Nº / Apto</label>
+                    <div className="relative">
+                      <Home size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <input required type="text" value={number} onChange={e => setNumber(e.target.value)} className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:border-purple-500 focus:outline-none font-medium" placeholder="101" />
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <button type="submit" className="w-full bg-[#7c3aed] text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-purple-200 hover:opacity-90 transition-all mt-4 transform active:scale-95">
-                Confirmar e Entrar
-              </button>
-            </form>
+                <button type="submit" className="w-full bg-[#7c3aed] text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-purple-200 hover:opacity-90 transition-all mt-4 transform active:scale-95">
+                  Confirmar e Entrar
+                </button>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       <ReferralModal
         isOpen={showReferral}
@@ -445,10 +588,6 @@ const ResidentHome: React.FC = () => {
 };
 
 // Simple icon components to save space
-const ShoppingBagIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>;
-const SparklesIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L12 3Z"></path></svg>;
-const UtensilsIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"></path><path d="M7 2v20"></path><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"></path></svg>;
-const ToolIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>;
-const CarIcon = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"></path><circle cx="7" cy="17" r="2"></circle><path d="M9 17h6"></path><circle cx="17" cy="17" r="2"></circle></svg>;
+
 
 export default ResidentHome;

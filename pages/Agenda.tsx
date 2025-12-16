@@ -8,16 +8,16 @@ const Agenda: React.FC = () => {
     const [showModal, setShowModal] = useState(false);
     const [modalMode, setModalMode] = useState<'NEW' | 'BLOCK'>('NEW');
 
-    // Mock Calendar Days
-    const days = [
-        { label: 'Hoje', date: '15' },
-        { label: 'Amanhã', date: '16' },
-        { label: 'Qua', date: '17' },
-        { label: 'Qui', date: '18' },
-        { label: 'Sex', date: '19' },
-        { label: 'Sáb', date: '20' },
-        { label: 'Dom', date: '21' },
-    ];
+    // Generate next 7 days dynamically
+    const days = Array.from({ length: 7 }, (_, i) => {
+        const d = new Date();
+        d.setDate(d.getDate() + i);
+        return {
+            label: i === 0 ? 'Hoje' : (i === 1 ? 'Amanhã' : ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'][d.getDay()]),
+            date: d.getDate().toString(),
+            fullDate: d.toISOString().split('T')[0] // Store full date for querying
+        };
+    });
 
     const [loading, setLoading] = useState(true);
     const [appointments, setAppointments] = useState<any[]>([]);
@@ -48,15 +48,22 @@ const Agenda: React.FC = () => {
             if (error) throw error;
 
             // Simple formatting to match UI
-            const formatted = (data || []).map(apt => ({
-                id: apt.id,
-                time: apt.start_time.substring(0, 5),
-                client: apt.client_name,
-                service: apt.service_title,
-                status: apt.status === 'BLOQUEADO' ? 'Livre' : (apt.status === 'AGENDADO' ? 'Agendado' : apt.status), // UI mapping
-                duration: '1h', // Mock duration for now
-                address: 'No condomínio'
-            }));
+            const formatted = (data || []).map(apt => {
+                const start = new Date(`1970-01-01T${apt.start_time}`);
+                const end = new Date(`1970-01-01T${apt.end_time || apt.start_time}`); // Fallback if end_time missing
+                const diff = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+                const duration = diff > 0 ? `${diff}h` : '1h';
+
+                return {
+                    id: apt.id,
+                    time: apt.start_time.substring(0, 5),
+                    client: apt.client_name,
+                    service: apt.service_title,
+                    status: apt.status === 'BLOQUEADO' ? 'Livre' : (apt.status === 'AGENDADO' ? 'Agendado' : apt.status),
+                    duration: duration,
+                    address: 'No condomínio'
+                };
+            });
             setAppointments(formatted);
 
         } catch (error) {
@@ -64,6 +71,22 @@ const Agenda: React.FC = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleOpenNew = () => {
+        setModalMode('NEW');
+        setClientName('');
+        setServiceTitle('');
+        setTime('');
+        setShowModal(true);
+    };
+
+    const handleOpenBlock = () => {
+        setModalMode('BLOCK');
+        setClientName('Bloqueio');
+        setServiceTitle('Indisponível');
+        setTime('');
+        setShowModal(true);
     };
 
     const handleSave = async () => {
@@ -107,7 +130,7 @@ const Agenda: React.FC = () => {
     };
 
     return (
-        <div className="bg-gray-50 min-h-screen pb-24">
+        <div className="bg-gray-50 pb-24">
             {/* Header */}
             <div className="bg-white p-4 sticky top-0 z-20 border-b border-gray-100 shadow-sm">
                 <div className="flex justify-between items-center mb-4">

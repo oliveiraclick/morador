@@ -60,9 +60,9 @@ const CreateOffer: React.FC = () => {
                     title,
                     description,
                     price: parseFloat(price.replace('R$', '').replace('.', '').replace(',', '.').trim()),
-                    category: type === 'product' ? category : 'Serviços',
-                    type: type.toUpperCase(),
-                    image_url: imagePreview || 'https://images.unsplash.com/photo-1556228453-efd6c1ff04f6?auto=format&fit=crop&q=80&w=200', // Fallback or real upload
+                    category: type === 'PRODUCT' ? category : 'Serviços',
+                    type: type === 'PRODUCT' ? 'desapego' : 'loja',
+                    image_url: imagePreview || 'https://images.unsplash.com/photo-1556228453-efd6c1ff04f6?auto=format&fit=crop&q=80&w=200',
                     condo_id: (user.user_metadata as any)?.condo_id
                 })
             );
@@ -80,7 +80,7 @@ const CreateOffer: React.FC = () => {
     };
 
     return (
-        <div className="bg-gray-50 min-h-screen flex flex-col pb-32">
+        <div className="bg-gray-50 flex flex-col pb-32">
             {/* Header */}
             <div className="bg-white p-4 flex items-center shadow-sm justify-between sticky top-0 z-10 hidden md:flex">
                 <div className="flex items-center gap-3">

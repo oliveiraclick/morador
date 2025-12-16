@@ -12,6 +12,8 @@ const SellItem: React.FC = () => {
   const [condition, setCondition] = useState(''); // Added state
   const [isGenerating, setIsGenerating] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [loading, setLoading] = useState(false);
 
   // Lazy Registration Check
   React.useEffect(() => {
@@ -41,11 +43,73 @@ const SellItem: React.FC = () => {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setSelectedFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handlePublish = async () => {
+    if (!title || !price) return alert('Preencha título e preço.');
+    setLoading(true);
+
+    try {
+      const supabase = await import('../lib/supabase').then(m => m.supabase);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não logado");
+
+      let imageUrl = null;
+      if (selectedFile) {
+        const fileExt = selectedFile.name.split('.').pop();
+        const fileName = `${Math.random()}.${fileExt}`;
+        const filePath = `${user.id}/${fileName}`;
+
+        // Attempt upload
+        const { error: uploadError } = await supabase.storage
+          .from('marketplace')
+          .upload(filePath, selectedFile);
+
+        if (uploadError) {
+          console.error("Upload Error:", uploadError);
+          if (uploadError.message.includes("Bucket not found")) {
+            alert("Errocrítico: O sistema de arquivos não está configurado (Bucket 'marketplace' não existe). Contate o suporte.");
+            setLoading(false);
+            return;
+          }
+          throw uploadError;
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('marketplace')
+          .getPublicUrl(filePath);
+
+        imageUrl = publicUrl;
+      }
+
+      const { error } = await supabase.from('marketplace_items').insert({
+        seller_id: user.id,
+        title,
+        description,
+        price: parseFloat(price),
+        category,
+        type: 'desapego',
+        condition,
+        image_url: imageUrl,
+        status: 'active'
+      });
+
+      if (error) throw error;
+
+      alert('Anúncio criado com sucesso!');
+      navigate('/home');
+    } catch (error: any) {
+      console.error(error);
+      alert('Erro ao publicar: ' + (error.message || "Erro desconhecido"));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -171,14 +235,12 @@ const SellItem: React.FC = () => {
       {/* Footer Actions - Ensured Visibility */}
       <div className="bg-white p-4 border-t border-gray-100 fixed bottom-0 left-0 right-0 md:max-w-[480px] md:mx-auto z-50">
         <button
-          onClick={() => {
-            alert('Anúncio criado com sucesso!');
-            navigate('/home'); // Redirect to home/market
-          }}
-          className="w-full bg-[#7c3aed] text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+          onClick={handlePublish}
+          disabled={loading}
+          className="w-full bg-[#7c3aed] text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2 disabled:opacity-70"
         >
-          <CheckCircle2 size={20} />
-          Publicar Anúncio
+          {loading ? <Loader2 size={20} className="animate-spin" /> : <CheckCircle2 size={20} />}
+          {loading ? 'Publicando...' : 'Publicar Anúncio'}
         </button>
       </div>
 

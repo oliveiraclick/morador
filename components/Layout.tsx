@@ -8,26 +8,36 @@ interface LayoutProps {
   role: UserRole;
 }
 
+import DebugOverlay from './DebugOverlay';
+
 const Layout: React.FC<LayoutProps> = ({ children, role }) => {
+  // ... existing hooks
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Hide nav on login, splash, and admin page
+  // Normalize role to avoid case sensitivity issues (e.g. 'resident' vs 'RESIDENT')
+  const normalizedRole = role ? role.toUpperCase() : '';
+
+
+  // Hide nav check...
   if (
     location.pathname === '/' ||
     location.pathname === '/login' ||
     location.pathname === '/role-selection' ||
     location.pathname.startsWith('/register/') ||
-    // location.pathname === '/admin' || // Removed to allow Admin Nav
     location.pathname === '/pro'
   ) {
-    return <div className="min-h-screen bg-gray-50 flex flex-col justify-center">{children}</div>;
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col justify-center">
+        {children}
+        {/* <DebugOverlay roleFromState={role} /> */}
+      </div>
+    );
   }
 
   const handleLogout = () => {
     localStorage.removeItem('user_role');
     localStorage.removeItem('user_registered');
-    // Force reload to clear all states
     window.location.href = '/login';
   };
 
@@ -37,8 +47,11 @@ const Layout: React.FC<LayoutProps> = ({ children, role }) => {
 
   return (
     <div className="min-h-screen bg-gray-100 flex justify-center">
+      {/* <DebugOverlay roleFromState={role} /> */}
       {/* Mobile container simulation */}
       <div className="w-full max-w-[480px] bg-gray-50 min-h-screen relative shadow-2xl flex flex-col">
+        {/* ... */}
+
 
         {/* Content Area */}
         <div className="flex-1 overflow-y-auto pb-20 no-scrollbar">
@@ -49,7 +62,7 @@ const Layout: React.FC<LayoutProps> = ({ children, role }) => {
         <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100 h-20 px-4 pb-4 rounded-t-2xl z-50">
           <div className="flex items-center justify-between h-full">
 
-            {role === UserRole.RESIDENT ? (
+            {normalizedRole === UserRole.RESIDENT ? (
               <>
                 <button onClick={() => navigate('/home')} className={navItemClass('/home')}>
                   <Home size={24} strokeWidth={location.pathname === '/home' ? 2.5 : 2} />
@@ -74,7 +87,7 @@ const Layout: React.FC<LayoutProps> = ({ children, role }) => {
                   <span className="text-[10px] font-medium">Perfil</span>
                 </button>
               </>
-            ) : role === UserRole.ADMIN ? (
+            ) : normalizedRole === UserRole.ADMIN ? (
               /* Admin Nav */
               <>
                 <button onClick={() => navigate('/admin')} className={navItemClass('/admin')}>

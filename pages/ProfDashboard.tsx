@@ -111,7 +111,7 @@ const ProfDashboard: React.FC = () => {
    };
 
    return (
-      <div className="bg-gray-50 min-h-screen relative">
+      <div className="bg-gray-50 pb-24 relative">
          {/* Notifications Modal/Dropdown */}
          {showNotifications && (
             <div className="absolute top-20 right-4 w-80 bg-white rounded-2xl shadow-xl border border-gray-100 z-50 overflow-hidden animate-in fade-in slide-in-from-top-4">

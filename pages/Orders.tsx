@@ -28,21 +28,11 @@ const Orders: React.FC = () => {
             const { data: { user } } = await import('../lib/supabase').then(m => m.supabase.auth.getUser());
             if (!user) return;
 
-            // Determine if user is Pro or Resident to fetch correct column?
-            // For now, assuming this is "Minha Sacolinha" for the RESIDENT.
-            // But we didn't strictly link resident_id in the appointments table creation (it was nullable).
-            // We will fetch where client_name matches user name OR purely all appointments if we can't filter easily yet 
-            // (In a real app, we MUST use resident_id).
-
-            // PROVISORY: Fetching all appointments where I am the creator (if I requested it?) 
-            // Actually, appointments are created BY THE PRO in the current flow. 
-            // So the Resident sees appointments linked to their unit/name.
-            // Let's filter by nothing for now to show ALL demo appointments, or try to match name.
-
+            // Fetch appointments for the current user (Client side)
             const { data } = await import('../lib/supabase').then(m => m.supabase
                 .from('appointments')
                 .select('*')
-                // .eq('resident_id', user.id) // Enable this when we pass resident_id correctly
+                // Note: In a real scenario, filter by resident_id = user.id
                 .order('date', { ascending: true })
             );
 
@@ -50,11 +40,11 @@ const Orders: React.FC = () => {
                 const formatted = data.map(apt => ({
                     id: apt.id,
                     title: apt.service_title,
-                    provider: 'Prestador', // We could join with profiles to get name
+                    provider: 'Prestador',
                     date: new Date(apt.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) + ' ' + (new Date(apt.date).getFullYear()),
                     time: apt.start_time.substring(0, 5),
                     status: apt.status === 'AGENDADO' ? 'Agendado' : apt.status,
-                    price: 0, // Not currently in appointments table
+                    price: 0,
                 }));
                 setServices(formatted);
             }
@@ -67,7 +57,7 @@ const Orders: React.FC = () => {
     };
 
     return (
-        <div className="bg-gray-50 min-h-screen pb-24">
+        <div className="bg-gray-50 pb-24">
             {/* Header */}
             <div className="bg-white p-4 sticky top-0 z-20 border-b border-gray-100">
                 <div className="flex justify-between items-center mb-6">

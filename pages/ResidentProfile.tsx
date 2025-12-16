@@ -1,15 +1,275 @@
+
 import React from 'react';
-import { ArrowLeft, User, MapPin, Heart, Settings, LogOut, ChevronRight, Bell } from 'lucide-react';
+import { ArrowLeft, User, MapPin, Heart, Settings, LogOut, ChevronRight, Bell, Camera, ShoppingBag as ShoppingBagIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 
 const ResidentProfile: React.FC = () => {
     const navigate = useNavigate();
-    const name = localStorage.getItem('user_name') || 'Morador';
-    const condo = localStorage.getItem('user_condo') || 'Condomínio Jardins do Sol';
+    const [name, setName] = React.useState(localStorage.getItem('user_name') || 'Morador');
+    const [condo, setCondo] = React.useState(localStorage.getItem('user_condo') || 'Condomínio não informado');
+    const [activeModal, setActiveModal] = React.useState<'favorites' | 'notifications' | 'personal' | 'address' | null>(null);
+
+    // Form States
+    const [loading, setLoading] = React.useState(false);
+    const [uploading, setUploading] = React.useState(false);
+    const [userId, setUserId] = React.useState('');
+    const [phone, setPhone] = React.useState('');
+    const [email, setEmail] = React.useState('');
+    const [avatarUrl, setAvatarUrl] = React.useState('');
+
+    // Address Form
+    const [condos, setCondos] = React.useState<any[]>([]);
+    const [selectedCondo, setSelectedCondo] = React.useState('');
+    const [unit, setUnit] = React.useState('');
+
+    // Fetch User Data
+    React.useEffect(() => {
+        const fetchProfile = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                setUserId(user.id);
+                setEmail(user.email || '');
+
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('*, condos(name)')
+                    .eq('id', user.id)
+                    .single();
+
+                if (profile) {
+                    setName(profile.full_name || 'Morador');
+                    setPhone(profile.phone || '');
+                    setUnit(profile.unit || '');
+                    setSelectedCondo(profile.condo_id || '');
+                    setAvatarUrl(profile.avatar_url || '');
+                    if (profile.condos?.name) setCondo(profile.condos.name);
+                }
+            }
+
+            // Fetch Condos for Address Modal
+            const { data: condosList } = await supabase.from('condos').select('*');
+            if (condosList) setCondos(condosList);
+        };
+        fetchProfile();
+    }, []);
 
     const handleLogout = () => {
         localStorage.clear();
         navigate('/');
+    };
+
+    const handleUpdateProfile = async () => {
+        if (loading) return;
+        setLoading(true);
+        try {
+            const { error } = await supabase.from('profiles').update({
+                full_name: name,
+                phone: phone
+            }).eq('id', userId);
+
+            if (error) throw error;
+            alert("Dados atualizados com sucesso!");
+            setActiveModal(null);
+            localStorage.setItem('user_name', name);
+        } catch (e: any) {
+            alert("Erro ao atualizar: " + e.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleUpdateAddress = async () => {
+        if (loading) return;
+        setLoading(true);
+        try {
+            const { error } = await supabase.from('profiles').update({
+                condo_id: selectedCondo,
+                unit: unit
+            }).eq('id', userId);
+
+            if (error) throw error;
+
+            // Update local display
+            const sel = condos.find(c => c.id === selectedCondo);
+            if (sel) setCondo(sel.name);
+
+            alert("Endereço atualizado com sucesso!");
+            setActiveModal(null);
+        } catch (e: any) {
+            alert("Erro ao atualizar endereço: " + e.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        try {
+            setUploading(true);
+
+            if (!event.target.files || event.target.files.length === 0) {
+                throw new Error('Você precisa selecionar uma imagem para fazer upload.');
+            }
+
+            const file = event.target.files[0];
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${userId}/${Math.random()}.${fileExt}`;
+            const filePath = `${fileName}`;
+
+            const { error: uploadError } = await supabase.storage
+                .from('avatars')
+                .upload(filePath, file);
+
+            if (uploadError) {
+                throw uploadError;
+            }
+
+            const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+            const publicUrl = data.publicUrl;
+
+            // Update profile
+            const { error: updateError } = await supabase
+                .from('profiles')
+                .update({ avatar_url: publicUrl })
+                .eq('id', userId);
+
+            if (updateError) throw updateError;
+
+            setAvatarUrl(publicUrl);
+            alert('Foto de perfil atualizada!');
+
+        } catch (error: any) {
+            alert('Erro ao fazer upload da imagem: ' + error.message);
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    // Render Modal Content
+    const renderModal = () => {
+        if (!activeModal) return null;
+
+        return (
+            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in">
+                <div className="bg-white rounded-3xl w-full max-w-sm p-6 relative shadow-2xl">
+                    <button
+                        onClick={() => setActiveModal(null)}
+                        className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+                    >
+                        <Settings size={20} className="transform rotate-45" />
+                    </button>
+
+                    {activeModal === 'favorites' && (
+                        <div>
+                            <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                                <Heart className="text-pink-500" fill="currentColor" /> Meus Favoritos
+                            </h3>
+                            <div className="text-center py-8 text-gray-500">
+                                <p>Você ainda não tem favoritos.</p>
+                                <p className="text-xs mt-2">Explore o mercado para adicionar!</p>
+                                <button onClick={() => navigate('/market')} className="mt-4 text-purple-600 font-bold text-sm">Explorar Agora</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeModal === 'notifications' && (
+                        <div>
+                            <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                                <Bell className="text-amber-500" /> Notificações
+                            </h3>
+                            <div className="space-y-3 max-h-60 overflow-y-auto">
+                                <div className="text-center py-8 text-gray-500 text-sm">
+                                    Nenhuma notificação por enquanto.
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeModal === 'personal' && (
+                        <div>
+                            <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                                <User className="text-blue-500" /> Dados Pessoais
+                            </h3>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="text-xs font-bold text-gray-500 uppercase">Nome Completo</label>
+                                    <input
+                                        type="text"
+                                        value={name}
+                                        onChange={e => setName(e.target.value)}
+                                        className="w-full p-3 rounded-xl border border-gray-200 focus:border-blue-500 outline-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold text-gray-500 uppercase">Email</label>
+                                    <input
+                                        type="text"
+                                        value={email}
+                                        disabled
+                                        className="w-full p-3 rounded-xl border border-gray-200 bg-gray-100 text-gray-500 cursor-not-allowed"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold text-gray-500 uppercase">Telefone</label>
+                                    <input
+                                        type="tel"
+                                        value={phone}
+                                        onChange={e => setPhone(e.target.value)}
+                                        placeholder="(00) 00000-0000"
+                                        className="w-full p-3 rounded-xl border border-gray-200 focus:border-blue-500 outline-none"
+                                    />
+                                </div>
+                                <button
+                                    onClick={handleUpdateProfile}
+                                    disabled={loading}
+                                    className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 disabled:opacity-50"
+                                >
+                                    {loading ? 'Salvando...' : 'Salvar Alterações'}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeModal === 'address' && (
+                        <div>
+                            <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                                <MapPin className="text-green-500" /> Endereços
+                            </h3>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="text-xs font-bold text-gray-500 uppercase">Condomínio</label>
+                                    <select
+                                        value={selectedCondo}
+                                        onChange={e => setSelectedCondo(e.target.value)}
+                                        className="w-full p-3 rounded-xl border border-gray-200 focus:border-green-500 outline-none bg-white"
+                                    >
+                                        <option value="" disabled>Selecione</option>
+                                        {condos.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold text-gray-500 uppercase">Complemento / Unidade</label>
+                                    <input
+                                        type="text"
+                                        value={unit}
+                                        onChange={e => setUnit(e.target.value)}
+                                        placeholder="Ex: Bloco A, Apto 101"
+                                        className="w-full p-3 rounded-xl border border-gray-200 focus:border-green-500 outline-none"
+                                    />
+                                </div>
+                                <button
+                                    onClick={handleUpdateAddress}
+                                    disabled={loading}
+                                    className="w-full bg-green-600 text-white py-3 rounded-xl font-bold hover:bg-green-700 disabled:opacity-50"
+                                >
+                                    {loading ? 'Salvando...' : 'Salvar Endereço'}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
     };
 
     return (
@@ -21,19 +281,42 @@ const ResidentProfile: React.FC = () => {
                         <ArrowLeft size={24} />
                     </button>
                     <h1 className="font-bold text-lg">Meu Perfil</h1>
-                    <button className="p-2 bg-white/20 rounded-full hover:bg-white/30 transition-colors">
-                        <Settings size={24} />
-                    </button>
+                    <div className="w-10"></div> {/* Spacer */}
                 </div>
 
                 <div className="flex items-center gap-4">
-                    <div className="w-20 h-20 rounded-full bg-white p-1 shadow-xl">
-                        <img
-                            src="https://picsum.photos/200/200"
-                            alt="Profile"
-                            className="w-full h-full rounded-full object-cover border-2 border-white"
-                        />
+                    <div className="relative group">
+                        <div className="w-20 h-20 rounded-full bg-white p-1 shadow-xl overflow-hidden">
+                            {avatarUrl ? (
+                                <img
+                                    src={avatarUrl}
+                                    alt="Profile"
+                                    className="w-full h-full rounded-full object-cover border-2 border-white"
+                                />
+                            ) : (
+                                <div className="w-full h-full rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-bold text-2xl">
+                                    {name.charAt(0)}
+                                </div>
+                            )}
+                        </div>
+                        {/* Upload Button Overlay */}
+                        <label className="absolute bottom-0 right-0 p-1.5 bg-green-400 rounded-full border-2 border-white cursor-pointer hover:scale-110 transition-transform shadow-sm">
+                            <Camera size={14} className="text-white" />
+                            <input
+                                type="file"
+                                className="hidden"
+                                accept="image/*"
+                                onChange={handleAvatarUpload}
+                                disabled={uploading}
+                            />
+                        </label>
+                        {uploading && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
+                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            </div>
+                        )}
                     </div>
+
                     <div>
                         <h2 className="text-2xl font-bold text-white leading-tight">{name}</h2>
                         <div className="flex items-center text-purple-200 text-sm mt-1">
@@ -67,12 +350,23 @@ const ResidentProfile: React.FC = () => {
                 {/* Menu Options */}
                 <div className="bg-white rounded-3xl p-2 shadow-sm border border-gray-100">
                     {[
-                        { icon: <Heart size={20} />, label: 'Meus Favoritos', color: 'text-pink-500 bg-pink-50' },
-                        { icon: <Bell size={20} />, label: 'Notificações', color: 'text-amber-500 bg-amber-50' },
-                        { icon: <User size={20} />, label: 'Dados Pessoais', color: 'text-blue-500 bg-blue-50' },
-                        { icon: <MapPin size={20} />, label: 'Endereços', color: 'text-green-500 bg-green-50' },
+                        { icon: <Heart size={20} />, label: 'Meus Favoritos', color: 'text-pink-500 bg-pink-50', id: 'favorites', action: 'modal' },
+                        { icon: <Bell size={20} />, label: 'Notificações', color: 'text-amber-500 bg-amber-50', id: 'notifications', action: 'modal' },
+                        { icon: <User size={20} />, label: 'Dados Pessoais', color: 'text-blue-500 bg-blue-50', id: 'personal', action: 'modal' },
+                        { icon: <ShoppingBagIcon size={20} />, label: 'Meus Anúncios', color: 'text-purple-500 bg-purple-50', id: 'my-ads', action: 'navigate', path: '/my-store' },
+                        { icon: <MapPin size={20} />, label: 'Endereços', color: 'text-green-500 bg-green-50', id: 'address', action: 'modal' },
                     ].map((item, i) => (
-                        <button key={i} className="w-full flex items-center justify-between p-4 hover:bg-gray-50 rounded-2xl transition-colors group">
+                        <button
+                            key={i}
+                            onClick={() => {
+                                if (item.action === 'modal') {
+                                    setActiveModal(item.id as any);
+                                } else if (item.action === 'navigate' && item.path) {
+                                    navigate(item.path);
+                                }
+                            }}
+                            className="w-full flex items-center justify-between p-4 hover:bg-gray-50 rounded-2xl transition-colors group"
+                        >
                             <div className="flex items-center gap-4">
                                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${item.color}`}>
                                     {item.icon}
@@ -93,8 +387,10 @@ const ResidentProfile: React.FC = () => {
                     Sair da Conta
                 </button>
 
-                <p className="text-center text-xs text-gray-400 mt-6">Versão 1.0.0 • Morador App</p>
+                <p className="text-center text-xs text-gray-400 mt-6">Versão 1.1.0 • Morador App</p>
             </div>
+
+            {renderModal()}
         </div>
     );
 };

@@ -60,7 +60,7 @@ const MyStore: React.FC = () => {
                     <h1 className="text-lg font-bold text-gray-900">Minha Loja</h1>
                 </div>
                 <button
-                    onClick={() => navigate('/create-offer')}
+                    onClick={() => navigate('/sell')}
                     className="flex items-center gap-1 bg-primary-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-primary-700 transition-colors"
                 >
                     <Plus size={16} />
@@ -78,7 +78,7 @@ const MyStore: React.FC = () => {
                     <div className="text-center py-20 text-gray-500">
                         <p className="mb-4">Você ainda não tem itens à venda.</p>
                         <button
-                            onClick={() => navigate('/create-offer')}
+                            onClick={() => navigate('/sell')}
                             className="text-primary-600 font-bold hover:underline"
                         >
                             Começar a vender agora

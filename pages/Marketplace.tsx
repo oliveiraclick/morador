@@ -7,6 +7,7 @@ const Marketplace: React.FC = () => {
   const location = useLocation();
   const [activeCategory, setActiveCategory] = useState(location.state?.category || 'Todos');
   const [viewItem, setViewItem] = useState<any>(null);
+  const [showLightbox, setShowLightbox] = useState(false);
 
   useEffect(() => {
     if (location.state?.category) {
@@ -53,96 +54,55 @@ const Marketplace: React.FC = () => {
 
   // State for items
   const [items, setItems] = useState<any[]>([]);
+  const [condoName, setCondoName] = useState('Vila');
 
   useEffect(() => {
-    const storedItems = localStorage.getItem('marketplace_items');
-    if (storedItems) {
-      setItems(JSON.parse(storedItems));
-    } else {
-      // Seed initial data
-      const initialItems = [
-        // DESAPEGOS (Residents)
-        {
-          id: 1,
-          type: 'DESAPEGO',
-          title: 'Bicicleta Infantil Aro 16',
-          price: 150.00,
-          img: 'https://images.unsplash.com/photo-1511994298241-608e28f14fde?auto=format&fit=crop&q=80&w=800',
-          description: 'Bicicleta em ótimo estado, pouco uso. Minha filha cresceu e não usa mais. Acompanha rodinhas. Precisa buscar no bloco A.',
-          seller: 'Ana Silva',
-          sellerAvatar: 'AS',
-          sellerColor: 'bg-purple-500',
-          location: 'Bloco A, Ap 402',
-          time: '2h atrás',
-          condition: 'Usado',
-          category: 'Infantil'
-        },
-        {
-          id: 2,
-          type: 'DESAPEGO',
-          title: 'Sofá 3 lugares Retrátil',
-          price: 800.00,
-          originalPrice: 950.00,
-          img: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=800',
-          description: 'Sofá super confortável, retrátil e reclinável. Tecido Suede. Tem um pequeno detalhe no braço esquerdo, mas imperceptível.',
-          seller: 'Carlos Souza',
-          sellerAvatar: 'CS',
-          sellerColor: 'bg-blue-500',
-          location: 'Bloco C, Ap 101',
-          time: '5h atrás',
-          condition: 'Seminovo',
-          category: 'Móveis'
-        },
-        {
-          id: 3,
-          type: 'DESAPEGO',
-          title: 'Mesa de Jantar 4 Lugares',
-          price: 450.00,
-          img: 'https://images.unsplash.com/photo-1617806118233-18e1de247200?auto=format&fit=crop&q=80&w=800',
-          description: 'Motivo da venda: mudança. Mesa em vidro temperado, muito resistente.',
-          seller: 'Mariana Lima',
-          sellerAvatar: 'ML',
-          sellerColor: 'bg-orange-500',
-          location: 'Bloco B, Ap 205',
-          time: '1d atrás',
-          condition: 'Usado',
-          category: 'Móveis'
-        },
-        // LOJAS (Professionals)
-        {
-          id: 101,
-          type: 'LOJA',
-          title: 'Kit Body Infantil - 3 Peças (Novo)',
-          price: 89.90,
-          img: 'https://images.unsplash.com/photo-1522771930-78848d9293e8?auto=format&fit=crop&q=80&w=800',
-          description: 'Kit com 3 bodies 100% algodão. Tamanhos P, M e G. Várias estampas disponíveis. Produto novo, embalado.',
-          seller: 'Mundo Baby (Loja da Ana)',
-          sellerAvatar: 'MB',
-          sellerColor: 'bg-pink-500',
-          location: 'Loja Bloco A',
-          time: 'Loja',
-          condition: 'Novo',
-          category: 'Infantil'
-        },
-        {
-          id: 102,
-          type: 'LOJA',
-          title: 'Hidratante Facial Natural',
-          price: 45.00,
-          img: 'https://images.unsplash.com/photo-1608248597279-f99d160bfbc8?auto=format&fit=crop&q=80&w=800',
-          description: 'Hidratante vegano feito artesanalmente. Ideal para todos os tipos de pele. Pronta entrega no condomínio.',
-          seller: 'EcoBeleza (Loja)',
-          sellerAvatar: 'EB',
-          sellerColor: 'bg-green-500',
-          location: 'Loja Bloco C',
-          time: 'Loja',
-          condition: 'Novo',
-          category: 'Beleza'
+    const fetchData = async () => {
+      // Fetch user's condo name
+      const { data: { user } } = await import('../lib/supabase').then(m => m.supabase.auth.getUser());
+      if (user) {
+        const { data: profile } = await import('../lib/supabase').then(m => m.supabase
+          .from('profiles')
+          .select('condos(name)')
+          .eq('id', user.id)
+          .single()
+        );
+        if (profile?.condos?.name) {
+          setCondoName(profile.condos.name);
         }
-      ];
-      setItems(initialItems);
-      localStorage.setItem('marketplace_items', JSON.stringify(initialItems));
-    }
+      }
+
+      // Fetch marketplace items
+      const { data, error } = await import('../lib/supabase').then(m => m.supabase
+        .from('marketplace_items')
+        .select(`
+          *,
+          profiles:seller_id (full_name, unit)
+        `)
+        .order('created_at', { ascending: false })
+      );
+
+      if (data) {
+        // Map DB fields to UI fields expected by current render
+        const mappedItems = data.map(item => ({
+          id: item.id,
+          type: item.type === 'desapego' ? 'DESAPEGO' : 'LOJA',
+          title: item.title,
+          price: item.price,
+          img: item.image_url,
+          description: item.description,
+          seller: item.profiles?.full_name || 'Vendedor',
+          sellerAvatar: item.profiles?.full_name?.substring(0, 2).toUpperCase() || 'VA',
+          sellerColor: 'bg-purple-500',
+          location: item.profiles?.unit || 'Condomínio',
+          time: new Date(item.created_at).toLocaleDateString(),
+          condition: 'Novo',
+          category: item.category
+        }));
+        setItems(mappedItems);
+      }
+    };
+    fetchData();
   }, []);
 
   // Filter Logic
@@ -291,7 +251,7 @@ const Marketplace: React.FC = () => {
 
       <div className="space-y-2">
         {/* Section 1: Desapegos */}
-        <SectionHeader title="Desapegos da Vila" icon={Repeat} count={desapegoItems.length} />
+        <SectionHeader title={`Desapego do ${condoName}`} icon={Repeat} count={desapegoItems.length} />
         <HorizontalList items={desapegoItems} />
 
         {/* Section 2: Lojas */}
@@ -309,7 +269,15 @@ const Marketplace: React.FC = () => {
           <div className="fixed inset-0 z-50 bg-white animate-in slide-in-from-bottom-5 duration-300 flex flex-col">
             {/* Header Image */}
             <div className="relative h-1/2 bg-gray-100">
-              <img src={viewItem.img} className="w-full h-full object-cover" alt={viewItem.title} />
+              <img
+                src={viewItem.img}
+                className="w-full h-full object-cover cursor-zoom-in"
+                alt={viewItem.title}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowLightbox(true);
+                }}
+              />
               <button
                 onClick={() => setViewItem(null)}
                 className="absolute top-4 left-4 p-2 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white/40 transition-colors"
@@ -381,6 +349,30 @@ const Marketplace: React.FC = () => {
         )
       }
 
+
+      {/* Lightbox Overlay */}
+      {
+        showLightbox && viewItem && (
+          <div
+            className="fixed inset-0 z-[60] bg-black flex items-center justify-center animate-in fade-in active:scale-100"
+            onClick={() => setShowLightbox(false)}
+          >
+            <button
+              onClick={() => setShowLightbox(false)}
+              className="absolute top-4 right-4 p-3 bg-white/10 rounded-full text-white hover:bg-white/20 z-50"
+            >
+              <ArrowLeft size={24} />
+            </button>
+
+            <img
+              src={viewItem.img}
+              className="max-w-full max-h-full object-contain p-4"
+              alt={viewItem.title}
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        )
+      }
     </div >
   );
 };
