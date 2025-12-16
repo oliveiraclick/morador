@@ -114,9 +114,13 @@ const ResidentHome: React.FC = () => {
         }
 
         // Fetch Profile for Condo Name and Completeness Check
-        const { data: profile } = await import('../lib/supabase').then(m => m.supabase.from('profiles').select('condo_id, unit, condos(name)').eq('id', user.id).single());
+        const { data: profile } = await import('../lib/supabase').then(m => m.supabase.from('profiles').select('full_name, condo_id, unit, condos(name)').eq('id', user.id).single());
 
         if (profile) {
+          // Fallback for name if metadata failure
+          if (!user.user_metadata?.full_name && profile.full_name) {
+            setUserName(profile.full_name.split(' ')[0]);
+          }
           if (profile.condos?.name) {
             setCondoName(profile.condos.name);
           }
@@ -130,6 +134,9 @@ const ResidentHome: React.FC = () => {
             setShowCompleteProfileModal(true);
           }
         }
+      } else {
+        // No user found, redirect to login
+        navigate('/login');
       }
     };
     fetchUser();
@@ -138,7 +145,7 @@ const ResidentHome: React.FC = () => {
   // Fetch Desapego Items
   React.useEffect(() => {
     const fetchDesapego = async () => {
-      const { data } = await import('../lib/supabase').then(m => m.supabase
+      const { data, error } = await import('../lib/supabase').then(m => m.supabase
         .from('marketplace_items')
         .select('*')
         .eq('type', 'desapego')
@@ -146,7 +153,14 @@ const ResidentHome: React.FC = () => {
         .limit(20)
       );
 
+      if (error) {
+        console.error('Error fetching desapego:', error);
+        // Temporary: show error alert to user
+        // alert('Debug: ' + error.message);
+      }
+
       if (data) {
+        // console.log('Desapego data:', data); // Debug
         const shuffled = [...data].sort(() => 0.5 - Math.random());
         setDesapegoItems(shuffled.slice(0, 5));
       }
@@ -441,8 +455,16 @@ const ResidentHome: React.FC = () => {
             ) : (
               desapegoItems.map((item) => (
                 <div key={item.id} className="min-w-[200px] bg-white p-3 rounded-2xl shadow-sm border border-gray-100 flex flex-col shrink-0 cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/market')}>
-                  <div className="relative mb-3">
-                    <img src={item.image_url} className="w-full h-32 rounded-xl object-cover" alt={item.title} />
+                  <div className="relative mb-3 bg-gray-100 rounded-xl h-32 overflow-hidden">
+                    <img
+                      src={item.image_url}
+                      onError={(e) => {
+                        console.error('Image load error for:', item.title, item.image_url);
+                        e.currentTarget.src = 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80&w=500';
+                      }}
+                      className="w-full h-full object-cover"
+                      alt={item.title}
+                    />
                     <span className="absolute top-2 left-2 bg-black/50 backdrop-blur-md text-white text-[10px] px-2 py-1 rounded-lg font-medium">
                       {item.category}
                     </span>

@@ -133,7 +133,6 @@ const RegisterResident: React.FC = () => {
                                 <option value="" disabled>Selecione seu condomínio</option>
                                 {condos.length === 0 && <option disabled>Carregando condomínios...</option>}
                                 {condos.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                <option value="splendido-test-id">Residencial Splendido</option>
                             </select>
                         </div>
                     </div>

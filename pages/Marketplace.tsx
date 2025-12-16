@@ -183,7 +183,14 @@ const Marketplace: React.FC = () => {
               onClick={() => setViewItem(item)}
               className="relative h-32 rounded-xl overflow-hidden mb-2 bg-gray-100 group cursor-pointer"
             >
-              <img src={item.img} className="w-full h-full object-cover transition-transform group-hover:scale-105" alt={item.title} />
+              <img
+                src={item.img}
+                className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                alt={item.title}
+                onError={(e) => {
+                  e.currentTarget.src = 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80&w=500';
+                }}
+              />
             </div>
 
             {/* Content */}
