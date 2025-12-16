@@ -284,7 +284,17 @@ const ResidentHome: React.FC = () => {
           <div className="flex items-center gap-3">
             <div onClick={() => navigate('/resident-profile')} className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border-2 border-white/30 cursor-pointer overflow-hidden relative">
               {userAvatar ? (
-                <img src={userAvatar} className="w-full h-full object-cover" alt="Avatar" />
+                <img
+                  src={userAvatar}
+                  className="w-full h-full object-cover"
+                  alt="Avatar"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    // Fallback to initials happens because img is hidden? 
+                    // actually better to set userAvatar to null to trigger the fallback UI
+                    setUserAvatar(null);
+                  }}
+                />
               ) : (
                 <span className="font-bold text-lg">{userName.charAt(0)}</span>
               )}
