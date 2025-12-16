@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Mail, Lock, LogIn } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { UserRole } from '../types';
@@ -8,6 +8,19 @@ const Login: React.FC = ({ setRole }: { setRole?: (role: UserRole) => void }) =>
     const navigate = useNavigate();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+
+    useEffect(() => {
+        const checkSession = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                const role = localStorage.getItem('user_role');
+                if (role === UserRole.ADMIN) navigate('/admin');
+                else if (role === UserRole.PROFESSIONAL) navigate('/dashboard');
+                else navigate('/home');
+            }
+        };
+        checkSession();
+    }, []);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();

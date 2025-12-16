@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import { UserRole } from './types';
@@ -43,7 +43,7 @@ import AdminAds from './pages/AdminAds';
 
 import ProfessionalPaywall from './pages/ProfessionalPaywall';
 
-const App = () => {
+const AppContent = () => {
   const [userRole, setUserRole] = useState<UserRole>(() => {
     const stored = localStorage.getItem('user_role');
     if (stored === UserRole.ADMIN || stored === UserRole.RESIDENT || stored === UserRole.PROFESSIONAL) {
@@ -52,7 +52,8 @@ const App = () => {
     return UserRole.RESIDENT;
   });
 
-  // Sync Role on load
+  const navigate = useNavigate();
+
   // Sync Role on load and Setup Auth Listener
   useEffect(() => {
     // 1. Initial Local Storage Sync
@@ -78,171 +79,177 @@ const App = () => {
           localStorage.setItem('user_registered', 'true');
           setUserRole(role as UserRole);
 
-          // Redirect Logic (Naive but effective for now)
-          if (window.location.pathname === '/login' || window.location.pathname === '/register/resident' || window.location.pathname === '/register/professional') {
-            if (role === UserRole.ADMIN) window.location.href = '/admin';
-            else if (role === UserRole.PROFESSIONAL) window.location.href = '/dashboard';
-            else window.location.href = '/home';
+          // Redirect Logic (Using navigate for smooth transition)
+          if (window.location.pathname === '/login' || window.location.pathname === '/' || window.location.pathname === '/register/resident' || window.location.pathname === '/register/professional') {
+            if (role === UserRole.ADMIN) navigate('/admin');
+            else if (role === UserRole.PROFESSIONAL) navigate('/dashboard');
+            else navigate('/home');
           }
         }
       });
       return () => subscription.unsubscribe();
     });
-  }, []);
+  }, [navigate]);
 
   return (
+    <Layout role={userRole}>
+      <Routes>
+        {/* Public Routes */}
+        <Route path="/" element={<Splash />} />
+        <Route path="/role-selection" element={<RoleSelection />} />
+        <Route path="/register/resident" element={<RegisterResident />} />
+        <Route path="/register/professional" element={<RegisterProfessional />} />
+        <Route path="/login" element={<Login setRole={setUserRole} />} />
+        <Route path="/complete-registration" element={
+          <ProtectedRoute allowedRoles={[UserRole.RESIDENT, UserRole.PROFESSIONAL]}>
+            <CompleteRegistration />
+          </ProtectedRoute>
+        } />
+
+        {/* Resident Routes */}
+        <Route path="/home" element={
+          <ProtectedRoute allowedRoles={[UserRole.RESIDENT]}>
+            <ResidentHome />
+          </ProtectedRoute>
+        } />
+        <Route path="/market" element={
+          <ProtectedRoute allowedRoles={[UserRole.RESIDENT]}>
+            <Marketplace />
+          </ProtectedRoute>
+        } />
+        <Route path="/booking" element={
+          <ProtectedRoute allowedRoles={[UserRole.RESIDENT]}>
+            <Booking />
+          </ProtectedRoute>
+        } />
+        <Route path="/sell" element={
+          <ProtectedRoute allowedRoles={[UserRole.RESIDENT]}>
+            <SellItem />
+          </ProtectedRoute>
+        } />
+        <Route path="/pro" element={
+          <ProtectedRoute allowedRoles={[UserRole.RESIDENT]}>
+            <ProPlan />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/profile" element={
+          <ProtectedRoute allowedRoles={[UserRole.RESIDENT]}>
+            <ResidentProfile />
+          </ProtectedRoute>
+        } />
+        <Route path="/professional-profile" element={
+          <ProtectedRoute allowedRoles={[UserRole.RESIDENT]}>
+            <ProfessionalProfile />
+          </ProtectedRoute>
+        } />
+
+        {/* Professional Routes */}
+        <Route path="/plan/professional" element={
+          <ProtectedRoute allowedRoles={[UserRole.PROFESSIONAL]}>
+            <ProfessionalPaywall />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/dashboard" element={
+          <ProtectedRoute allowedRoles={[UserRole.PROFESSIONAL]}>
+            <ProfDashboard />
+          </ProtectedRoute>
+        } />
+
+        {/* Shared Routes */}
+        <Route path="/orders" element={
+          <ProtectedRoute allowedRoles={[UserRole.RESIDENT, UserRole.PROFESSIONAL]}>
+            <Orders />
+          </ProtectedRoute>
+        } />
+        <Route path="/chat" element={
+          <ProtectedRoute allowedRoles={[UserRole.RESIDENT, UserRole.PROFESSIONAL, UserRole.ADMIN]}>
+            <Chat />
+          </ProtectedRoute>
+        } />
+        <Route path="/create-offer" element={
+          <ProtectedRoute allowedRoles={[UserRole.PROFESSIONAL]}>
+            <CreateOffer />
+          </ProtectedRoute>
+        } />
+        <Route path="/store" element={
+          <ProtectedRoute allowedRoles={[UserRole.PROFESSIONAL]}>
+            <MyStore />
+          </ProtectedRoute>
+        } />
+        <Route path="/agenda" element={
+          <ProtectedRoute allowedRoles={[UserRole.PROFESSIONAL]}>
+            <Agenda />
+          </ProtectedRoute>
+        } />
+        <Route path="/reviews" element={
+          <ProtectedRoute allowedRoles={[UserRole.PROFESSIONAL]}>
+            <Reviews />
+          </ProtectedRoute>
+        } />
+
+        {/* Legacy/Shortcut Routes */}
+        <Route path="/beauty" element={<Navigate to="/market" state={{ category: 'Beleza' }} replace />} />
+        <Route path="/food" element={<Navigate to="/market" state={{ category: 'Comida' }} replace />} />
+
+        {/* Admin Routes */}
+        <Route path="/admin" element={
+          <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+            <MasterDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/users" element={
+          <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+            <AdminUsers />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/condos" element={
+          <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+            <AdminCondos />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/financial" element={
+          <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+            <AdminFinancial />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/plans" element={
+          <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+            <AdminPlans />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/broadcast" element={
+          <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+            <AdminBroadcast />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/settings" element={
+          <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+            <AdminPlans />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/ads" element={
+          <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+            <AdminAds />
+          </ProtectedRoute>
+        } />
+
+        {/* Generic Settings Route (Accessible by Pro via Dashboard link) */}
+        <Route path="/settings" element={
+          <ProtectedRoute allowedRoles={[UserRole.PROFESSIONAL, UserRole.RESIDENT, UserRole.ADMIN]}>
+            <Settings />
+          </ProtectedRoute>
+        } />
+      </Routes>
+    </Layout>
+  );
+};
+
+const App = () => {
+  return (
     <BrowserRouter>
-      <Layout role={userRole}>
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<Splash />} />
-          <Route path="/role-selection" element={<RoleSelection />} />
-          <Route path="/register/resident" element={<RegisterResident />} />
-          <Route path="/register/professional" element={<RegisterProfessional />} />
-          <Route path="/login" element={<Login setRole={setUserRole} />} />
-          <Route path="/complete-registration" element={
-            <ProtectedRoute allowedRoles={[UserRole.RESIDENT, UserRole.PROFESSIONAL]}>
-              <CompleteRegistration />
-            </ProtectedRoute>
-          } />
-
-          {/* Resident Routes */}
-          <Route path="/home" element={
-            <ProtectedRoute allowedRoles={[UserRole.RESIDENT]}>
-              <ResidentHome />
-            </ProtectedRoute>
-          } />
-          <Route path="/market" element={
-            <ProtectedRoute allowedRoles={[UserRole.RESIDENT]}>
-              <Marketplace />
-            </ProtectedRoute>
-          } />
-          <Route path="/booking" element={
-            <ProtectedRoute allowedRoles={[UserRole.RESIDENT]}>
-              <Booking />
-            </ProtectedRoute>
-          } />
-          <Route path="/sell" element={
-            <ProtectedRoute allowedRoles={[UserRole.RESIDENT]}>
-              <SellItem />
-            </ProtectedRoute>
-          } />
-          <Route path="/pro" element={
-            <ProtectedRoute allowedRoles={[UserRole.RESIDENT]}>
-              <ProPlan />
-            </ProtectedRoute>
-          } />
-
-          <Route path="/profile" element={
-            <ProtectedRoute allowedRoles={[UserRole.RESIDENT]}>
-              <ResidentProfile />
-            </ProtectedRoute>
-          } />
-          <Route path="/professional-profile" element={
-            <ProtectedRoute allowedRoles={[UserRole.RESIDENT]}>
-              <ProfessionalProfile />
-            </ProtectedRoute>
-          } />
-
-          {/* Professional Routes */}
-          <Route path="/plan/professional" element={
-            <ProtectedRoute allowedRoles={[UserRole.PROFESSIONAL]}>
-              <ProfessionalPaywall />
-            </ProtectedRoute>
-          } />
-
-          <Route path="/dashboard" element={
-            <ProtectedRoute allowedRoles={[UserRole.PROFESSIONAL]}>
-              <ProfDashboard />
-            </ProtectedRoute>
-          } />
-
-          {/* Shared Routes */}
-          <Route path="/orders" element={
-            <ProtectedRoute allowedRoles={[UserRole.RESIDENT, UserRole.PROFESSIONAL]}>
-              <Orders />
-            </ProtectedRoute>
-          } />
-          <Route path="/chat" element={
-            <ProtectedRoute allowedRoles={[UserRole.RESIDENT, UserRole.PROFESSIONAL, UserRole.ADMIN]}>
-              <Chat />
-            </ProtectedRoute>
-          } />
-          <Route path="/create-offer" element={
-            <ProtectedRoute allowedRoles={[UserRole.PROFESSIONAL]}>
-              <CreateOffer />
-            </ProtectedRoute>
-          } />
-          <Route path="/store" element={
-            <ProtectedRoute allowedRoles={[UserRole.PROFESSIONAL]}>
-              <MyStore />
-            </ProtectedRoute>
-          } />
-          <Route path="/agenda" element={
-            <ProtectedRoute allowedRoles={[UserRole.PROFESSIONAL]}>
-              <Agenda />
-            </ProtectedRoute>
-          } />
-          <Route path="/reviews" element={
-            <ProtectedRoute allowedRoles={[UserRole.PROFESSIONAL]}>
-              <Reviews />
-            </ProtectedRoute>
-          } />
-
-          {/* Legacy/Shortcut Routes */}
-          <Route path="/beauty" element={<Navigate to="/market" state={{ category: 'Beleza' }} replace />} />
-          <Route path="/food" element={<Navigate to="/market" state={{ category: 'Comida' }} replace />} />
-
-          {/* Admin Routes */}
-          <Route path="/admin" element={
-            <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
-              <MasterDashboard />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/users" element={
-            <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
-              <AdminUsers />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/condos" element={
-            <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
-              <AdminCondos />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/financial" element={
-            <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
-              <AdminFinancial />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/plans" element={
-            <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
-              <AdminPlans />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/broadcast" element={
-            <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
-              <AdminBroadcast />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/settings" element={
-            <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
-              <AdminPlans />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/ads" element={
-            <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
-              <AdminAds />
-            </ProtectedRoute>
-          } />
-
-          {/* Generic Settings Route (Accessible by Pro via Dashboard link) */}
-          <Route path="/settings" element={
-            <ProtectedRoute allowedRoles={[UserRole.PROFESSIONAL, UserRole.RESIDENT, UserRole.ADMIN]}>
-              <Settings />
-            </ProtectedRoute>
-          } />
-        </Routes>
-      </Layout>
+      <AppContent />
     </BrowserRouter>
   );
 };
