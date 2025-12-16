@@ -94,6 +94,7 @@ const ResidentHome: React.FC = () => {
 
   // Fetch User & Profile
   const [userName, setUserName] = React.useState("Vizinho(a)");
+  const [userAvatar, setUserAvatar] = React.useState<string | null>(null);
   const [condoName, setCondoName] = React.useState("Seu Condomínio");
 
   // Profile Completion State
@@ -112,15 +113,23 @@ const ResidentHome: React.FC = () => {
         if (user.user_metadata?.full_name) {
           setUserName(user.user_metadata.full_name.split(' ')[0]);
         }
+        if (user.user_metadata?.avatar_url) {
+          setUserAvatar(user.user_metadata.avatar_url);
+        }
 
         // Fetch Profile for Condo Name and Completeness Check
-        const { data: profile } = await import('../lib/supabase').then(m => m.supabase.from('profiles').select('full_name, condo_id, unit, condos(name)').eq('id', user.id).single());
+        const { data: profile } = await import('../lib/supabase').then(m => m.supabase.from('profiles').select('full_name, avatar_url, condo_id, unit, condos(name)').eq('id', user.id).single());
 
         if (profile) {
           // Fallback for name if metadata failure
           if (!user.user_metadata?.full_name && profile.full_name) {
             setUserName(profile.full_name.split(' ')[0]);
           }
+          // Fallback for avatar
+          if (profile.avatar_url) {
+            setUserAvatar(profile.avatar_url);
+          }
+
           if (profile.condos?.name) {
             setCondoName(profile.condos.name);
           }
@@ -273,8 +282,12 @@ const ResidentHome: React.FC = () => {
 
         <div className="relative z-10 flex justify-between items-center mb-8">
           <div className="flex items-center gap-3">
-            <div onClick={() => navigate('/resident-profile')} className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border-2 border-white/30 cursor-pointer">
-              <span className="font-bold text-lg">{userName.charAt(0)}</span>
+            <div onClick={() => navigate('/resident-profile')} className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border-2 border-white/30 cursor-pointer overflow-hidden relative">
+              {userAvatar ? (
+                <img src={userAvatar} className="w-full h-full object-cover" alt="Avatar" />
+              ) : (
+                <span className="font-bold text-lg">{userName.charAt(0)}</span>
+              )}
             </div>
             <div>
               <h1 className="font-bold text-2xl leading-tight text-white mb-0.5">Olá, {userName} 👋</h1>
