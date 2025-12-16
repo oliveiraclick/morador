@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Bell, Search, MapPin, QrCode, ShoppingBag as ShoppingBagIcon, Sparkles as SparklesIcon, Utensils as UtensilsIcon, LayoutGrid, Hammer as HammerIcon, Megaphone, ChevronRight, ChevronLeft, Heart, Building, Home, Star, Calendar, FileText, Key } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 import ReferralModal from '../components/ReferralModal';
 
 const ResidentHome: React.FC = () => {
@@ -106,49 +107,80 @@ const ResidentHome: React.FC = () => {
   const [userId, setUserId] = useState('');
 
   React.useEffect(() => {
-    const fetchUser = async () => {
-      const { data: { user } } = await import('../lib/supabase').then(m => m.supabase.auth.getUser());
+    // 1. Load from cache first for immediate feedback
+    const cachedName = localStorage.getItem('user_name_cache');
+    const cachedAvatar = localStorage.getItem('user_avatar_cache');
+    const cachedCondo = localStorage.getItem('user_condo_cache');
+
+    if (cachedName) setUserName(cachedName);
+    if (cachedAvatar) setUserAvatar(cachedAvatar);
+    if (cachedCondo) setCondoName(cachedCondo);
+
+    const fetchUser = async (session: any) => {
+      const user = session?.user;
+
       if (user) {
         setUserId(user.id);
-        if (user.user_metadata?.full_name) {
-          setUserName(user.user_metadata.full_name.split(' ')[0]);
-        }
-        if (user.user_metadata?.avatar_url) {
-          setUserAvatar(user.user_metadata.avatar_url);
-        }
+
+        let newName = user.user_metadata?.full_name?.split(' ')[0] || userName;
+        let newAvatar = user.user_metadata?.avatar_url || userAvatar;
 
         // Fetch Profile for Condo Name and Completeness Check
-        const { data: profile } = await import('../lib/supabase').then(m => m.supabase.from('profiles').select('full_name, avatar_url, condo_id, unit, condos(name)').eq('id', user.id).single());
+        // We use maybeSingle() instead of single() to avoid errors if profile doesn't exist yet
+        const { data: profile } = await supabase.from('profiles')
+          .select('full_name, avatar_url, condo_id, unit, condos(name)')
+          .eq('id', user.id)
+          .maybeSingle();
 
         if (profile) {
           // Fallback for name if metadata failure
-          if (!user.user_metadata?.full_name && profile.full_name) {
-            setUserName(profile.full_name.split(' ')[0]);
+          if (profile.full_name) {
+            newName = profile.full_name.split(' ')[0];
           }
           // Fallback for avatar
           if (profile.avatar_url) {
-            setUserAvatar(profile.avatar_url);
+            newAvatar = profile.avatar_url;
           }
 
           if (profile.condos?.name) {
             setCondoName(profile.condos.name);
+            localStorage.setItem('user_condo_cache', profile.condos.name);
           }
 
           // Check if profile is incomplete (missing condo or unit)
           if (!profile.condo_id || !profile.unit) {
-            // Fetch condos for selection
-            const { data: condosData, error: condosError } = await import('../lib/supabase').then(m => m.supabase.from('condos').select('*'));
-            if (condosError) console.error("Error fetching condos:", condosError);
+            // Fetch condos for selection only if needed
+            const { data: condosData } = await supabase.from('condos').select('*');
             if (condosData) setCondos(condosData);
             setShowCompleteProfileModal(true);
           }
         }
+
+        // Update State & Cache
+        setUserName(newName);
+        setUserAvatar(newAvatar);
+
+        localStorage.setItem('user_name_cache', newName);
+        if (newAvatar) localStorage.setItem('user_avatar_cache', newAvatar);
+
       } else {
         // No user found, redirect to login
-        navigate('/login');
+        // But delay slightly or check if we are really logged out?
+        // navigate('/login'); 
       }
     };
-    fetchUser();
+
+    // 2. Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      fetchUser(session);
+    });
+
+    // 3. Listen for auth changes (real-time)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      fetchUser(session);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   // Fetch Desapego Items
