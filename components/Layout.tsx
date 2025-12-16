@@ -32,7 +32,7 @@ const Layout: React.FC<LayoutProps> = ({ children, role }) => {
   };
 
   const navItemClass = (path: string) =>
-    `flex flex - col items - center justify - center w - full h - full space - y - 1 ${location.pathname === path ? 'text-[#7c3aed]' : 'text-gray-400 hover:text-gray-600'
+    `flex-1 flex flex-col items-center justify-center w-full h-full space-y-1 ${location.pathname === path ? 'text-[#7c3aed]' : 'text-gray-400 hover:text-gray-600'
     } `;
 
   return (
@@ -95,7 +95,7 @@ const Layout: React.FC<LayoutProps> = ({ children, role }) => {
                 <button onClick={() => navigate('/admin/settings')} className={navItemClass('/admin/settings')}>
                   <Settings size={24} strokeWidth={location.pathname === '/admin/settings' ? 2.5 : 2} />
                 </button>
-                <button onClick={handleLogout} className="flex flex-col items-center justify-center w-full h-full space-y-1 text-red-400 hover:text-red-600">
+                <button onClick={handleLogout} className="flex-1 flex flex-col items-center justify-center w-full h-full space-y-1 text-red-400 hover:text-red-600">
                   <LogOut size={24} strokeWidth={2} />
                 </button>
               </>
