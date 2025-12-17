@@ -26,8 +26,8 @@ const Splash: React.FC = () => {
       <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-purple-600 to-[#7c3aed]"></div>
 
       <div className="z-10 flex flex-col items-center animate-fade-in-up">
-        <div className="w-24 h-24 bg-white/20 backdrop-blur-sm rounded-3xl flex items-center justify-center mb-6 shadow-2xl border border-white/10 p-4">
-          <img src="/logo.png" alt="Morador Logo" className="w-full h-full object-contain filter drop-shadow-lg" />
+        <div className="w-24 h-24 bg-white/20 backdrop-blur-sm rounded-3xl flex items-center justify-center mb-6 shadow-2xl border border-white/10">
+          <Home size={48} className="text-white fill-white" />
         </div>
 
         <h1 className="text-4xl font-bold text-white mb-2 tracking-tight">Morador</h1>
