@@ -25,15 +25,11 @@ const AdminPlans: React.FC = () => {
             ]);
 
             if (couponsRes.data) setCoupons(couponsRes.data);
-            if (plansRes.data && plansRes.data.length > 0) {
-                setPlans(plansRes.data);
-            } else {
-                // Return default plans if DB is empty to avoid broken UI
-                setPlans([
-                    { id: 1, name: 'Morador Pro', price: 'R$ 14,90', features: ['Sem anúncios', 'Clube de Descontos', 'Suporte Prioritário'], color: 'bg-purple-600' },
-                    { id: 2, name: 'Condomínio Digital', price: 'R$ 299,00', features: ['Gestão Completa', 'App White Label', 'Portaria Remota'], color: 'bg-indigo-600' },
-                ]);
-            }
+            // Plans allow for mock if empty
+            setPlans([
+                { id: 1, name: 'Morador Pro', price: 'R$ 29,90', features: ['Sem anúncios', 'Clube de Descontos', 'Suporte Prioritário'], color: 'bg-purple-600' },
+            ]);
+
         } catch (error) {
             console.error('Error fetching data:', error);
         } finally {
@@ -45,10 +41,10 @@ const AdminPlans: React.FC = () => {
         try {
             const { error } = await supabase.from('coupons').insert([{
                 code: newCoupon.code.toUpperCase(),
-                discount: '100% OFF',
-                duration: parseInt(newCoupon.duration || '1'),
-                uses: 0,
-                status: 'active'
+                discount_label: '100% OFF', // Fixed column name
+                duration_months: parseInt(newCoupon.duration || '1'), // Fixed column name
+                uses_count: 0, // Fixed column name
+                active: true
             }]);
 
             if (error) throw error;
@@ -57,7 +53,7 @@ const AdminPlans: React.FC = () => {
             setShowCouponModal(false);
             setNewCoupon({ code: '', discount: '', duration: '' });
         } catch (error) {
-            alert('Erro ao criar cupom');
+            alert('Erro ao criar cupom: ' + error.message);
         }
     };
 
@@ -70,8 +66,6 @@ const AdminPlans: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 pb-20">
-            {/* ... Existing UI ... */}
-
             {/* Header */}
             <div className="bg-white px-6 py-4 flex items-center gap-4 shadow-sm sticky top-0 z-10">
                 <button onClick={() => navigate('/admin')} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
@@ -81,41 +75,24 @@ const AdminPlans: React.FC = () => {
             </div>
 
             <div className="p-6 space-y-8">
-                {/* ... Plans Section ... */}
+                {/* Plans Section - Simplified to Static View since it's just one plan now */}
                 <div>
-                    {/* No changes to Plans UI */}
                     <div className="flex justify-between items-center mb-4">
                         <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                             <CreditCard size={20} className="text-purple-600" />
-                            Planos Ativos
+                            Plano Ativo (Kiwify)
                         </h2>
-                        <button className="text-purple-600 text-sm font-bold flex items-center gap-1">
-                            <Plus size={16} /> Novo Plano
-                        </button>
                     </div>
 
-                    <div className="space-y-4">
-                        {plans.map(plan => (
-                            <div key={plan.id} className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 relative overflow-hidden group">
-                                <div className={`absolute top-0 left-0 w-2 h-full ${plan.color}`}></div>
-                                <div className="flex justify-between items-start">
-                                    <div>
-                                        <h3 className="font-bold text-gray-900 text-lg">{plan.name}</h3>
-                                        <p className="text-2xl font-bold text-gray-700 mt-1">{plan.price}<span className="text-xs text-gray-400 font-normal">/mês</span></p>
-                                    </div>
-                                    <button className="p-2 bg-gray-50 rounded-lg hover:bg-gray-100 text-gray-500">
-                                        <Edit2 size={18} />
-                                    </button>
-                                </div>
-                                <div className="mt-4 flex flex-wrap gap-2">
-                                    {plan.features.map((feat, i) => (
-                                        <span key={i} className="text-[10px] font-bold bg-gray-50 text-gray-600 px-2 py-1 rounded-md border border-gray-100">
-                                            {feat}
-                                        </span>
-                                    ))}
-                                </div>
+                    <div className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 relative overflow-hidden group">
+                        <div className="absolute top-0 left-0 w-2 h-full bg-purple-600"></div>
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <h3 className="font-bold text-gray-900 text-lg">Morador Pro</h3>
+                                <p className="text-2xl font-bold text-gray-700 mt-1">R$ 29,90<span className="text-xs text-gray-400 font-normal">/mês</span></p>
                             </div>
-                        ))}
+                            <span className="text-xs bg-green-100 text-green-700 font-bold px-2 py-1 rounded-lg">Kiwify Integrado</span>
+                        </div>
                     </div>
                 </div>
 
@@ -144,17 +121,13 @@ const AdminPlans: React.FC = () => {
                                         <div className="flex items-center gap-2">
                                             <h4 className="font-bold text-gray-900">{coupon.code}</h4>
                                             <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-bold">
-                                                {/* @ts-ignore */}
-                                                {coupon.visualLabel || coupon.discount}
+                                                {coupon.discount_label || '100% OFF'}
                                             </span>
                                         </div>
-                                        <p className="text-xs text-gray-400">{coupon.uses} utilizações</p>
+                                        <p className="text-xs text-gray-400">{coupon.uses_count || 0} utilizações</p>
                                     </div>
                                 </div>
                                 <div className="flex gap-2">
-                                    <button className="p-2 hover:bg-gray-50 rounded-full text-gray-400">
-                                        <Copy size={18} />
-                                    </button>
                                     <button onClick={() => handleDeleteCoupon(coupon.id)} className="p-2 hover:bg-red-50 rounded-full text-gray-400 hover:text-red-500">
                                         <Trash2 size={18} />
                                     </button>
