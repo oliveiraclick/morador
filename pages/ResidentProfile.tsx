@@ -26,33 +26,51 @@ const ResidentProfile: React.FC = () => {
 
     // Fetch User Data
     React.useEffect(() => {
+        let mounted = true;
         const fetchProfile = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-                setUserId(user.id);
-                setEmail(user.email || '');
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!mounted) return;
 
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('*, condos(name)')
-                    .eq('id', user.id)
-                    .single();
+                if (user) {
+                    setUserId(user.id);
+                    setEmail(user.email || '');
 
-                if (profile) {
-                    setName(profile.full_name || 'Morador');
-                    setPhone(profile.phone || '');
-                    setUnit(profile.unit || '');
-                    setSelectedCondo(profile.condo_id || '');
-                    setAvatarUrl(profile.avatar_url || '');
-                    if (profile.condos?.name) setCondo(profile.condos.name);
+                    const { data: profile, error } = await supabase
+                        .from('profiles')
+                        .select('*, condos(name)')
+                        .eq('id', user.id)
+                        .maybeSingle(); // Use maybeSingle to avoid 406 error if not found
+
+                    if (error) {
+                        console.error('Error fetching profile:', error);
+                    }
+
+                    if (profile) {
+                        if (mounted) {
+                            setName(profile.full_name || 'Morador');
+                            setPhone(profile.phone || '');
+                            setUnit(profile.unit || '');
+                            setSelectedCondo(profile.condo_id || '');
+                            setAvatarUrl(profile.avatar_url || '');
+                            // Safely access nested property
+                            const condoData = profile.condos as any;
+                            if (condoData?.name) setCondo(condoData.name);
+                            else if (Array.isArray(condoData) && condoData[0]?.name) setCondo(condoData[0].name);
+                        }
+                    }
                 }
-            }
 
-            // Fetch Condos for Address Modal
-            const { data: condosList } = await supabase.from('condos').select('*');
-            if (condosList) setCondos(condosList);
+                // Fetch Condos
+                const { data: condosList } = await supabase.from('condos').select('*');
+                if (condosList && mounted) setCondos(condosList);
+
+            } catch (err) {
+                console.error("Critical error in Profile load:", err);
+            }
         };
         fetchProfile();
+        return () => { mounted = false; };
     }, []);
 
     const handleLogout = () => {
