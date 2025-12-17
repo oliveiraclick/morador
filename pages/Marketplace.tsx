@@ -335,7 +335,7 @@ const Marketplace: React.FC = () => {
             />
             {/* Improved Back Button Visibility */}
             <button
-              onClick={() => setViewItem(null)}
+              onClick={() => navigate(-1)}
               className="absolute top-4 left-4 p-2 bg-white/90 backdrop-blur-md rounded-full text-gray-900 shadow-md hover:bg-white transition-colors"
             >
               <ArrowLeft size={24} />
