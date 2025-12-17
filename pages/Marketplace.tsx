@@ -7,13 +7,15 @@ const Marketplace: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [activeCategory, setActiveCategory] = useState(location.state?.category || 'Todos');
+  const [viewMode, setViewMode] = useState(location.state?.viewMode || 'list');
+  const [filterType, setFilterType] = useState(location.state?.filterType || 'ALL');
   const [viewItem, setViewItem] = useState<any>(null);
   const [showLightbox, setShowLightbox] = useState(false);
 
   useEffect(() => {
-    if (location.state?.category) {
-      setActiveCategory(location.state.category);
-    }
+    if (location.state?.category) setActiveCategory(location.state.category);
+    if (location.state?.viewMode) setViewMode(location.state.viewMode);
+    if (location.state?.filterType) setFilterType(location.state.filterType);
   }, [location.state]);
 
   const categories = ['Todos', 'Móveis', 'Eletrônicos', 'Infantil', 'Roupas', 'Beleza', 'Comida'];
@@ -258,13 +260,66 @@ const Marketplace: React.FC = () => {
       </div>
 
       <div className="space-y-2">
-        {/* Section 1: Desapegos */}
-        <SectionHeader title={`Desapego do ${condoName}`} icon={Repeat} count={desapegoItems.length} />
-        <HorizontalList items={desapegoItems} />
+        {viewMode === 'grid' ? (
+          <div className="px-4 mt-4">
+            <div className="flex items-center gap-2 mb-4 text-[#7c3aed]">
+              <Repeat size={20} />
+              <h2 className="text-lg font-bold text-gray-900">{filterType === 'DESAPEGO' ? `Desapegos do ${condoName}` : 'Itens'}</h2>
+            </div>
 
-        {/* Section 2: Lojas */}
-        <SectionHeader title="Lojas & Vitrines" icon={Store} count={lojaItems.length} />
-        <HorizontalList items={lojaItems} />
+            <div className="grid grid-cols-2 gap-3 pb-20">
+              {(filterType === 'DESAPEGO' ? desapegoItems : items).map((item) => (
+                <div key={item.id} className="bg-white rounded-2xl p-3 shadow-sm border border-gray-100 flex flex-col">
+                  {/* Seller Header */}
+                  <div className="flex items-center justify-between mb-3 px-1">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-6 h-6 rounded-full ${item.sellerColor} flex items-center justify-center text-white text-[9px] font-bold shadow-sm`}>
+                        {item.sellerAvatar}
+                      </div>
+                      <h3 className="text-[10px] font-bold text-gray-900 leading-tight truncate max-w-[80px]">{item.seller}</h3>
+                    </div>
+                    <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-md ${item.condition === 'Novo' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                      {item.condition}
+                    </span>
+                  </div>
+
+                  {/* Image */}
+                  <div onClick={() => setViewItem(item)} className="relative aspect-square rounded-xl overflow-hidden mb-2 bg-gray-100 group cursor-pointer">
+                    <img
+                      src={item.img}
+                      className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                      onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80&w=500'; }}
+                    />
+                  </div>
+
+                  {/* Content */}
+                  <div className="px-1 flex-1 flex flex-col">
+                    <h2 className="text-xs font-bold text-gray-800 line-clamp-1 mb-1">{item.title}</h2>
+                    <div className="flex items-baseline gap-2 mb-3 mt-auto">
+                      <span className="text-sm font-bold text-[#7c3aed]">R$ {item.price.toFixed(2).replace('.', ',')}</span>
+                    </div>
+                    <button onClick={() => handleNegotiate(item)} className="w-full bg-white border border-[#7c3aed] text-[#7c3aed] py-2 rounded-lg font-bold text-[10px] hover:bg-[#7c3aed] hover:text-white transition-colors flex items-center justify-center gap-1.5">
+                      <MessageSquare size={12} /> Negociar
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {(filterType === 'DESAPEGO' ? desapegoItems : items).length === 0 && (
+                <div className="col-span-2 text-center py-10 text-gray-400">Nenhum item encontrado.</div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Section 1: Desapegos */}
+            <SectionHeader title={`Desapego do ${condoName}`} icon={Repeat} count={desapegoItems.length} />
+            <HorizontalList items={desapegoItems} />
+
+            {/* Section 2: Lojas */}
+            <SectionHeader title="Lojas & Vitrines" icon={Store} count={lojaItems.length} />
+            <HorizontalList items={lojaItems} />
+          </>
+        )}
       </div>
 
 
