@@ -309,7 +309,7 @@ const ResidentHome: React.FC = () => {
       )}
 
       {/* Header */}
-      <header className="bg-[#7c3aed] text-white pt-12 pb-24 rounded-b-[40px] px-6 relative overflow-hidden">
+      <header className="bg-[#7c3aed] text-white pt-12 pb-10 rounded-b-[40px] px-6 relative overflow-hidden">
         {/* Background Pattern */}
         <div className="absolute top-0 left-0 w-full h-full opacity-10">
           <div className="absolute right-0 top-0 w-64 h-64 bg-white rounded-full mix-blend-overlay blur-3xl -mr-16 -mt-16"></div>
@@ -464,16 +464,7 @@ const ResidentHome: React.FC = () => {
                 </p>
               </div>
             </div>
-          ) : (
-            <div className="bg-white p-4 rounded-2xl shadow-sm border border-l-4 border-gray-200 border-gray-100 flex gap-4 mb-8 opacity-50">
-              <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-gray-400 flex-shrink-0">
-                <Megaphone size={24} />
-              </div>
-              <div className="flex items-center">
-                <p className="text-sm text-gray-400">Nenhum aviso no momento.</p>
-              </div>
-            </div>
-          )}
+          ) : null}
 
         {/* Desapego Carousel */}
         <div className="mb-8 relative group">
