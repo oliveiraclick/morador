@@ -10,8 +10,14 @@ const Login: React.FC = ({ setRole }: { setRole?: (role: UserRole) => void }) =>
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
+    const [logoUrl, setLogoUrl] = useState<string | null>(null);
+
     useEffect(() => {
+        const { data: { publicUrl } } = supabase.storage.from('marketplace').getPublicUrl('app/logo.png');
+        setLogoUrl(`${publicUrl}?t=${Date.now()}`);
+
         const checkSession = async () => {
+            // ... existing checks
             const { data: { session } } = await supabase.auth.getSession();
             if (session) {
                 const role = localStorage.getItem('user_role');
@@ -23,70 +29,29 @@ const Login: React.FC = ({ setRole }: { setRole?: (role: UserRole) => void }) =>
         checkSession();
     }, []);
 
-    const handleLogin = async (e: React.FormEvent) => {
-        e.preventDefault();
-
-        // 1. Check Hardcoded Admin - REMOVED FOR PRODUCTION SECURITY
-        // if (email === 'denys@morador.app' && password === 'Vendas@123') { ... }
-
-        // 2. Supabase Auth
-        try {
-            const { data, error } = await supabase.auth.signInWithPassword({
-                email,
-                password,
-            });
-
-            if (error) throw error;
-
-            if (data.user) {
-                // Fetch Profile to get Role
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('role')
-                    .eq('id', data.user.id)
-                    .single();
-
-                const role = profile?.role || UserRole.RESIDENT;
-
-                localStorage.setItem('user_role', role);
-                localStorage.setItem('user_registered', 'true');
-                if (setRole) setRole(role as UserRole);
-
-                // Redirect
-                if (role === UserRole.ADMIN) navigate('/admin');
-                else if (role === UserRole.PROFESSIONAL) navigate('/dashboard');
-                else navigate('/home');
-            }
-        } catch (err: any) {
-            alert('Erro ao entrar: ' + err.message);
-        }
-    };
-
-    const handleGoogleLogin = async () => {
-        try {
-            const { error } = await supabase.auth.signInWithOAuth({
-                provider: 'google',
-                options: {
-                    redirectTo: window.location.origin,
-                    queryParams: {
-                        access_type: 'offline',
-                        prompt: 'consent',
-                    },
-                },
-            });
-            if (error) throw error;
-        } catch (error: any) {
-            alert('Erro ao conectar com Google: ' + error.message);
-        }
-    };
+    // ... existing handlers
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col justify-center p-6">
             <div className="max-w-md w-full mx-auto">
                 <div className="text-center mb-10">
-                    <div className="w-16 h-16 bg-[#7c3aed] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-purple-200 rotate-3 transform hover:rotate-6 transition-transform">
-                        <LogIn size={32} className="text-white" />
-                    </div>
+                    {logoUrl ? (
+                        <div className="w-24 h-24 mx-auto mb-4 p-2 bg-white rounded-2xl shadow-xl shadow-purple-200 flex items-center justify-center">
+                            <img
+                                src={logoUrl}
+                                className="w-full h-full object-contain"
+                                alt="Logo"
+                                onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                    setLogoUrl(null);
+                                }}
+                            />
+                        </div>
+                    ) : (
+                        <div className="w-16 h-16 bg-[#7c3aed] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-purple-200 rotate-3 transform hover:rotate-6 transition-transform">
+                            <LogIn size={32} className="text-white" />
+                        </div>
+                    )}
                     <h1 className="text-3xl font-bold text-gray-900">Bem-vindo de volta!</h1>
                     <p className="text-gray-500 mt-2">Acesse sua conta para continuar</p>
                 </div>

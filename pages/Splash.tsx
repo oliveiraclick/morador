@@ -6,7 +6,14 @@ import { APP_VERSION } from '../lib/constants';
 const Splash: React.FC = () => {
   const navigate = useNavigate();
 
+  const [logoUrl, setLogoUrl] = React.useState<string | null>(null);
+
   useEffect(() => {
+    import('../lib/supabase').then(({ supabase }) => {
+      const { data: { publicUrl } } = supabase.storage.from('marketplace').getPublicUrl('app/logo.png');
+      setLogoUrl(`${publicUrl}?t=${Date.now()}`);
+    });
+
     // Simulate loading time then check persistence
     const timer = setTimeout(() => {
       const isRegistered = localStorage.getItem('user_registered');
@@ -26,9 +33,23 @@ const Splash: React.FC = () => {
       <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-purple-600 to-[#7c3aed]"></div>
 
       <div className="z-10 flex flex-col items-center animate-fade-in-up">
-        <div className="w-24 h-24 bg-white/20 backdrop-blur-sm rounded-3xl flex items-center justify-center mb-6 shadow-2xl border border-white/10">
-          <Home size={48} className="text-white fill-white" />
-        </div>
+        {logoUrl ? (
+          <div className="w-32 h-32 bg-white rounded-3xl flex items-center justify-center mb-6 shadow-2xl border border-white/10 p-4">
+            <img
+              src={logoUrl}
+              alt="Logo"
+              className="w-full h-full object-contain"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                setLogoUrl(null); // Fallback to icon
+              }}
+            />
+          </div>
+        ) : (
+          <div className="w-24 h-24 bg-white/20 backdrop-blur-sm rounded-3xl flex items-center justify-center mb-6 shadow-2xl border border-white/10">
+            <Home size={48} className="text-white fill-white" />
+          </div>
+        )}
 
         <h1 className="text-4xl font-bold text-white mb-2 tracking-tight">Morador</h1>
         <p className="text-purple-200 text-sm font-medium">Conectando você ao seu lar</p>

@@ -44,6 +44,7 @@ import AdminBroadcast from './pages/AdminBroadcast';
 import AdminAds from './pages/AdminAds';
 
 import ProfessionalPaywall from './pages/ProfessionalPaywall';
+import AdminBranding from './pages/AdminBranding';
 
 const AppContent = () => {
   const [loading, setLoading] = useState(true);
@@ -276,7 +277,12 @@ const AppContent = () => {
         } />
         <Route path="/admin/settings" element={
           <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
-            <AdminPlans />
+            <Settings />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/branding" element={
+          <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+            <AdminBranding />
           </ProtectedRoute>
         } />
         <Route path="/admin/ads" element={
