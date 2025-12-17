@@ -2,17 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { Search, Heart, MessageSquare, ArrowLeft, Store, Repeat, Utensils, Smartphone, Sparkles, ShoppingBag } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { useGlobal } from '../context/GlobalContext';
 
 const Marketplace: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { items, profile, loading, refreshItems } = useGlobal(); // Use Global Context
+
   const [activeCategory, setActiveCategory] = useState(location.state?.category || 'Todos');
   const [viewItem, setViewItem] = useState<any>(null);
   const [showLightbox, setShowLightbox] = useState(false);
-
   const [viewMode, setViewMode] = useState<'NORMAL' | 'GRID_DESAPEGO'>('NORMAL');
 
-  // Deep Link Logic: Check if an item was passed via navigation state to open immediately
+  // Deep Link Logic
   useEffect(() => {
     if (location.state?.filter === 'DESAPEGO_ONLY') {
       setViewMode('GRID_DESAPEGO');
@@ -20,15 +22,26 @@ const Marketplace: React.FC = () => {
     } else if (location.state?.category) {
       setActiveCategory(location.state.category);
     }
+  }, [location.state]);
 
+  // Deep Link View Item (Look in global items)
+  useEffect(() => {
     if (location.state?.viewItem) {
       setViewItem(location.state.viewItem);
+    } else if (location.state?.viewItemId && items.length > 0) {
+      const found = items.find(i => i.id === location.state.viewItemId);
+      if (found) setViewItem(found);
     }
-  }, [location.state]);
+  }, [location.state, items]);
+
+  // Refresh on mount to ensure freshness, but we have cache immediately
+  useEffect(() => {
+    refreshItems();
+  }, []);
 
   const categories = ['Todos', 'Móveis', 'Eletrônicos', 'Infantil', 'Roupas', 'Beleza', 'Comida'];
 
-  // Theme Logic
+  // Theme Logic... (rest of the file)
   const themes: Record<string, any> = {
     'Todos': {
       gradient: 'bg-white',
@@ -63,65 +76,11 @@ const Marketplace: React.FC = () => {
   const currentTheme = themes[activeCategory] || themes['Todos'];
   const HeaderIcon = currentTheme.icon;
 
-  // State for items
-  const [items, setItems] = useState<any[]>([]);
-  const [condoName, setCondoName] = useState('Vila');
+  const condoName = profile?.condo_name || 'Vila';
 
-  useEffect(() => {
-    const fetchData = async () => {
-      // Fetch user's condo name
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('condos(name)')
-          .eq('id', user.id)
-          .single();
+  // State from Global Context instead of local
+  // Removed local useEffect for fetchData
 
-        if (profile?.condos?.name) {
-          setCondoName(profile.condos.name);
-        }
-      }
-
-      // Fetch marketplace items
-      const { data, error } = await supabase
-        .from('marketplace_items')
-        .select(`
-          *,
-          profiles:seller_id (full_name, unit, avatar_url)
-        `)
-        .order('created_at', { ascending: false });
-
-      if (data) {
-        // Map DB fields to UI fields expected by current render
-        const mappedItems = data.map(item => ({
-          id: item.id,
-          type: item.type === 'desapego' ? 'DESAPEGO' : 'LOJA',
-          title: item.title,
-          price: Number(item.price),
-          img: item.image_url,
-          description: item.description,
-          seller: item.profiles?.full_name || 'Vendedor',
-          sellerAvatar: item.profiles?.full_name?.substring(0, 2).toUpperCase() || 'VA',
-          sellerAvatarUrl: item.profiles?.avatar_url,
-          sellerColor: 'bg-purple-500',
-          location: item.profiles?.unit || 'Condomínio',
-          time: new Date(item.created_at).toLocaleDateString(),
-          condition: 'Novo',
-          category: item.category,
-          originalPrice: item.original_price // Assuming column exists or is null
-        }));
-        setItems(mappedItems);
-
-        // If we have an ID but not the object (e.g. from a link), find it
-        if (location.state?.viewItemId && !location.state.viewItem) {
-          const found = mappedItems.find(i => i.id === location.state.viewItemId);
-          if (found) setViewItem(found);
-        }
-      }
-    };
-    fetchData();
-  }, []);
 
   // Filter Logic
   const desapegoItems = items.filter(item =>
@@ -293,7 +252,7 @@ const Marketplace: React.FC = () => {
           <div className="pt-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
               <Repeat className="text-[#7c3aed]" />
-              Desapegos na Vila
+              Desapegos
             </h2>
 
             <div className="grid grid-cols-2 gap-3">

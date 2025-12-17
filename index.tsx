@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
+import { GlobalProvider } from './context/GlobalContext';
 import { UserRole } from './types';
 
 // Pages
@@ -307,9 +308,11 @@ import ErrorBoundary from './components/ErrorBoundary';
 const App = () => {
   return (
     <ErrorBoundary>
-      <BrowserRouter>
-        <AppContent />
-      </BrowserRouter>
+      <GlobalProvider>
+        <BrowserRouter>
+          <AppContent />
+        </BrowserRouter>
+      </GlobalProvider>
     </ErrorBoundary>
   );
 };

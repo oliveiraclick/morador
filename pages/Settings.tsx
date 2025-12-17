@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, User, Bell, Shield, CircleHelp, LogOut, ChevronRight, Sparkles } from 'lucide-react';
+import { ArrowLeft, User, Bell, Shield, CircleHelp, LogOut, ChevronRight, Sparkles, RotateCcw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { APP_VERSION } from '../lib/constants';
 
@@ -10,6 +10,20 @@ const Settings: React.FC = () => {
         localStorage.removeItem('user_role');
         localStorage.removeItem('user_registered');
         window.location.href = '/login';
+    };
+
+    const handleHardRefresh = async () => {
+        if ('serviceWorker' in navigator) {
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            for (const registration of registrations) {
+                await registration.unregister();
+            }
+        }
+        if ('caches' in window) {
+            const keys = await caches.keys();
+            await Promise.all(keys.map(key => caches.delete(key)));
+        }
+        window.location.reload();
     };
 
     const sections = [
@@ -31,6 +45,7 @@ const Settings: React.FC = () => {
             title: 'Suporte',
             items: [
                 { icon: <CircleHelp size={20} />, label: 'Ajuda e Suporte', action: () => { } },
+                { icon: <RotateCcw size={20} />, label: 'Atualizar Aplicativo (Limpar Cache)', action: handleHardRefresh },
             ]
         }
     ];

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ChevronRight, ChevronLeft, Building, Home, MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { useGlobal } from '../context/GlobalContext'; // Global Context
 import ReferralModal from '../components/ReferralModal';
 import HomeHeader from '../components/HomeHeader';
 import DesapegoCard from '../components/DesapegoCard';
@@ -12,13 +13,20 @@ import OfferCard from '../components/OfferCard';
 
 const ResidentHome: React.FC = () => {
   const navigate = useNavigate();
-
-
+  const { profile, items, refreshProfile } = useGlobal(); // Use Global
 
   const [showReferral, setShowReferral] = useState(false);
   const [activePros, setActivePros] = useState<any[]>([]);
-  const [desapegoItems, setDesapegoItems] = useState<any[]>([]);
   const [ads, setAds] = useState<any[]>([]);
+
+  // Derived State from Global Context
+  const userName = profile?.full_name?.split(' ')[0] || "Vizinho(a)";
+  const userAvatar = profile?.avatar_url || null;
+  const condoName = profile?.condo_name || "Seu Condomínio";
+  const userId = profile?.id || '';
+
+  // Desapego items from Global Context
+  const desapegoItems = items.filter(i => i.type === 'desapego').slice(0, 20);
 
   // Notification State
   const [showNotifications, setShowNotifications] = useState(false);
@@ -83,25 +91,12 @@ const ResidentHome: React.FC = () => {
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
-        if (parsed) {
-          const pros = Array.isArray(parsed) ? parsed : [parsed];
-          setActivePros(pros.filter(p => p && typeof p === 'object'));
-        } else {
-          setActivePros([]);
+        if (Array.isArray(parsed)) {
+          setActivePros(parsed);
         }
-      } catch (e) {
-        console.error("Failed to parse prof_on_siteData", e);
-        setActivePros([]);
-      }
-    } else {
-      setActivePros([]);
+      } catch (e) { console.error(e) }
     }
   }, []);
-
-  // Fetch User & Profile
-  const [userName, setUserName] = React.useState("Vizinho(a)");
-  const [userAvatar, setUserAvatar] = React.useState<string | null>(null);
-  const [condoName, setCondoName] = React.useState("Seu Condomínio");
 
   // Profile Completion State
   const [showCompleteProfileModal, setShowCompleteProfileModal] = useState(false);
@@ -109,107 +104,17 @@ const ResidentHome: React.FC = () => {
   const [selectedCondo, setSelectedCondo] = useState('');
   const [street, setStreet] = useState('');
   const [number, setNumber] = useState('');
-  const [userId, setUserId] = useState('');
 
+  // Check if profile is incomplete
   React.useEffect(() => {
-    // 1. Load from cache first for immediate feedback
-    const cachedName = localStorage.getItem('user_name_cache');
-    const cachedAvatar = localStorage.getItem('user_avatar_cache');
-    const cachedCondo = localStorage.getItem('user_condo_cache');
-
-    if (cachedName) setUserName(cachedName);
-    if (cachedAvatar) setUserAvatar(cachedAvatar);
-    if (cachedCondo) setCondoName(cachedCondo);
-
-    const fetchUser = async (session: any) => {
-      const user = session?.user;
-
-      if (user) {
-        setUserId(user.id);
-
-        let newName = user.user_metadata?.full_name?.split(' ')[0] || userName;
-        let newAvatar = user.user_metadata?.avatar_url || userAvatar;
-
-        // Fetch Profile for Condo Name and Completeness Check
-        // We use maybeSingle() instead of single() to avoid errors if profile doesn't exist yet
-        const { data: profile, error } = await supabase.from('profiles')
-          .select('full_name, avatar_url, condo_id, unit, condos(name)')
-          .eq('id', user.id)
-          .maybeSingle();
-
-        if (error) console.error("Error fetching profile:", error);
-
-        if (profile) {
-          // Fallback for name if metadata failure
-          if (profile.full_name) {
-            newName = profile.full_name.split(' ')[0];
-          }
-          // Fallback for avatar
-          if (profile.avatar_url) {
-            newAvatar = profile.avatar_url;
-          }
-
-          if (profile.condos?.name) {
-            setCondoName(profile.condos.name);
-            localStorage.setItem('user_condo_cache', profile.condos.name);
-          }
-
-          // Check if profile is incomplete (missing condo or unit)
-          if (!profile.condo_id || !profile.unit) {
-            // Fetch condos for selection only if needed
-            const { data: condosData } = await supabase.from('condos').select('*');
-            if (condosData) setCondos(condosData);
-            setShowCompleteProfileModal(true);
-          }
-        }
-
-        // Update State & Cache
-        setUserName(newName);
-        setUserAvatar(newAvatar);
-
-        localStorage.setItem('user_name_cache', newName);
-        if (newAvatar) localStorage.setItem('user_avatar_cache', newAvatar);
-
-      } else {
-        // No user found, redirect to login
-        // But delay slightly or check if we are really logged out?
-        // navigate('/login'); 
-      }
-    };
-
-    // 2. Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      fetchUser(session);
-    });
-
-    // 3. Listen for auth changes (real-time)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      fetchUser(session);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  // Fetch Desapego Items
-  React.useEffect(() => {
-    const fetchDesapego = async () => {
-      const { data, error } = await supabase
-        .from('marketplace_items')
-        .select('*')
-        .eq('type', 'desapego')
-        .order('created_at', { ascending: false })
-        .limit(20);
-
-      if (error) {
-        console.error('Error fetching desapego:', error);
-      }
-
-      if (data) {
-        setDesapegoItems(data);
-      }
-    };
-    fetchDesapego();
-  }, []);
+    if (profile && (!profile.condo_id || !profile.unit)) {
+      // Load condos if needed
+      supabase.from('condos').select('*').then(({ data }) => {
+        if (data) setCondos(data);
+      });
+      setShowCompleteProfileModal(true);
+    }
+  }, [profile]);
 
   // Fetch Ads
   React.useEffect(() => {
@@ -256,9 +161,9 @@ const ResidentHome: React.FC = () => {
 
       if (error) throw error;
 
+      await refreshProfile(); // Update Global Cache
       setShowCompleteProfileModal(false);
-      // Refresh page or state
-      window.location.reload();
+      // No reload needed
 
     } catch (error) {
       console.error("Error updating profile:", error);

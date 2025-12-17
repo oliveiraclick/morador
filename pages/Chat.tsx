@@ -118,14 +118,18 @@ const Chat: React.FC = () => {
         }
 
         // 3. Send to Supabase
-        const { error } = await supabase.from('messages').insert([{
+        const messagePayload: any = {
             sender_id: currentUserId,
-            // receiver_id: seller?.id ... we don't have seller ID easily in this mock flow unless passed.
-            // For now we leave receiver generic or null, or we assume seller has an ID if we passed it.
-            // In a real app we MUST pass seller_id.
             content: text,
             product_context: product?.title || null
-        }]);
+        };
+
+        // Critical: Add receiver_id if we know who the seller is
+        if (product && product.seller_id) {
+            messagePayload.receiver_id = product.seller_id;
+        }
+
+        const { error } = await supabase.from('messages').insert([messagePayload]);
 
         if (error) {
             console.error('Error sending message:', error);

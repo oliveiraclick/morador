@@ -5,72 +5,53 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { APP_VERSION } from '../lib/constants';
 
+import { useGlobal } from '../context/GlobalContext';
+
 const ResidentProfile: React.FC = () => {
     const navigate = useNavigate();
-    const [name, setName] = React.useState(localStorage.getItem('user_name') || 'Morador');
-    const [condo, setCondo] = React.useState(localStorage.getItem('user_condo') || 'Condomínio não informado');
+    const { profile, refreshProfile, condos: globalCondos } = useGlobal(); // Use Global Context
+
+    // Initial State from Context
+    const [name, setName] = React.useState(profile?.full_name || localStorage.getItem('user_name') || 'Morador');
+    const [condo, setCondo] = React.useState(profile?.condo_name || localStorage.getItem('user_condo') || 'Condomínio não informado');
+
     const [activeModal, setActiveModal] = React.useState<'favorites' | 'notifications' | 'personal' | 'address' | null>(null);
 
     // Form States
     const [loading, setLoading] = React.useState(false);
     const [uploading, setUploading] = React.useState(false);
-    const [userId, setUserId] = React.useState('');
-    const [phone, setPhone] = React.useState('');
-    const [email, setEmail] = React.useState('');
-    const [avatarUrl, setAvatarUrl] = React.useState('');
+
+    // We can assume profile is loaded or loading, but for form fields we need local state
+    const [userId, setUserId] = React.useState(profile?.id || '');
+    const [phone, setPhone] = React.useState(profile?.phone || '');
+    const [email, setEmail] = React.useState(profile?.email || '');
+    const [avatarUrl, setAvatarUrl] = React.useState(profile?.avatar_url || '');
 
     // Address Form
-    const [condos, setCondos] = React.useState<any[]>([]);
-    const [selectedCondo, setSelectedCondo] = React.useState('');
-    const [unit, setUnit] = React.useState('');
+    const [condos, setCondos] = React.useState<any[]>(globalCondos || []);
+    const [selectedCondo, setSelectedCondo] = React.useState(profile?.condo_id || '');
+    const [unit, setUnit] = React.useState(profile?.unit || '');
 
-    // Fetch User Data
+    // Sync with Global Profile when it changes (e.g. after refresh)
     React.useEffect(() => {
-        let mounted = true;
-        const fetchProfile = async () => {
-            try {
-                const { data: { user } } = await supabase.auth.getUser();
-                if (!mounted) return;
+        if (profile) {
+            setUserId(profile.id);
+            setName(profile.full_name || 'Morador');
+            setPhone(profile.phone || '');
+            setEmail(profile.email || '');
+            setAvatarUrl(profile.avatar_url || '');
+            setCondo(profile.condo_name || 'Condomínio não informado');
+            setSelectedCondo(profile.condo_id || '');
+            setUnit(profile.unit || '');
+        }
+        if (globalCondos.length > 0) {
+            setCondos(globalCondos);
+        }
+    }, [profile, globalCondos]);
 
-                if (user) {
-                    setUserId(user.id);
-                    setEmail(user.email || '');
-
-                    const { data: profile, error } = await supabase
-                        .from('profiles')
-                        .select('*, condos(name)')
-                        .eq('id', user.id)
-                        .maybeSingle(); // Use maybeSingle to avoid 406 error if not found
-
-                    if (error) {
-                        console.error('Error fetching profile:', error);
-                    }
-
-                    if (profile) {
-                        if (mounted) {
-                            setName(profile.full_name || 'Morador');
-                            setPhone(profile.phone || '');
-                            setUnit(profile.unit || '');
-                            setSelectedCondo(profile.condo_id || '');
-                            setAvatarUrl(profile.avatar_url || '');
-                            // Safely access nested property
-                            const condoData = profile.condos as any;
-                            if (condoData?.name) setCondo(condoData.name);
-                            else if (Array.isArray(condoData) && condoData[0]?.name) setCondo(condoData[0].name);
-                        }
-                    }
-                }
-
-                // Fetch Condos
-                const { data: condosList } = await supabase.from('condos').select('*');
-                if (condosList && mounted) setCondos(condosList);
-
-            } catch (err) {
-                console.error("Critical error in Profile load:", err);
-            }
-        };
-        fetchProfile();
-        return () => { mounted = false; };
+    // Fallback: If no profile in context yet, fetch it (handled by Global, but we can trigger refresh)
+    React.useEffect(() => {
+        if (!profile) refreshProfile();
     }, []);
 
     const handleLogout = () => {
@@ -89,6 +70,7 @@ const ResidentProfile: React.FC = () => {
 
             if (error) throw error;
             alert("Dados atualizados com sucesso!");
+            await refreshProfile(); // Refresh Global Context
             setActiveModal(null);
             localStorage.setItem('user_name', name);
         } catch (e: any) {
@@ -114,6 +96,7 @@ const ResidentProfile: React.FC = () => {
             if (sel) setCondo(sel.name);
 
             alert("Endereço atualizado com sucesso!");
+            await refreshProfile(); // Refresh Global Context
             setActiveModal(null);
         } catch (e: any) {
             alert("Erro ao atualizar endereço: " + e.message);
@@ -300,7 +283,9 @@ const ResidentProfile: React.FC = () => {
                         <ArrowLeft size={24} />
                     </button>
                     <h1 className="font-bold text-lg">Meu Perfil</h1>
-                    <div className="w-10"></div> {/* Spacer */}
+                    <button onClick={() => navigate('/settings')} className="p-2 bg-white/20 rounded-full hover:bg-white/30 transition-colors">
+                        <Settings size={24} />
+                    </button>
                 </div>
 
                 <div className="flex items-center gap-4">
@@ -374,6 +359,7 @@ const ResidentProfile: React.FC = () => {
                         { icon: <User size={20} />, label: 'Dados Pessoais', color: 'text-blue-500 bg-blue-50', id: 'personal', action: 'modal' },
                         { icon: <ShoppingBagIcon size={20} />, label: 'Meus Anúncios', color: 'text-purple-500 bg-purple-50', id: 'my-ads', action: 'navigate', path: '/my-store' },
                         { icon: <MapPin size={20} />, label: 'Endereços', color: 'text-green-500 bg-green-50', id: 'address', action: 'modal' },
+                        { icon: <Settings size={20} />, label: 'Configurações', color: 'text-gray-500 bg-gray-50', id: 'settings', action: 'navigate', path: '/settings' },
                     ].map((item, i) => (
                         <button
                             key={i}
