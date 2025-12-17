@@ -83,8 +83,8 @@ const Login: React.FC = ({ setRole }: { setRole?: (role: UserRole) => void }) =>
         <div className="min-h-screen bg-gray-50 flex flex-col justify-center p-6">
             <div className="max-w-md w-full mx-auto">
                 <div className="text-center mb-10">
-                    <div className="w-16 h-16 bg-[#7c3aed] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-purple-200 rotate-3 transform hover:rotate-6 transition-transform">
-                        <LogIn size={32} className="text-white" />
+                    <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-purple-200 rotate-3 transform hover:rotate-6 transition-transform p-3">
+                        <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
                     </div>
                     <h1 className="text-3xl font-bold text-gray-900">Bem-vindo de volta!</h1>
                     <p className="text-gray-500 mt-2">Acesse sua conta para continuar</p>
