@@ -1,9 +1,105 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Bell, Settings, TrendingUp, TrendingDown, Users, Building, DollarSign, Store, BarChart3, ShieldCheck, FileText, Ticket } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 
 const MasterDashboard: React.FC = () => {
   const navigate = useNavigate();
+
+  // State
+  const [greeting, setGreeting] = useState('');
+  const [metrics, setMetrics] = useState({
+    mrr: 0,
+    condos: 0,
+    users: 0,
+    churn: 1.2 // Hardcoded for now
+  });
+  const [sectorData, setSectorData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Dynamic Greeting
+  useEffect(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) setGreeting('Bom dia');
+    else if (hour < 18) setGreeting('Boa tarde');
+    else setGreeting('Boa noite');
+  }, []);
+
+  // Fetch Data
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+
+        // 1. MRR (Sum of 'in' transactions)
+        const { data: financial } = await supabase
+          .from('financial_transactions')
+          .select('amount')
+          .eq('type', 'in')
+          .eq('status', 'paid');
+
+        const mrr = financial ? financial.reduce((sum, item) => sum + Number(item.amount), 0) : 0;
+
+        // 2. Condos Count
+        const { count: condoCount } = await supabase
+          .from('condos')
+          .select('*', { count: 'exact', head: true });
+
+        // 3. Users Count
+        const { count: userCount } = await supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true });
+
+        // 4. Sectors (Professionals)
+        const { data: pros } = await supabase
+          .from('profiles')
+          .select('profession')
+          .eq('role', 'professional');
+
+        let sectors: any[] = [];
+        if (pros) {
+          const counts: { [key: string]: number } = {};
+          pros.forEach(p => {
+            const prof = p.profession || 'Outros';
+            counts[prof] = (counts[prof] || 0) + 1;
+          });
+
+          sectors = Object.entries(counts)
+            .map(([name, count]) => ({ name, count, color: getRandomColor() }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 4); // Top 4
+        }
+
+        // Mock fallback if empty
+        if (sectors.length === 0) {
+          sectors = [
+            { name: 'Limpeza', count: 0, color: 'bg-blue-500' },
+            { name: 'Manutenção', count: 0, color: 'bg-orange-500' }
+          ];
+        }
+
+        setMetrics({
+          mrr,
+          condos: condoCount || 0,
+          users: userCount || 0,
+          churn: 1.2
+        });
+        setSectorData(sectors);
+
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const getRandomColor = () => {
+    const colors = ['bg-blue-500', 'bg-orange-500', 'bg-pink-500', 'bg-purple-500', 'bg-green-500', 'bg-indigo-500'];
+    return colors[Math.floor(Math.random() * colors.length)];
+  };
 
   return (
     <div className="bg-gray-50 min-h-screen pb-10">
@@ -35,7 +131,7 @@ const MasterDashboard: React.FC = () => {
         {/* Welcome */}
         <div>
           <h2 className="text-2xl font-bold text-gray-900">
-            Bom dia, Admin <span className="text-2xl">👋</span>
+            {greeting}, Admin <span className="text-2xl">👋</span>
           </h2>
           <p className="text-gray-500 text-sm mt-1">Visão geral dos seus condomínios hoje.</p>
         </div>
@@ -50,7 +146,9 @@ const MasterDashboard: React.FC = () => {
               <span className="px-2 py-1 bg-green-100 text-green-700 text-[10px] font-bold rounded-full">+12%</span>
             </div>
             <p className="text-xs text-gray-500 font-medium mb-1">MRR Mensal</p>
-            <p className="text-xl font-bold text-gray-900">R$ 150.2k</p>
+            <p className="text-xl font-bold text-gray-900">
+              {loading ? '...' : `R$ ${(metrics.mrr / 1000).toFixed(1)}k`}
+            </p>
           </div>
 
           <div className="bg-white p-4 rounded-3xl shadow-sm border border-gray-100">
@@ -61,27 +159,31 @@ const MasterDashboard: React.FC = () => {
               <span className="px-2 py-1 bg-green-100 text-green-700 text-[10px] font-bold rounded-full">+5%</span>
             </div>
             <p className="text-xs text-gray-500 font-medium mb-1">Condomínios</p>
-            <p className="text-xl font-bold text-gray-900">124</p>
+            <p className="text-xl font-bold text-gray-900">
+              {loading ? '...' : metrics.condos}
+            </p>
           </div>
 
           <div className="col-span-2 bg-white p-4 rounded-3xl shadow-sm border border-gray-100">
             <h3 className="font-bold text-gray-900 text-sm mb-3">Prestadores por Setor</h3>
             <div className="space-y-3">
-              {[
-                { name: 'Limpeza', count: 45, color: 'bg-blue-500' },
-                { name: 'Manutenção', count: 32, color: 'bg-orange-500' },
-                { name: 'Beleza', count: 28, color: 'bg-pink-500' },
-                { name: 'Aulas', count: 15, color: 'bg-purple-500' }
-              ].map((sec, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full ${sec.color}`}></span>
-                  <span className="text-xs text-gray-500 flex-1">{sec.name}</span>
-                  <span className="text-xs font-bold text-gray-900">{sec.count}</span>
-                  <div className="w-24 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                    <div className={`h-full ${sec.color}`} style={{ width: `${(sec.count / 45) * 100}%` }}></div>
+              {loading ? (
+                <p className="text-center text-gray-400 text-xs py-4">Carregando dados...</p>
+              ) : (
+                sectorData.map((sec, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <span className={`w-2 h-2 rounded-full ${sec.color}`}></span>
+                    <span className="text-xs text-gray-500 flex-1 capitalize">{sec.name}</span>
+                    <span className="text-xs font-bold text-gray-900">{sec.count}</span>
+                    <div className="w-24 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full ${sec.color}`}
+                        style={{ width: `${Math.min((sec.count / (metrics.users || 1)) * 100 * 5, 100)}%` }} // Scaling for visual
+                      ></div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
 
@@ -93,7 +195,9 @@ const MasterDashboard: React.FC = () => {
               <span className="px-2 py-1 bg-green-100 text-green-700 text-[10px] font-bold rounded-full">+8%</span>
             </div>
             <p className="text-xs text-gray-500 font-medium mb-1">Usuários Totais</p>
-            <p className="text-xl font-bold text-gray-900">45.3k</p>
+            <p className="text-xl font-bold text-gray-900">
+              {loading ? '...' : (metrics.users > 1000 ? `${(metrics.users / 1000).toFixed(1)}k` : metrics.users)}
+            </p>
           </div>
 
           <div className="bg-white p-4 rounded-3xl shadow-sm border border-gray-100">
@@ -104,7 +208,7 @@ const MasterDashboard: React.FC = () => {
               <span className="px-2 py-1 bg-green-100 text-green-700 text-[10px] font-bold rounded-full">-0.2%</span>
             </div>
             <p className="text-xs text-gray-500 font-medium mb-1">Churn Rate</p>
-            <p className="text-xl font-bold text-gray-900">1.2%</p>
+            <p className="text-xl font-bold text-gray-900">{metrics.churn}%</p>
           </div>
         </div>
 
@@ -248,8 +352,6 @@ const MasterDashboard: React.FC = () => {
           </div>
         </div>
       </div>
-
-
     </div>
   );
 };
