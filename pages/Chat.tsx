@@ -141,8 +141,12 @@ const Chat: React.FC = () => {
                     <ArrowLeft size={24} />
                 </button>
                 <div className="flex items-center gap-3 flex-1">
-                    <div className="w-10 h-10 bg-gray-300 rounded-full overflow-hidden">
-                        <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="User" className="w-full h-full object-cover" />
+                    <div className="w-10 h-10 bg-gray-300 rounded-full overflow-hidden flex items-center justify-center text-gray-600 font-bold border border-white/20">
+                        {product?.sellerAvatarUrl ? (
+                            <img src={product.sellerAvatarUrl} alt="User" className="w-full h-full object-cover" />
+                        ) : (
+                            <span>{seller?.substring(0, 2).toUpperCase()}</span>
+                        )}
                     </div>
                     <div>
                         <h1 className="font-bold text-base leading-tight">{seller}</h1>
@@ -159,7 +163,7 @@ const Chat: React.FC = () => {
             {/* Product Context Banner */}
             {product && (
                 <div className="bg-white p-3 flex gap-3 shadow-sm border-b border-gray-200 sticky top-[72px] z-10">
-                    <img src={product.image} className="w-12 h-12 bg-gray-100 rounded-lg object-cover" />
+                    <img src={product.img || product.image} className="w-12 h-12 bg-gray-100 rounded-lg object-cover" />
                     <div className="flex-1">
                         <h3 className="font-bold text-gray-900 text-sm">{product.title}</h3>
                         <p className="text-xs text-[#008069] font-bold">R$ {product.price?.toFixed(2)}</p>

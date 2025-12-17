@@ -88,7 +88,7 @@ const Marketplace: React.FC = () => {
         .from('marketplace_items')
         .select(`
           *,
-          profiles:seller_id (full_name, unit)
+          profiles:seller_id (full_name, unit, avatar_url)
         `)
         .order('created_at', { ascending: false });
 
@@ -103,6 +103,7 @@ const Marketplace: React.FC = () => {
           description: item.description,
           seller: item.profiles?.full_name || 'Vendedor',
           sellerAvatar: item.profiles?.full_name?.substring(0, 2).toUpperCase() || 'VA',
+          sellerAvatarUrl: item.profiles?.avatar_url,
           sellerColor: 'bg-purple-500',
           location: item.profiles?.unit || 'Condomínio',
           time: new Date(item.created_at).toLocaleDateString(),
@@ -360,7 +361,7 @@ const Marketplace: React.FC = () => {
 
       {/* Product Detail Modal */}
       {viewItem && (
-        <div className="fixed inset-0 z-50 bg-white animate-in slide-in-from-bottom-5 duration-300 flex flex-col">
+        <div className="fixed inset-0 z-[9999] bg-white animate-in slide-in-from-bottom-5 duration-300 flex flex-col">
 
           {/* Header Image (Top 45%) */}
           <div className="relative h-[45vh] shrink-0 bg-gray-900">
