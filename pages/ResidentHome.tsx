@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import ReferralModal from '../components/ReferralModal';
 import HomeHeader from '../components/HomeHeader';
 import DesapegoCard from '../components/DesapegoCard';
+import ProfessionalCard from '../components/ProfessionalCard';
 
 const ResidentHome: React.FC = () => {
   const navigate = useNavigate();
@@ -364,28 +365,12 @@ const ResidentHome: React.FC = () => {
 
               <div className={`grid gap-3 ${activePros.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
                 {activePros.map((prof, idx) => (
-                  <div key={idx} className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-4 text-white shadow-lg shadow-blue-200 relative overflow-hidden group">
-                    {/* Decorative Circles */}
-                    <div className="absolute top-0 right-0 w-16 h-16 bg-white/10 rounded-full -mr-8 -mt-8 blur-xl"></div>
-
-                    <div className={`flex ${activePros.length > 1 ? 'flex-col items-center text-center' : 'items-center gap-4'}`}>
-                      <div className="relative">
-                        <img src={prof.avatar} className="w-14 h-14 rounded-full border-2 border-white/30 shadow-md" />
-                        <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-400 border-2 border-blue-600 rounded-full"></span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-lg leading-tight truncate w-full">{prof.profession}</h3>
-                        <p className="text-xs text-blue-100 truncate w-full">{prof.name}</p>
-
-                        <button
-                          onClick={() => navigate('/chat', { state: { seller: prof.name, product: { title: `Serviço de ${prof.profession}`, price: 0 } } })}
-                          className={`mt-3 bg-white text-blue-600 rounded-xl text-xs font-bold hover:bg-blue-50 transition-colors shadow-sm ${activePros.length > 1 ? 'w-full py-2' : 'px-6 py-2 w-auto'}`}
-                        >
-                          Chamar
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                  <ProfessionalCard
+                    key={idx}
+                    professional={prof}
+                    isMultiple={activePros.length > 1}
+                    onCall={() => navigate('/chat', { state: { seller: prof.name, product: { title: `Serviço de ${prof.profession}`, price: 0 } } })}
+                  />
                 ))}
               </div>
             </div>
