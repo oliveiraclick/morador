@@ -10,11 +10,17 @@ const Marketplace: React.FC = () => {
   const [viewItem, setViewItem] = useState<any>(null);
   const [showLightbox, setShowLightbox] = useState(false);
 
+  const [viewMode, setViewMode] = useState<'NORMAL' | 'GRID_DESAPEGO'>('NORMAL');
+
   // Deep Link Logic: Check if an item was passed via navigation state to open immediately
   useEffect(() => {
-    if (location.state?.category) {
+    if (location.state?.filter === 'DESAPEGO_ONLY') {
+      setViewMode('GRID_DESAPEGO');
+      setActiveCategory('Todos');
+    } else if (location.state?.category) {
       setActiveCategory(location.state.category);
     }
+
     if (location.state?.viewItem) {
       setViewItem(location.state.viewItem);
     }
@@ -267,14 +273,89 @@ const Marketplace: React.FC = () => {
         </div>
       </div>
 
-      <div className="space-y-2">
-        {/* Section 1: Desapegos */}
-        <SectionHeader title={`Desapego do ${condoName}`} icon={Repeat} count={desapegoItems.length} />
-        <HorizontalList items={desapegoItems} />
+      <div className="space-y-2 px-4">
+        {viewMode === 'NORMAL' ? (
+          <>
+            {/* Section 1: Desapegos */}
+            <div className="-mx-4">
+              <SectionHeader title={`Desapego do ${condoName}`} icon={Repeat} count={desapegoItems.length} />
+              <HorizontalList items={desapegoItems} />
+            </div>
 
-        {/* Section 2: Lojas */}
-        <SectionHeader title="Lojas & Vitrines" icon={Store} count={lojaItems.length} />
-        <HorizontalList items={lojaItems} />
+            {/* Section 2: Lojas */}
+            <div className="-mx-4">
+              <SectionHeader title="Lojas & Vitrines" icon={Store} count={lojaItems.length} />
+              <HorizontalList items={lojaItems} />
+            </div>
+          </>
+        ) : (
+          <div className="pt-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <Repeat className="text-[#7c3aed]" />
+              Desapegos na Vila
+            </h2>
+
+            <div className="grid grid-cols-2 gap-3">
+              {desapegoItems.length === 0 ? (
+                <div className="col-span-2 py-10 text-center text-gray-400 border-2 border-dashed border-gray-200 rounded-xl">
+                  Nenhum item encontrado
+                </div>
+              ) : (
+                desapegoItems.map((item) => (
+                  <div key={item.id} className="bg-white rounded-2xl p-3 shadow-sm border border-gray-100 flex flex-col">
+                    {/* Seller Header */}
+                    <div className="flex items-center justify-between mb-3 px-1">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-6 h-6 rounded-full ${item.sellerColor} flex items-center justify-center text-white text-[9px] font-bold shadow-sm`}>
+                          {item.sellerAvatar}
+                        </div>
+                        <div>
+                          <h3 className="text-[10px] font-bold text-gray-900 leading-tight truncate max-w-[60px]">{item.seller}</h3>
+                        </div>
+                      </div>
+                      <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-md ${item.condition === 'Novo' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
+                        }`}>
+                        {item.condition}
+                      </span>
+                    </div>
+
+                    {/* Image */}
+                    <div
+                      onClick={() => setViewItem(item)}
+                      className="relative aspect-square rounded-xl overflow-hidden mb-2 bg-gray-100 group cursor-pointer"
+                    >
+                      <img
+                        src={item.img}
+                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                        alt={item.title}
+                        onError={(e) => {
+                          e.currentTarget.src = 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80&w=500';
+                        }}
+                      />
+                    </div>
+
+                    {/* Content */}
+                    <div className="px-1 flex-1 flex flex-col">
+                      <h2 className="text-xs font-bold text-gray-800 line-clamp-2 mb-1 flex-1">{item.title}</h2>
+
+                      <div className="flex items-baseline gap-2 mb-2">
+                        <span className="text-sm font-bold text-[#7c3aed]">R$ {item.price.toFixed(2).replace('.', ',')}</span>
+                      </div>
+
+                      <button
+                        onClick={() => handleNegotiate(item)}
+                        className="w-full bg-white border border-[#7c3aed] text-[#7c3aed] py-2 rounded-lg font-bold text-[10px] hover:bg-[#7c3aed] hover:text-white transition-colors flex items-center justify-center gap-1.5"
+                      >
+                        <MessageSquare size={12} />
+                        Negociar
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Product Detail Modal */}

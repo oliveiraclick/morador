@@ -32,7 +32,7 @@ const HomeHeader: React.FC<HomeHeaderProps> = ({
 
     const categories = [
         { name: 'Anunciar', icon: <Plus size={24} />, color: 'bg-white/20 text-white border-white/30', action: () => navigate('/sell') },
-        { name: 'Desapego', icon: <ShoppingBagIcon />, color: 'bg-white/10 text-purple-100 border-white/10', action: () => navigate('/market', { state: { category: 'Todos' } }) },
+        { name: 'Desapego', icon: <ShoppingBagIcon />, color: 'bg-white/10 text-purple-100 border-white/10', action: () => navigate('/market', { state: { filter: 'DESAPEGO_ONLY' } }) },
         { name: 'Beleza', icon: <SparklesIcon />, color: 'bg-white/10 text-purple-100 border-white/10', action: () => navigate('/market', { state: { category: 'Beleza' } }) },
         { name: 'Comida', icon: <UtensilsIcon />, color: 'bg-white/10 text-purple-100 border-white/10', action: () => navigate('/market', { state: { category: 'Comida' } }) },
         { name: 'Serviços', icon: <HammerIcon />, color: 'bg-white/10 text-purple-100 border-white/10', action: () => navigate('/service-search') },
