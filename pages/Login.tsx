@@ -3,6 +3,7 @@ import { Mail, Lock, LogIn } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { UserRole } from '../types';
 import { supabase } from '../lib/supabase';
+import { APP_VERSION } from '../lib/constants';
 
 const Login: React.FC = ({ setRole }: { setRole?: (role: UserRole) => void }) => {
     const navigate = useNavigate();
@@ -165,6 +166,10 @@ const Login: React.FC = ({ setRole }: { setRole?: (role: UserRole) => void }) =>
 
                 <p className="text-center mt-8 text-sm text-gray-500">
                     Ainda não tem conta? <a href="/role-selection" className="text-purple-600 font-bold hover:underline">Cadastre-se</a>
+                </p>
+
+                <p className="text-center mt-4 text-[10px] text-gray-300 font-mono">
+                    v{APP_VERSION}
                 </p>
             </div>
         </div>
