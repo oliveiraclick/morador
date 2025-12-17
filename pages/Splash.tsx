@@ -37,7 +37,7 @@ const Splash: React.FC = () => {
         <div className="h-1.5 w-full bg-purple-900/30 rounded-full overflow-hidden">
           <div className="h-full bg-white rounded-full animate-[progress_2s_ease-in-out_infinite]"></div>
         </div>
-        <p className="text-center text-purple-300 text-[10px] mt-2 font-medium">V1.33</p>
+        <p className="text-center text-purple-300 text-[10px] mt-2 font-medium">V1.34</p>
       </div>
 
       <style>{`

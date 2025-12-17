@@ -92,6 +92,7 @@ const Marketplace: React.FC = () => {
           img: item.image_url,
           description: item.description,
           seller: item.profiles?.full_name || 'Vendedor',
+          sellerId: item.seller_id,
           sellerAvatar: item.profiles?.full_name?.substring(0, 2).toUpperCase() || 'VA',
           sellerColor: 'bg-purple-500',
           location: item.profiles?.unit || 'Condomínio',

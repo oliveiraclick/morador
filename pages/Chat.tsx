@@ -120,9 +120,7 @@ const Chat: React.FC = () => {
         // 3. Send to Supabase
         const { error } = await supabase.from('messages').insert([{
             sender_id: currentUserId,
-            // receiver_id: seller?.id ... we don't have seller ID easily in this mock flow unless passed.
-            // For now we leave receiver generic or null, or we assume seller has an ID if we passed it.
-            // In a real app we MUST pass seller_id.
+            receiver_id: product?.sellerId || null,
             content: text,
             product_context: product?.title || null
         }]);
@@ -159,7 +157,7 @@ const Chat: React.FC = () => {
             {/* Product Context Banner */}
             {product && (
                 <div className="bg-white p-3 flex gap-3 shadow-sm border-b border-gray-200 sticky top-[72px] z-10">
-                    <img src={product.image} className="w-12 h-12 bg-gray-100 rounded-lg object-cover" />
+                    <img src={product.image || product.img} className="w-12 h-12 bg-gray-100 rounded-lg object-cover" />
                     <div className="flex-1">
                         <h3 className="font-bold text-gray-900 text-sm">{product.title}</h3>
                         <p className="text-xs text-[#008069] font-bold">R$ {product.price?.toFixed(2)}</p>
