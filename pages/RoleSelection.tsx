@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Briefcase, MapPin, ShieldAlert } from 'lucide-react';
+import { User, Briefcase, MapPin } from 'lucide-react';
 import { UserRole } from '../types';
 
 const RoleSelection: React.FC = () => {
@@ -11,11 +11,6 @@ const RoleSelection: React.FC = () => {
             navigate('/register/resident');
         } else if (role === UserRole.PROFESSIONAL) {
             navigate('/register/professional');
-        } else if (role === UserRole.ADMIN) {
-            // Admin bypass registration for now, or could have a secret login
-            localStorage.setItem('user_registered', 'true');
-            localStorage.setItem('user_role', UserRole.ADMIN);
-            navigate('/admin');
         }
     };
 
@@ -56,13 +51,6 @@ const RoleSelection: React.FC = () => {
                     </div>
                 </button>
 
-                <button
-                    onClick={() => handleSelection(UserRole.ADMIN)}
-                    className="mt-4 flex items-center justify-center gap-2 text-xs text-purple-300 hover:text-white transition-colors"
-                >
-                    <ShieldAlert size={14} />
-                    Acesso Administrativo (Master)
-                </button>
 
                 <div className="mt-8 text-center">
                     <p className="text-xs text-purple-300">Já tem uma conta?</p>
