@@ -209,7 +209,7 @@ const ResidentHome: React.FC = () => {
   React.useEffect(() => {
     const fetchAds = async () => {
       const { data } = await import('../lib/supabase').then(m => m.supabase
-        .from('ads')
+        .from('destaques')
         .select('*')
         .eq('active', true)
         .order('created_at', { ascending: false })
@@ -237,7 +237,7 @@ const ResidentHome: React.FC = () => {
       const { error } = await import('../lib/supabase').then(m => m.supabase
         .from('profiles')
         .update({
-          condo_id: parseInt(selectedCondo),
+          condo_id: selectedCondo,
           unit: `${street}, ${number}` // Combining due to simple schema 
           // In a real app we might have separate columns
         })

@@ -26,7 +26,7 @@ const AdminAds: React.FC = () => {
     const fetchAds = async () => {
         try {
             setLoading(true);
-            const { data, error } = await supabase.from('ads').select('*').order('created_at', { ascending: false });
+            const { data, error } = await supabase.from('destaques').select('*').order('created_at', { ascending: false });
             if (error) throw error;
             if (data) setAds(data);
         } catch (error) {
@@ -40,7 +40,7 @@ const AdminAds: React.FC = () => {
         if (!newAd.title || !newAd.description) return;
 
         try {
-            const { error } = await supabase.from('ads').insert([{
+            const { error } = await supabase.from('destaques').insert([{
                 title: newAd.title,
                 description: newAd.description,
                 image_url: newAd.imageUrl || 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&q=80&w=400',
@@ -60,13 +60,13 @@ const AdminAds: React.FC = () => {
 
     const handleDeleteAd = async (id: number) => {
         if (window.confirm('Tem certeza que deseja remover este anúncio?')) {
-            await supabase.from('ads').delete().eq('id', id);
+            await supabase.from('destaques').delete().eq('id', id);
             fetchAds();
         }
     };
 
     const toggleActive = async (id: number, currentStatus: boolean) => {
-        await supabase.from('ads').update({ active: !currentStatus }).eq('id', id);
+        await supabase.from('destaques').update({ active: !currentStatus }).eq('id', id);
         fetchAds();
     };
 

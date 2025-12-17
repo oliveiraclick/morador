@@ -98,9 +98,10 @@ const AppContent = () => {
             setUserRole(role as UserRole);
 
             // Redirect Logic
+            const normalizedRole = (role as string).toUpperCase();
             if (window.location.pathname === '/login' || window.location.pathname === '/' || window.location.pathname === '/register/resident' || window.location.pathname === '/register/professional') {
-              if (role === UserRole.ADMIN) navigate('/admin');
-              else if (role === UserRole.PROFESSIONAL) navigate('/dashboard');
+              if (normalizedRole === UserRole.ADMIN) navigate('/admin');
+              else if (normalizedRole === UserRole.PROFESSIONAL) navigate('/dashboard');
               else navigate('/home');
             }
 
