@@ -606,26 +606,7 @@ const ResidentHome: React.FC = () => {
                     </select>
                   </div>
                   {condos.length === 0 && (
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        const { data, error } = await import('../lib/supabase').then(m => m.supabase.from('condos').insert({
-                          name: 'Residencial Splendido',
-                          address: 'Rua Exemplo, 123',
-                          plan: 'PREMIUM'
-                        }).select());
-
-                        if (error) {
-                          alert("Erro ao criar condomínio: " + error.message);
-                        } else {
-                          alert("Condomínio criado! Selecione ele na lista.");
-                          setCondos(prev => [...prev, ...data]);
-                        }
-                      }}
-                      className="text-xs text-purple-600 underline mt-1 cursor-pointer hover:text-purple-800"
-                    >
-                      [DEBUG] Criar Condomínio Teste
-                    </button>
+                    <p className="text-xs text-red-500 mt-2">Nenhum condomínio encontrado. Contate o suporte.</p>
                   )}
                 </div>
 

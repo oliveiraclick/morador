@@ -46,6 +46,7 @@ import AdminAds from './pages/AdminAds';
 import ProfessionalPaywall from './pages/ProfessionalPaywall';
 
 const AppContent = () => {
+  const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState<UserRole>(() => {
     const stored = localStorage.getItem('user_role');
     if (stored === UserRole.ADMIN || stored === UserRole.RESIDENT || stored === UserRole.PROFESSIONAL) {
@@ -56,19 +57,14 @@ const AppContent = () => {
 
   const navigate = useNavigate();
 
-  // Sync Role on load and Setup Auth Listener
   useEffect(() => {
-    // 1. Initial Local Storage Sync
-    const stored = localStorage.getItem('user_role');
-    if (stored === UserRole.ADMIN || stored === UserRole.RESIDENT || stored === UserRole.PROFESSIONAL) {
-      setUserRole(stored as UserRole);
-    }
+    const initAuth = async () => {
+      import('./lib/supabase').then(async ({ supabase }) => {
+        // Check active session
+        const { data: { session } } = await supabase.auth.getSession();
 
-    // 2. Supabase Auth Listener (Handles Google Redirects)
-    import('./lib/supabase').then(({ supabase }) => {
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-        if (event === 'SIGNED_IN' && session) {
-          // Fetch Profile to get Role
+        if (session) {
+          // Verify role from DB to be safe
           const { data: profile } = await supabase
             .from('profiles')
             .select('role')
@@ -80,18 +76,55 @@ const AppContent = () => {
           localStorage.setItem('user_role', role);
           localStorage.setItem('user_registered', 'true');
           setUserRole(role as UserRole);
-
-          // Redirect Logic (Using navigate for smooth transition)
-          if (window.location.pathname === '/login' || window.location.pathname === '/' || window.location.pathname === '/register/resident' || window.location.pathname === '/register/professional') {
-            if (role === UserRole.ADMIN) navigate('/admin');
-            else if (role === UserRole.PROFESSIONAL) navigate('/dashboard');
-            else navigate('/home');
-          }
+        } else {
+          // No session, maybe verify if we should clear local storage?
+          // For now, trust the session check.
         }
+
+        setLoading(false);
+
+        // Listen for changes (Sign in / Sign out)
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+          if (event === 'SIGNED_IN' && session) {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('role')
+              .eq('id', session.user.id)
+              .single();
+
+            const role = profile?.role || UserRole.RESIDENT;
+            localStorage.setItem('user_role', role);
+            localStorage.setItem('user_registered', 'true');
+            setUserRole(role as UserRole);
+
+            // Redirect Logic
+            if (window.location.pathname === '/login' || window.location.pathname === '/' || window.location.pathname === '/register/resident' || window.location.pathname === '/register/professional') {
+              if (role === UserRole.ADMIN) navigate('/admin');
+              else if (role === UserRole.PROFESSIONAL) navigate('/dashboard');
+              else navigate('/home');
+            }
+
+          } else if (event === 'SIGNED_OUT') {
+            localStorage.clear();
+            setUserRole(UserRole.RESIDENT);
+            navigate('/login');
+          }
+        });
+
+        return () => subscription.unsubscribe();
       });
-      return () => subscription.unsubscribe();
-    });
+    };
+
+    initAuth();
   }, [navigate]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+      </div>
+    );
+  }
 
   return (
     <Layout role={userRole}>

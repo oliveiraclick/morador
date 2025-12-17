@@ -16,8 +16,11 @@ const CreateOffer: React.FC = () => {
     const productCategories = ['Infantil', 'Beleza', 'Comida', 'Eletrônicos', 'Roupas', 'Outros'];
     const serviceCategories = ['Limpeza', 'Manutenção', 'Beleza', 'Aulas', 'Transporte', 'Outros'];
 
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
     // Lazy Registration Check
     React.useEffect(() => {
+        // ... (keep existing)
         const checkRegistration = async () => {
             const { data: { user } } = await import('../lib/supabase').then(m => m.supabase.auth.getUser());
             if (user) {
@@ -33,6 +36,7 @@ const CreateOffer: React.FC = () => {
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
+            setSelectedFile(file);
             const reader = new FileReader();
             reader.onloadend = () => {
                 setImagePreview(reader.result as string);
@@ -53,6 +57,31 @@ const CreateOffer: React.FC = () => {
 
             if (!user) throw new Error('Usuário não autenticado');
 
+            // 1. Upload Image if selected
+            let finalImageUrl = imagePreview || 'https://images.unsplash.com/photo-1556228453-efd6c1ff04f6?auto=format&fit=crop&q=80&w=200';
+
+            if (selectedFile) {
+                const fileExt = selectedFile.name.split('.').pop();
+                const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+                const { error: uploadError } = await import('../lib/supabase').then(m => m.supabase.storage
+                    .from('marketplace')
+                    .upload(fileName, selectedFile));
+
+                if (uploadError) throw uploadError;
+
+                const { data: { publicUrl } } = import('../lib/supabase').then(m => m.supabase.storage
+                    .from('marketplace')
+                    .getPublicUrl(fileName)) as any;
+
+                // Note: The above line might return a promise if not awaited or configured differently in the mock, 
+                // but standard supabase-js is synchronous for getPublicUrl usually, 
+                // however dynamic import makes it tricky. Let's do it safely:
+
+                const sb = await import('../lib/supabase').then(m => m.supabase);
+                const urlData = sb.storage.from('marketplace').getPublicUrl(fileName);
+                finalImageUrl = urlData.data.publicUrl;
+            }
+
             const { error } = await import('../lib/supabase').then(m => m.supabase
                 .from('marketplace_items')
                 .insert({
@@ -62,8 +91,8 @@ const CreateOffer: React.FC = () => {
                     price: parseFloat(price.replace('R$', '').replace('.', '').replace(',', '.').trim()),
                     category: type === 'PRODUCT' ? category : 'Serviços',
                     type: type === 'PRODUCT' ? 'desapego' : 'loja',
-                    image_url: imagePreview || 'https://images.unsplash.com/photo-1556228453-efd6c1ff04f6?auto=format&fit=crop&q=80&w=200',
-                    condo_id: (user.user_metadata as any)?.condo_id
+                    image_url: finalImageUrl,
+                    condo_id: (user.user_metadata as any)?.condo_id // This might be null if not in metadata, trigger handles it usually
                 })
             );
 
@@ -71,9 +100,9 @@ const CreateOffer: React.FC = () => {
 
             alert('Oferta publicada com sucesso!');
             navigate('/store'); // Redirect to My Store
-        } catch (error) {
+        } catch (error: any) {
             console.error('Erro ao publicar:', error);
-            alert('Erro ao publicar oferta. Tente novamente.');
+            alert('Erro ao publicar oferta: ' + error.message);
         } finally {
             setLoading(false);
         }

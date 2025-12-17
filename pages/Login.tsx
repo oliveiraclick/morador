@@ -25,14 +25,8 @@ const Login: React.FC = ({ setRole }: { setRole?: (role: UserRole) => void }) =>
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // 1. Check Hardcoded Admin (Backdoor/Legacy)
-        if (email === 'denys@morador.app' && password === 'Vendas@123') {
-            localStorage.setItem('user_role', UserRole.ADMIN);
-            localStorage.setItem('user_registered', 'true');
-            if (setRole) setRole(UserRole.ADMIN);
-            navigate('/admin');
-            return;
-        }
+        // 1. Check Hardcoded Admin - REMOVED FOR PRODUCTION SECURITY
+        // if (email === 'denys@morador.app' && password === 'Vendas@123') { ... }
 
         // 2. Supabase Auth
         try {

@@ -4,12 +4,29 @@ import { useNavigate } from 'react-router-dom';
 
 const ProfessionalProfile: React.FC = () => {
     const navigate = useNavigate();
-    const [isEditing, setIsEditing] = useState(false);
+    const [profile, setProfile] = useState<any>(null);
+
+    React.useEffect(() => {
+        const fetchProfile = async () => {
+            const { data: { user } } = await import('../lib/supabase').then(m => m.supabase.auth.getUser());
+            if (user) {
+                const { data } = await import('../lib/supabase').then(m => m.supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', user.id)
+                    .single());
+                if (data) setProfile(data);
+            }
+        };
+        fetchProfile();
+    }, []);
 
     const handleLogout = () => {
         localStorage.clear();
         navigate('/');
     };
+
+    if (!profile) return <div className="min-h-screen bg-white flex items-center justify-center">Carregando...</div>;
 
     return (
         <div className="bg-white pb-24">
@@ -36,38 +53,35 @@ const ProfessionalProfile: React.FC = () => {
                 {/* Profile Avatar */}
                 <div className="-mt-16 mb-4 flex justify-between items-end">
                     <div className="relative">
-                        <div className="w-32 h-32 rounded-3xl bg-white p-1 shadow-xl">
-                            <img src="https://picsum.photos/150/150" className="w-full h-full rounded-2xl object-cover" alt="Profile" />
+                        <div className="w-32 h-32 rounded-3xl bg-white p-1 shadow-xl flex items-center justify-center bg-gray-50 overflow-hidden">
+                            {profile.avatar_url ? (
+                                <img src={profile.avatar_url} className="w-full h-full rounded-2xl object-cover" alt="Profile" />
+                            ) : (
+                                <span className="text-4xl font-bold text-gray-300">{profile.full_name?.charAt(0)}</span>
+                            )}
                         </div>
                         <button className="absolute bottom-[-10px] right-[-10px] bg-primary-600 text-white p-2 rounded-full shadow-lg border-2 border-white">
                             <Camera size={16} />
                         </button>
                     </div>
-                    <button
-                        onClick={() => setIsEditing(!isEditing)}
-                        className="bg-gray-100 text-gray-700 px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-gray-200 transition-colors"
-                    >
-                        <PenSquare size={16} />
-                        Editar Perfil
-                    </button>
                 </div>
 
                 {/* Info */}
                 <div className="mb-6">
                     <div className="flex items-center gap-2 mb-1">
-                        <h1 className="text-2xl font-bold text-gray-900">Dr. Reparos Gerais</h1>
+                        <h1 className="text-2xl font-bold text-gray-900">{profile.full_name}</h1>
                         <ShieldCheck size={20} className="text-blue-500" fill="currentColor" />
                     </div>
-                    <p className="text-gray-500 text-sm mb-3">Marido de Aluguel • Eletricista • Encanador</p>
+                    <p className="text-gray-500 text-sm mb-3">{profile.profession || 'Profissional'}</p>
 
                     <div className="flex items-center gap-4 text-xs font-medium text-gray-500">
                         <div className="flex items-center gap-1">
                             <Star size={14} className="text-amber-400 fill-amber-400" />
-                            <span className="text-gray-900 font-bold">4.9</span> (120 avaliações)
+                            <span className="text-gray-900 font-bold">4.9</span>
                         </div>
                         <div className="flex items-center gap-1">
                             <MapPin size={14} />
-                            Bloco C, Ap 402
+                            {profile.is_on_site ? 'No Condomínio' : 'Indisponível'}
                         </div>
                     </div>
                 </div>
