@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Bell, Search, MapPin, QrCode, ShoppingBag as ShoppingBagIcon, Sparkles as SparklesIcon, Utensils as UtensilsIcon, LayoutGrid, Hammer as HammerIcon, Megaphone, ChevronRight, ChevronLeft, Heart, Building, Home, Star, Calendar, FileText, Key } from 'lucide-react';
+import { Plus, Bell, Search, MapPin, QrCode, ShoppingBag as ShoppingBagIcon, Sparkles as SparklesIcon, Utensils as UtensilsIcon, LayoutGrid, Hammer as HammerIcon, Megaphone, ChevronRight, ChevronLeft, Heart, Building, Home, Star, Calendar, FileText, Key, MessageSquare } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import ReferralModal from '../components/ReferralModal';
@@ -22,6 +22,7 @@ const ResidentHome: React.FC = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadMessages, setUnreadMessages] = useState(0);
 
   React.useEffect(() => {
     const fetchNotifications = async () => {
@@ -161,6 +162,16 @@ const ResidentHome: React.FC = () => {
 
         localStorage.setItem('user_name_cache', newName);
         if (newAvatar) localStorage.setItem('user_avatar_cache', newAvatar);
+
+
+        // Fetch Unread Messages Count
+        const { count } = await supabase
+          .from('messages')
+          .select('*', { count: 'exact', head: true })
+          .eq('receiver_id', user.id)
+          .eq('read', false);
+
+        if (count !== null) setUnreadMessages(count);
 
       } else {
         // No user found, redirect to login
@@ -330,6 +341,12 @@ const ResidentHome: React.FC = () => {
             </div>
           </div>
           <div className="flex gap-3">
+            <button onClick={() => navigate('/chats')} className="w-10 h-10 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center relative hover:bg-white/20 transition-colors">
+              <MessageSquare size={20} />
+              {unreadMessages > 0 && (
+                <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-green-400 border-2 border-[#7c3aed] rounded-full"></span>
+              )}
+            </button>
             <button onClick={handleOpenNotifications} className="w-10 h-10 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center relative hover:bg-white/20 transition-colors">
               <Bell size={20} />
               {unreadCount > 0 && (

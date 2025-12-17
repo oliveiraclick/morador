@@ -13,6 +13,7 @@ import RegisterResident from './pages/RegisterResident';
 import CompleteRegistration from './pages/CompleteRegistration'; // Imported
 import RegisterProfessional from './pages/RegisterProfessional';
 import Chat from './pages/Chat';
+import ChatList from './pages/ChatList';
 import Settings from './pages/Settings';
 import MyStore from './pages/MyStore';
 
@@ -217,6 +218,11 @@ const AppContent = () => {
         <Route path="/chat" element={
           <ProtectedRoute allowedRoles={[UserRole.RESIDENT, UserRole.PROFESSIONAL, UserRole.ADMIN]}>
             <Chat />
+          </ProtectedRoute>
+        } />
+        <Route path="/chats" element={
+          <ProtectedRoute allowedRoles={[UserRole.RESIDENT, UserRole.PROFESSIONAL, UserRole.ADMIN]}>
+            <ChatList />
           </ProtectedRoute>
         } />
         <Route path="/create-offer" element={
