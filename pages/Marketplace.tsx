@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Heart, MessageSquare, ArrowLeft, Store, Repeat, Utensils, Smartphone, Sparkles, ShoppingBag } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 
 const Marketplace: React.FC = () => {
   const navigate = useNavigate();
@@ -63,28 +64,27 @@ const Marketplace: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       // Fetch user's condo name
-      const { data: { user } } = await import('../lib/supabase').then(m => m.supabase.auth.getUser());
+      const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data: profile } = await import('../lib/supabase').then(m => m.supabase
+        const { data: profile } = await supabase
           .from('profiles')
           .select('condos(name)')
           .eq('id', user.id)
-          .single()
-        );
+          .single();
+
         if (profile?.condos?.name) {
           setCondoName(profile.condos.name);
         }
       }
 
       // Fetch marketplace items
-      const { data, error } = await import('../lib/supabase').then(m => m.supabase
+      const { data, error } = await supabase
         .from('marketplace_items')
         .select(`
           *,
           profiles:seller_id (full_name, unit)
         `)
-        .order('created_at', { ascending: false })
-      );
+        .order('created_at', { ascending: false });
 
       if (data) {
         // Map DB fields to UI fields expected by current render
