@@ -7,30 +7,45 @@ const MyStore: React.FC = () => {
     const navigate = useNavigate();
     const [items, setItems] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        fetchItems();
+        let mounted = true;
+        const load = async () => {
+            // Timeout safety
+            const timer = setTimeout(() => {
+                if (mounted && loading) {
+                    setLoading(false);
+                    setError('Tempo limite excedido. Tente recarregar.');
+                }
+            }, 10000);
+
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session?.user) {
+                    if (mounted) setLoading(false);
+                    return;
+                }
+
+                const { data, error } = await supabase
+                    .from('marketplace_items')
+                    .select('*')
+                    .eq('seller_id', session.user.id)
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+                if (mounted) setItems(data || []);
+            } catch (err: any) {
+                console.error('Error fetching items:', err);
+                if (mounted) setError(err.message || 'Erro ao carregar itens.');
+            } finally {
+                clearTimeout(timer);
+                if (mounted) setLoading(false);
+            }
+        };
+        load();
+        return () => { mounted = false; };
     }, []);
-
-    const fetchItems = async () => {
-        try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
-
-            const { data, error } = await supabase
-                .from('marketplace_items')
-                .select('*')
-                .eq('seller_id', user.id)
-                .order('created_at', { ascending: false });
-
-            if (error) throw error;
-            setItems(data || []);
-        } catch (error) {
-            console.error('Error fetching items:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const handleDelete = async (id: string) => {
         if (!confirm('Tem certeza que deseja excluir este item?')) return;
@@ -54,7 +69,7 @@ const MyStore: React.FC = () => {
             {/* Header */}
             <div className="bg-white p-4 sticky top-0 z-10 border-b border-gray-100 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <button onClick={() => navigate('/dashboard')} className="p-2 -ml-2 hover:bg-gray-100 rounded-full">
+                    <button onClick={() => navigate(-1)} className="p-2 -ml-2 hover:bg-gray-100 rounded-full">
                         <ArrowLeft size={24} className="text-gray-900" />
                     </button>
                     <h1 className="text-lg font-bold text-gray-900">Minha Loja</h1>
@@ -70,6 +85,12 @@ const MyStore: React.FC = () => {
 
             {/* Content */}
             <div className="p-4">
+                {error && (
+                    <div className="bg-red-50 text-red-600 p-4 rounded-xl mb-4 text-sm font-medium">
+                        Ops: {error}
+                    </div>
+                )}
+
                 {loading ? (
                     <div className="flex justify-center p-8">
                         <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin"></div>
@@ -106,9 +127,9 @@ const MyStore: React.FC = () => {
                                     </div>
                                     <div className="flex justify-between items-end mt-2">
                                         <span className="font-bold text-gray-900">R$ {item.price?.toFixed(2)}</span>
-                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${item.active ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'
+                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${item.active !== false ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'
                                             }`}>
-                                            {item.active ? 'Ativo' : 'Inativo'}
+                                            {item.active !== false ? 'Ativo' : 'Inativo'}
                                         </span>
                                     </div>
                                 </div>
