@@ -108,14 +108,8 @@ const Marketplace: React.FC = () => {
 
         // If we have an ID but not the object (e.g. from a link), find it
         if (location.state?.viewItemId && !location.state.viewItem) {
-          console.log("Deep link: searching for item", location.state.viewItemId);
           const found = mappedItems.find(i => i.id === location.state.viewItemId);
-          if (found) {
-            console.log("Deep link: found item", found);
-            setViewItem(found);
-          } else {
-            console.warn("Deep link: item not found in fetched list", mappedItems.map(i => i.id));
-          }
+          if (found) setViewItem(found);
         }
       }
     };

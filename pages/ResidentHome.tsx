@@ -513,7 +513,7 @@ const ResidentHome: React.FC = () => {
               </div>
             ) : (
               desapegoItems.map((item) => (
-                <div key={item.id} className="min-w-[200px] bg-white p-3 rounded-2xl shadow-sm border border-gray-100 flex flex-col shrink-0 cursor-pointer hover:shadow-md transition-shadow"
+                <div key={item.id} className="w-40 bg-white p-3 rounded-2xl shadow-sm border border-gray-100 flex flex-col shrink-0 cursor-pointer hover:shadow-md transition-shadow"
                   onClick={() => navigate('/market', { state: { viewItemId: item.id, category: 'Todos' } })}
                 >
                   <div className="relative mb-3 bg-gray-100 rounded-xl aspect-square overflow-hidden">
@@ -530,11 +530,11 @@ const ResidentHome: React.FC = () => {
                       {item.category}
                     </span>
                   </div>
-                  <h3 className="font-bold text-gray-900 leading-tight mb-1 truncate">{item.title}</h3>
+                  <h3 className="font-bold text-gray-900 leading-tight mb-1 truncate text-xs">{item.title}</h3>
                   <div className="mt-auto flex justify-between items-center">
-                    <span className="font-bold text-primary-600">R$ {Number(item.price).toFixed(2).replace('.', ',')}</span>
-                    <button className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:text-red-500 hover:text-red-500 hover:bg-red-50 transition-colors">
-                      <Heart size={16} />
+                    <span className="font-bold text-primary-600 text-xs">R$ {Number(item.price).toFixed(2).replace('.', ',')}</span>
+                    <button className="w-6 h-6 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:text-red-500 hover:text-red-500 hover:bg-red-50 transition-colors">
+                      <Heart size={14} />
                     </button>
                   </div>
                 </div>
