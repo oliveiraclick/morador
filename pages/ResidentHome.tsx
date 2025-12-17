@@ -1,20 +1,19 @@
 import React, { useState } from 'react';
-import { Search, Megaphone, ChevronRight, ChevronLeft, Building, Home, MapPin } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Building, Home, MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import ReferralModal from '../components/ReferralModal';
 import HomeHeader from '../components/HomeHeader';
 import DesapegoCard from '../components/DesapegoCard';
 import ProfessionalCard from '../components/ProfessionalCard';
+import SearchBar from '../components/SearchBar';
+import SystemNotice from '../components/SystemNotice';
+import OfferCard from '../components/OfferCard';
 
 const ResidentHome: React.FC = () => {
   const navigate = useNavigate();
 
-  const AdLinkButton = (link: string) => (
-    <button onClick={() => navigate(link)} className="text-xs font-bold text-pink-600 flex items-center gap-1 hover:underline">
-      Ver detalhes <ChevronRight size={12} />
-    </button>
-  );
+
 
   const [showReferral, setShowReferral] = useState(false);
   const [activePros, setActivePros] = useState<any[]>([]);
@@ -323,30 +322,7 @@ const ResidentHome: React.FC = () => {
       />
 
       {/* Search Bar */}
-      <div className="px-6 -mt-6 mb-6 relative z-10">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            const form = e.target as HTMLFormElement;
-            const input = form.elements.namedItem('search') as HTMLInputElement;
-            if (input.value.trim()) {
-              navigate(`/service-search?q=${encodeURIComponent(input.value)}`);
-            }
-          }}
-          className="bg-white p-2 rounded-2xl shadow-lg shadow-purple-200/50 flex items-center gap-2 border border-purple-50"
-        >
-          <Search className="text-purple-400 ml-2" size={20} />
-          <input
-            name="search"
-            type="text"
-            placeholder="Busque por encanador, eletricista..."
-            className="w-full p-2 outline-none text-gray-700 placeholder-gray-400 font-medium"
-          />
-          <button type="submit" className="bg-[#7c3aed] text-white p-2.5 rounded-xl hover:bg-[#6d28d9] transition-colors">
-            <Search size={18} />
-          </button>
-        </form>
-      </div >
+      <SearchBar onSearch={(query) => navigate(`/service-search?q=${encodeURIComponent(query)}`)} />
 
       {/* Highlights */}
       < div className="px-6 mt-2" >
@@ -380,23 +356,7 @@ const ResidentHome: React.FC = () => {
         {/* Admin News / Offers Card - Dynamic */}
         {
           notifications.length > 0 ? (
-            <div className="bg-white p-4 rounded-2xl shadow-sm border border-l-4 border-l-primary-500 border-gray-100 flex gap-4 mb-8 animate-in slide-in-from-bottom-2">
-              <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center text-purple-600 flex-shrink-0">
-                <Megaphone size={24} />
-              </div>
-              <div className="flex-1">
-                <div className="flex justify-between items-center mb-1">
-                  <span className="text-xs font-bold text-purple-600 uppercase tracking-wider">Avisos e Ofertas</span>
-                  <span className="text-xs text-gray-400">
-                    {new Date(notifications[0].created_at).toLocaleDateString()}
-                  </span>
-                </div>
-                <h3 className="font-bold text-gray-900">{notifications[0].title}</h3>
-                <p className="text-sm text-gray-500 mt-1 leading-relaxed line-clamp-2">
-                  {notifications[0].message}
-                </p>
-              </div>
-            </div>
+            <SystemNotice notice={notifications[0]} />
           ) : null}
 
         {/* Desapego Carousel */}
@@ -462,19 +422,11 @@ const ResidentHome: React.FC = () => {
               </div>
             ) : (
               ads.map((ad) => (
-                <div key={ad.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex gap-4 mb-4 relative overflow-hidden group">
-                  <div className="w-20 h-20 rounded-xl bg-gray-100 flex-shrink-0">
-                    <img src={ad.image_url} className="w-full h-full object-cover rounded-xl" alt={ad.title} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-start">
-                      <h3 className="font-bold text-gray-900 truncate pr-2">{ad.title}</h3>
-                      <span className="text-[10px] bg-pink-100 text-pink-700 px-2 py-0.5 rounded-full font-bold">Oferta</span>
-                    </div>
-                    <p className="text-sm text-gray-500 mt-1 mb-2 line-clamp-2">{ad.description}</p>
-                    {ad.link && AdLinkButton(ad.link)}
-                  </div>
-                </div>
+                <OfferCard
+                  key={ad.id}
+                  ad={ad}
+                  onLinkClick={(link) => navigate(link)}
+                />
               ))
             )}
           </div>
