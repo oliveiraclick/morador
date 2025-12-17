@@ -470,16 +470,7 @@ const ResidentHome: React.FC = () => {
                 </p>
               </div>
             </div>
-          ) : (
-            <div className="bg-white p-4 rounded-2xl shadow-sm border border-l-4 border-gray-200 border-gray-100 flex gap-4 mb-8 opacity-50">
-              <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-gray-400 flex-shrink-0">
-                <Megaphone size={24} />
-              </div>
-              <div className="flex items-center">
-                <p className="text-sm text-gray-400">Nenhum aviso no momento.</p>
-              </div>
-            </div>
-          )}
+          ) : null}
 
         {/* Desapego Carousel */}
         <div className="mb-8 relative group">
