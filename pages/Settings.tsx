@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowLeft, User, Bell, Shield, CircleHelp, LogOut, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { APP_VERSION } from '../lib/constants';
 
 const Settings: React.FC = () => {
     const navigate = useNavigate();
@@ -73,7 +74,7 @@ const Settings: React.FC = () => {
                 </button>
 
                 <p className="text-center text-xs text-gray-400">
-                    Versão 1.0.2
+                    Versão {APP_VERSION}
                 </p>
             </div>
         </div>

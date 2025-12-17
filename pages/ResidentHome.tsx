@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Bell, Search, MapPin, QrCode, ShoppingBag as ShoppingBagIcon, Sparkles as SparklesIcon, Utensils as UtensilsIcon, LayoutGrid, Hammer as HammerIcon, Megaphone, ChevronRight, ChevronLeft, Heart, Building, Home, Star, Calendar, FileText, Key, MessageSquare } from 'lucide-react';
+import { Plus, Bell, Search, MapPin, QrCode, ShoppingBag as ShoppingBagIcon, Sparkles as SparklesIcon, Utensils as UtensilsIcon, LayoutGrid, Hammer as HammerIcon, Megaphone, ChevronRight, ChevronLeft, Heart, Building, Home, Star, Calendar, FileText, Key } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import ReferralModal from '../components/ReferralModal';
@@ -22,16 +22,16 @@ const ResidentHome: React.FC = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [unreadMessages, setUnreadMessages] = useState(0);
 
   React.useEffect(() => {
     const fetchNotifications = async () => {
-      const { data } = await supabase
+      const { data } = await import('../lib/supabase').then(m => m.supabase
         .from('broadcasts')
         .select('*')
         .or(`target.eq.all,target.eq.residents`)
         .order('created_at', { ascending: false })
-        .limit(10);
+        .limit(10)
+      );
 
       if (data) {
         setNotifications(data);
@@ -163,16 +163,6 @@ const ResidentHome: React.FC = () => {
         localStorage.setItem('user_name_cache', newName);
         if (newAvatar) localStorage.setItem('user_avatar_cache', newAvatar);
 
-
-        // Fetch Unread Messages Count
-        const { count } = await supabase
-          .from('messages')
-          .select('*', { count: 'exact', head: true })
-          .eq('receiver_id', user.id)
-          .eq('read', false);
-
-        if (count !== null) setUnreadMessages(count);
-
       } else {
         // No user found, redirect to login
         // But delay slightly or check if we are really logged out?
@@ -196,12 +186,13 @@ const ResidentHome: React.FC = () => {
   // Fetch Desapego Items
   React.useEffect(() => {
     const fetchDesapego = async () => {
-      const { data, error } = await supabase
+      const { data, error } = await import('../lib/supabase').then(m => m.supabase
         .from('marketplace_items')
         .select('*')
         .eq('type', 'desapego')
         .order('created_at', { ascending: false })
-        .limit(20);
+        .limit(20)
+      );
 
       if (error) {
         console.error('Error fetching desapego:', error);
@@ -217,12 +208,12 @@ const ResidentHome: React.FC = () => {
   // Fetch Ads
   React.useEffect(() => {
     const fetchAds = async () => {
-      const { data } = await supabase
-        .from('destaques')
+      const { data } = await import('../lib/supabase').then(m => m.supabase
+        .from('ads')
         .select('*')
         .eq('active', true)
-        .order('created_at', { ascending: false });
-
+        .order('created_at', { ascending: false })
+      );
       if (data) setAds(data);
     };
     fetchAds();
@@ -243,14 +234,15 @@ const ResidentHome: React.FC = () => {
     }
 
     try {
-      const { error } = await supabase
+      const { error } = await import('../lib/supabase').then(m => m.supabase
         .from('profiles')
         .update({
-          condo_id: selectedCondo,
+          condo_id: parseInt(selectedCondo),
           unit: `${street}, ${number}` // Combining due to simple schema 
           // In a real app we might have separate columns
         })
-        .eq('id', userId);
+        .eq('id', userId)
+      );
 
       if (error) throw error;
 
@@ -309,7 +301,7 @@ const ResidentHome: React.FC = () => {
       )}
 
       {/* Header */}
-      <header className="bg-[#7c3aed] text-white pt-12 pb-14 rounded-b-[40px] px-6 relative overflow-hidden">
+      <header className="bg-[#7c3aed] text-white pt-12 pb-24 rounded-b-[40px] px-6 relative overflow-hidden">
         {/* Background Pattern */}
         <div className="absolute top-0 left-0 w-full h-full opacity-10">
           <div className="absolute right-0 top-0 w-64 h-64 bg-white rounded-full mix-blend-overlay blur-3xl -mr-16 -mt-16"></div>
@@ -341,12 +333,6 @@ const ResidentHome: React.FC = () => {
             </div>
           </div>
           <div className="flex gap-3">
-            <button onClick={() => navigate('/chats')} className="w-10 h-10 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center relative hover:bg-white/20 transition-colors">
-              <MessageSquare size={20} />
-              {unreadMessages > 0 && (
-                <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-green-400 border-2 border-[#7c3aed] rounded-full"></span>
-              )}
-            </button>
             <button onClick={handleOpenNotifications} className="w-10 h-10 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center relative hover:bg-white/20 transition-colors">
               <Bell size={20} />
               {unreadCount > 0 && (
@@ -363,7 +349,7 @@ const ResidentHome: React.FC = () => {
         <div className="flex gap-4 overflow-x-auto no-scrollbar py-4 px-2 -mx-2">
           {[
             { name: 'Anunciar', icon: <Plus size={24} />, color: 'bg-white/20 text-white border-white/30', action: () => navigate('/sell') },
-            { name: 'Desapego', icon: <ShoppingBagIcon />, color: 'bg-white/10 text-purple-100 border-white/10', action: () => navigate('/market', { state: { category: 'Todos', viewMode: 'grid', filterType: 'DESAPEGO' } }) },
+            { name: 'Desapego', icon: <ShoppingBagIcon />, color: 'bg-white/10 text-purple-100 border-white/10', action: () => navigate('/market', { state: { category: 'Todos' } }) },
             { name: 'Beleza', icon: <SparklesIcon />, color: 'bg-white/10 text-purple-100 border-white/10', action: () => navigate('/market', { state: { category: 'Beleza' } }) },
             { name: 'Comida', icon: <UtensilsIcon />, color: 'bg-white/10 text-purple-100 border-white/10', action: () => navigate('/market', { state: { category: 'Comida' } }) },
             { name: 'Serviços', icon: <HammerIcon />, color: 'bg-white/10 text-purple-100 border-white/10', action: () => navigate('/service-search') },
@@ -380,7 +366,7 @@ const ResidentHome: React.FC = () => {
       </header>
 
       {/* Search Bar */}
-      <div className="px-6 -mt-8 mb-6 relative z-10">
+      <div className="px-6 -mt-6 mb-6 relative z-10">
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -470,7 +456,16 @@ const ResidentHome: React.FC = () => {
                 </p>
               </div>
             </div>
-          ) : null}
+          ) : (
+            <div className="bg-white p-4 rounded-2xl shadow-sm border border-l-4 border-gray-200 border-gray-100 flex gap-4 mb-8 opacity-50">
+              <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-gray-400 flex-shrink-0">
+                <Megaphone size={24} />
+              </div>
+              <div className="flex items-center">
+                <p className="text-sm text-gray-400">Nenhum aviso no momento.</p>
+              </div>
+            </div>
+          )}
 
         {/* Desapego Carousel */}
         <div className="mb-8 relative group">
@@ -510,8 +505,10 @@ const ResidentHome: React.FC = () => {
               </div>
             ) : (
               desapegoItems.map((item) => (
-                <div key={item.id} className="w-40 md:w-52 bg-white p-3 rounded-2xl shadow-sm border border-gray-100 flex flex-col shrink-0 cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/market')}>
-                  <div className="relative mb-3 bg-gray-100 rounded-xl aspect-square overflow-hidden">
+                <div key={item.id} className="min-w-[200px] bg-white p-3 rounded-2xl shadow-sm border border-gray-100 flex flex-col shrink-0 cursor-pointer hover:shadow-md transition-shadow"
+                  onClick={() => navigate('/market', { state: { viewItemId: item.id, category: 'Todos' } })}
+                >
+                  <div className="relative mb-3 bg-gray-100 rounded-xl h-32 overflow-hidden">
                     <img
                       src={item.image_url}
                       onError={(e) => {

@@ -1,69 +1,9 @@
-import React, { useState } from 'react';
-import { ArrowLeft, X, Calendar, Wallet, CheckCircle2, ChevronDown, Star, Ticket } from 'lucide-react';
+import React from 'react';
+import { ArrowLeft, X, Calendar, Wallet, CheckCircle2, ChevronDown, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
 
 const ProPlan: React.FC = () => {
   const navigate = useNavigate();
-  const [couponCode, setCouponCode] = useState('');
-  const [loadingCoupon, setLoadingCoupon] = useState(false);
-
-  const handleApplyCoupon = async () => {
-    if (!couponCode) return;
-    setLoadingCoupon(true);
-    try {
-      // Check coupon validity
-      const { data, error } = await supabase
-        .from('coupons')
-        .select('*')
-        .eq('code', couponCode.toUpperCase())
-        .eq('active', true)
-        .single();
-
-      if (error || !data) {
-        alert('Cupom inválido ou expirado.');
-        return;
-      }
-
-      // Apply 100% Discount Logic
-      if (data.discount_label && (data.discount_label.includes('100%') || data.discount_label.includes('OFF'))) {
-        // Determine current user
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return navigate('/login');
-
-        // Activate Subscription (Mocking a subscription record for now or just handling profile status)
-        // Ideally insert into subscriptions table.
-        const { error: subError } = await supabase
-          .from('subscriptions')
-          .insert({
-            user_id: user.id,
-            status: 'active',
-            plan_type: 'professional',
-            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000 * (data.duration_months || 1)).toISOString()
-          });
-
-        // Update usage count
-        await supabase.from('coupons').update({ uses_count: (data.uses_count || 0) + 1 }).eq('id', data.id);
-
-        alert(`Cupom ${data.code} aplicado com sucesso! Você ganhou ${data.duration_months} meses de acesso.`);
-        navigate('/dashboard'); // Redirect to dashboard
-      } else {
-        alert(`Cupom de desconto parcial aplicado! Prossiga para o checkout.`);
-        // For partial discounts, we would append ?coupon=CODE to Kiwify URL if supported
-      }
-
-    } catch (error) {
-      console.error(error);
-      alert('Erro ao validar cupom.');
-    } finally {
-      setLoadingCoupon(false);
-    }
-  };
-
-  const handleSubscribe = () => {
-    // Kiwify Direct Link
-    window.open('https://pay.kiwify.com.br/6CblNjX', '_blank');
-  };
 
   return (
     <div className="bg-white min-h-screen pb-24">
@@ -169,20 +109,43 @@ const ProPlan: React.FC = () => {
 
         {/* Plans */}
         <div id="plans">
-          <h2 className="text-2xl font-bold text-gray-900 text-center mb-8">Invista em você</h2>
+          <h2 className="text-2xl font-bold text-gray-900 text-center mb-8">Planos flexíveis</h2>
 
           <div className="space-y-4">
+            {/* Free */}
+            <div className="border border-gray-100 rounded-3xl p-6 bg-white shadow-sm">
+              <span className="text-sm font-medium text-gray-500">Básico</span>
+              <h3 className="text-3xl font-bold text-gray-900 mb-6">Grátis</h3>
+
+              <ul className="space-y-4 mb-8">
+                <li className="flex items-center gap-3 text-sm text-gray-500">
+                  <CheckCircle2 size={18} className="text-green-500" />
+                  Perfil simples
+                </li>
+                <li className="flex items-center gap-3 text-sm text-gray-500">
+                  <CheckCircle2 size={18} className="text-green-500" />
+                  Agenda manual
+                </li>
+                <li className="flex items-center gap-3 text-sm text-gray-300 line-through decoration-gray-300">
+                  <CheckCircle2 size={18} className="text-gray-200" />
+                  Pagamentos online
+                </li>
+              </ul>
+
+              <button className="w-full py-3 border border-gray-200 rounded-xl text-gray-600 font-bold text-sm">Plano Atual</button>
+            </div>
+
             {/* Pro */}
             <div className="border-2 border-purple-500 rounded-3xl p-6 bg-white shadow-xl relative overflow-hidden">
               <div className="absolute top-0 right-0 left-0 h-1.5 bg-gradient-to-r from-purple-400 to-pink-500"></div>
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-purple-600 text-white text-[10px] font-bold px-3 py-1 rounded-b-lg tracking-wider uppercase">Pagamento Único / Mensal</div>
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-purple-600 text-white text-[10px] font-bold px-3 py-1 rounded-b-lg tracking-wider uppercase">Recomendado</div>
 
               <span className="text-sm font-bold text-purple-600 mt-2 block">Morador Pro</span>
               <div className="flex items-end gap-1 mb-2 mt-1">
                 <h3 className="text-4xl font-bold text-gray-900">R$ 29,90</h3>
                 <span className="text-gray-500 text-xs font-medium mb-1">/mês</span>
               </div>
-              <p className="text-[10px] text-green-600 font-bold mb-6">Cancele quando quiser.</p>
+              <p className="text-[10px] text-green-600 font-bold mb-6">7 dias grátis, cancele quando quiser.</p>
 
               <ul className="space-y-4 mb-8">
                 <li className="flex items-center gap-3 text-sm text-gray-700 font-medium">
@@ -204,12 +167,15 @@ const ProPlan: React.FC = () => {
               </ul>
 
               <button
-                onClick={handleSubscribe}
-                className="w-full py-3.5 bg-gradient-to-r from-[#7c3aed] to-[#9333ea] rounded-xl text-white font-bold text-sm shadow-lg shadow-purple-200 hover:shadow-purple-300 transition-all active:scale-95 flex items-center justify-center gap-2"
+                onClick={() => {
+                  alert('Redirecionando para checkout...');
+                  navigate('/dashboard');
+                }}
+                className="w-full py-3.5 bg-gradient-to-r from-[#7c3aed] to-[#9333ea] rounded-xl text-white font-bold text-sm shadow-lg shadow-purple-200 hover:shadow-purple-300 transition-all active:scale-95"
               >
-                Assinar Agora (via Kiwify)
+                Começar Teste Grátis
               </button>
-              <p className="text-[10px] text-gray-400 text-center mt-3">Ambiente seguro.</p>
+              <p className="text-[10px] text-gray-400 text-center mt-3">Não cobramos nada hoje.</p>
             </div>
           </div>
         </div>
@@ -233,16 +199,10 @@ const ProPlan: React.FC = () => {
               <input
                 type="text"
                 placeholder="Código"
-                value={couponCode}
-                onChange={e => setCouponCode(e.target.value)}
                 className="flex-1 bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm font-bold text-gray-900 uppercase focus:outline-none focus:border-purple-500"
               />
-              <button
-                onClick={handleApplyCoupon}
-                disabled={loadingCoupon}
-                className="bg-gray-900 text-white px-4 py-2 rounded-lg text-xs font-bold hover:opacity-80 transition-opacity disabled:opacity-50"
-              >
-                {loadingCoupon ? '...' : 'Aplicar'}
+              <button className="bg-gray-900 text-white px-4 py-2 rounded-lg text-xs font-bold hover:opacity-80 transition-opacity">
+                Aplicar
               </button>
             </div>
           </div>
@@ -253,13 +213,14 @@ const ProPlan: React.FC = () => {
       {/* Sticky Bottom CTA */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 z-30 flex items-center justify-between shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
         <div>
+          <span className="text-[10px] text-gray-400 line-through">R$ 49,90</span>
           <div className="flex items-baseline gap-1">
             <span className="text-lg font-bold text-gray-900">R$ 29,90</span>
             <span className="text-xs text-gray-500">/mês</span>
           </div>
         </div>
-        <button onClick={handleSubscribe} className="bg-[#7c3aed] text-white px-6 py-3 rounded-lg font-bold text-sm shadow-lg shadow-purple-200">
-          Assinar Pro
+        <button onClick={() => navigate('/dashboard')} className="bg-[#7c3aed] text-white px-6 py-3 rounded-lg font-bold text-sm shadow-lg shadow-purple-200">
+          Assinar Pro Agora
         </button>
       </div>
 

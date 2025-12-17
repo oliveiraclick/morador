@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home } from 'lucide-react';
+import { APP_VERSION } from '../lib/constants';
 
 const Splash: React.FC = () => {
   const navigate = useNavigate();
@@ -37,7 +38,7 @@ const Splash: React.FC = () => {
         <div className="h-1.5 w-full bg-purple-900/30 rounded-full overflow-hidden">
           <div className="h-full bg-white rounded-full animate-[progress_2s_ease-in-out_infinite]"></div>
         </div>
-        <p className="text-center text-purple-300 text-[10px] mt-2 font-medium">V1.47</p>
+        <p className="text-center text-purple-300 text-[10px] mt-2 font-medium">V{APP_VERSION}</p>
       </div>
 
       <style>{`

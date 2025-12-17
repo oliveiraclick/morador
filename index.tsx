@@ -13,7 +13,6 @@ import RegisterResident from './pages/RegisterResident';
 import CompleteRegistration from './pages/CompleteRegistration'; // Imported
 import RegisterProfessional from './pages/RegisterProfessional';
 import Chat from './pages/Chat';
-import ChatList from './pages/ChatList';
 import Settings from './pages/Settings';
 import MyStore from './pages/MyStore';
 
@@ -99,10 +98,9 @@ const AppContent = () => {
             setUserRole(role as UserRole);
 
             // Redirect Logic
-            const normalizedRole = (role as string).toUpperCase();
             if (window.location.pathname === '/login' || window.location.pathname === '/' || window.location.pathname === '/register/resident' || window.location.pathname === '/register/professional') {
-              if (normalizedRole === UserRole.ADMIN) navigate('/admin');
-              else if (normalizedRole === UserRole.PROFESSIONAL) navigate('/dashboard');
+              if (role === UserRole.ADMIN) navigate('/admin');
+              else if (role === UserRole.PROFESSIONAL) navigate('/dashboard');
               else navigate('/home');
             }
 
@@ -218,11 +216,6 @@ const AppContent = () => {
         <Route path="/chat" element={
           <ProtectedRoute allowedRoles={[UserRole.RESIDENT, UserRole.PROFESSIONAL, UserRole.ADMIN]}>
             <Chat />
-          </ProtectedRoute>
-        } />
-        <Route path="/chats" element={
-          <ProtectedRoute allowedRoles={[UserRole.RESIDENT, UserRole.PROFESSIONAL, UserRole.ADMIN]}>
-            <ChatList />
           </ProtectedRoute>
         } />
         <Route path="/create-offer" element={

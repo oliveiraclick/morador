@@ -17,16 +17,11 @@ interface Message {
 const Chat: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    // Accept avatar from state if available
-    const { seller, product, avatar } = location.state || { seller: 'Vendedor', product: null, avatar: null };
-
+    const { seller, product } = location.state || { seller: 'Vendedor', product: null };
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const [inputText, setInputText] = useState('');
     const [messages, setMessages] = useState<any[]>([]);
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-
-    // State for the partner's avatar
-    const [headerAvatar, setHeaderAvatar] = useState<string | null>(avatar);
 
     useEffect(() => {
         const initializeChat = async () => {
@@ -34,19 +29,6 @@ const Chat: React.FC = () => {
             if (user) {
                 setCurrentUserId(user.id);
                 fetchMessages(user.id);
-
-                // If we don't have an avatar passed via state, try to fetch it
-                if (!headerAvatar && product?.sellerId) {
-                    const { data: profile } = await supabase
-                        .from('profiles')
-                        .select('avatar_url')
-                        .eq('id', product.sellerId)
-                        .single();
-
-                    if (profile?.avatar_url) {
-                        setHeaderAvatar(profile.avatar_url);
-                    }
-                }
 
                 // Realtime subscription
                 const subscription = supabase
@@ -138,7 +120,9 @@ const Chat: React.FC = () => {
         // 3. Send to Supabase
         const { error } = await supabase.from('messages').insert([{
             sender_id: currentUserId,
-            receiver_id: product?.sellerId || null,
+            // receiver_id: seller?.id ... we don't have seller ID easily in this mock flow unless passed.
+            // For now we leave receiver generic or null, or we assume seller has an ID if we passed it.
+            // In a real app we MUST pass seller_id.
             content: text,
             product_context: product?.title || null
         }]);
@@ -157,12 +141,8 @@ const Chat: React.FC = () => {
                     <ArrowLeft size={24} />
                 </button>
                 <div className="flex items-center gap-3 flex-1">
-                    <div className="w-10 h-10 bg-gray-300 rounded-full overflow-hidden flex items-center justify-center">
-                        {headerAvatar ? (
-                            <img src={headerAvatar} alt="User" className="w-full h-full object-cover" />
-                        ) : (
-                            <span className="font-bold text-gray-600 text-lg">{seller?.charAt(0)}</span>
-                        )}
+                    <div className="w-10 h-10 bg-gray-300 rounded-full overflow-hidden">
+                        <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="User" className="w-full h-full object-cover" />
                     </div>
                     <div>
                         <h1 className="font-bold text-base leading-tight">{seller}</h1>
@@ -179,7 +159,7 @@ const Chat: React.FC = () => {
             {/* Product Context Banner */}
             {product && (
                 <div className="bg-white p-3 flex gap-3 shadow-sm border-b border-gray-200 sticky top-[72px] z-10">
-                    <img src={product.image || product.img} className="w-12 h-12 bg-gray-100 rounded-lg object-cover" />
+                    <img src={product.image} className="w-12 h-12 bg-gray-100 rounded-lg object-cover" />
                     <div className="flex-1">
                         <h3 className="font-bold text-gray-900 text-sm">{product.title}</h3>
                         <p className="text-xs text-[#008069] font-bold">R$ {product.price?.toFixed(2)}</p>
@@ -207,7 +187,7 @@ const Chat: React.FC = () => {
             </div>
 
             {/* Input Area */}
-            <div className="px-2 pt-2 pb-6 bg-[#f0f2f5] flex items-center gap-2 fixed bottom-0 left-0 right-0 z-20">
+            <div className="p-2 bg-[#f0f2f5] flex items-center gap-2 fixed bottom-0 left-0 right-0">
                 <div className="bg-white flex-1 rounded-full flex items-center px-4 py-2 shadow-sm">
                     <Smile size={24} className="text-gray-400 mr-2" />
                     <input

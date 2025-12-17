@@ -1,21 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Heart, MessageSquare, ArrowLeft, Store, Repeat, Utensils, Smartphone, Sparkles, ShoppingBag } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
 
 const Marketplace: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [activeCategory, setActiveCategory] = useState(location.state?.category || 'Todos');
-  const [viewMode, setViewMode] = useState(location.state?.viewMode || 'list');
-  const [filterType, setFilterType] = useState(location.state?.filterType || 'ALL');
   const [viewItem, setViewItem] = useState<any>(null);
   const [showLightbox, setShowLightbox] = useState(false);
 
+  // Deep Link Logic: Check if an item was passed via navigation state to open immediately
   useEffect(() => {
-    if (location.state?.category) setActiveCategory(location.state.category);
-    if (location.state?.viewMode) setViewMode(location.state.viewMode);
-    if (location.state?.filterType) setFilterType(location.state.filterType);
+    if (location.state?.category) {
+      setActiveCategory(location.state.category);
+    }
+    if (location.state?.viewItem) {
+      setViewItem(location.state.viewItem);
+    }
   }, [location.state]);
 
   const categories = ['Todos', 'Móveis', 'Eletrônicos', 'Infantil', 'Roupas', 'Beleza', 'Comida'];
@@ -62,27 +63,28 @@ const Marketplace: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       // Fetch user's condo name
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await import('../lib/supabase').then(m => m.supabase.auth.getUser());
       if (user) {
-        const { data: profile } = await supabase
+        const { data: profile } = await import('../lib/supabase').then(m => m.supabase
           .from('profiles')
           .select('condos(name)')
           .eq('id', user.id)
-          .single();
-
+          .single()
+        );
         if (profile?.condos?.name) {
           setCondoName(profile.condos.name);
         }
       }
 
       // Fetch marketplace items
-      const { data, error } = await supabase
+      const { data, error } = await import('../lib/supabase').then(m => m.supabase
         .from('marketplace_items')
         .select(`
           *,
           profiles:seller_id (full_name, unit)
         `)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+      );
 
       if (data) {
         // Map DB fields to UI fields expected by current render
@@ -94,15 +96,21 @@ const Marketplace: React.FC = () => {
           img: item.image_url,
           description: item.description,
           seller: item.profiles?.full_name || 'Vendedor',
-          sellerId: item.seller_id,
           sellerAvatar: item.profiles?.full_name?.substring(0, 2).toUpperCase() || 'VA',
           sellerColor: 'bg-purple-500',
           location: item.profiles?.unit || 'Condomínio',
           time: new Date(item.created_at).toLocaleDateString(),
           condition: 'Novo',
-          category: item.category
+          category: item.category,
+          originalPrice: item.original_price // Assuming column exists or is null
         }));
         setItems(mappedItems);
+
+        // If we have an ID but not the object (e.g. from a link), find it
+        if (location.state?.viewItemId && !location.state.viewItem) {
+          const found = mappedItems.find(i => i.id === location.state.viewItemId);
+          if (found) setViewItem(found);
+        }
       }
     };
     fetchData();
@@ -164,7 +172,7 @@ const Marketplace: React.FC = () => {
         </div>
       ) : (
         items.map((item) => (
-          <div key={item.id} className="w-40 md:w-52 snap-center bg-white rounded-2xl p-3 shadow-sm border border-gray-100 flex-shrink-0">
+          <div key={item.id} className="min-w-[220px] max-w-[220px] snap-center bg-white rounded-2xl p-3 shadow-sm border border-gray-100 flex-shrink-0">
             {/* Seller Header */}
             <div className="flex items-center justify-between mb-3 px-1">
               <div className="flex items-center gap-2">
@@ -184,7 +192,7 @@ const Marketplace: React.FC = () => {
             {/* Image */}
             <div
               onClick={() => setViewItem(item)}
-              className="relative aspect-square rounded-xl overflow-hidden mb-2 bg-gray-100 group cursor-pointer"
+              className="relative h-32 rounded-xl overflow-hidden mb-2 bg-gray-100 group cursor-pointer"
             >
               <img
                 src={item.img}
@@ -260,183 +268,123 @@ const Marketplace: React.FC = () => {
       </div>
 
       <div className="space-y-2">
-        {viewMode === 'grid' ? (
-          <div className="px-4 mt-4">
-            <div className="flex items-center gap-2 mb-4 text-[#7c3aed]">
-              <Repeat size={20} />
-              <h2 className="text-lg font-bold text-gray-900">{filterType === 'DESAPEGO' ? `Desapegos do ${condoName}` : 'Itens'}</h2>
-            </div>
+        {/* Section 1: Desapegos */}
+        <SectionHeader title={`Desapego do ${condoName}`} icon={Repeat} count={desapegoItems.length} />
+        <HorizontalList items={desapegoItems} />
 
-            <div className="grid grid-cols-2 gap-3 pb-20">
-              {(filterType === 'DESAPEGO' ? desapegoItems : items).map((item) => (
-                <div key={item.id} className="bg-white rounded-2xl p-3 shadow-sm border border-gray-100 flex flex-col">
-                  {/* Seller Header */}
-                  <div className="flex items-center justify-between mb-3 px-1">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-6 h-6 rounded-full ${item.sellerColor} flex items-center justify-center text-white text-[9px] font-bold shadow-sm`}>
-                        {item.sellerAvatar}
-                      </div>
-                      <h3 className="text-[10px] font-bold text-gray-900 leading-tight truncate max-w-[80px]">{item.seller}</h3>
-                    </div>
-                    <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-md ${item.condition === 'Novo' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
-                      {item.condition}
-                    </span>
-                  </div>
-
-                  {/* Image */}
-                  <div onClick={() => setViewItem(item)} className="relative aspect-square rounded-xl overflow-hidden mb-2 bg-gray-100 group cursor-pointer">
-                    <img
-                      src={item.img}
-                      className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                      onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80&w=500'; }}
-                    />
-                  </div>
-
-                  {/* Content */}
-                  <div className="px-1 flex-1 flex flex-col">
-                    <h2 className="text-xs font-bold text-gray-800 line-clamp-1 mb-1">{item.title}</h2>
-                    <div className="flex items-baseline gap-2 mb-3 mt-auto">
-                      <span className="text-sm font-bold text-[#7c3aed]">R$ {item.price.toFixed(2).replace('.', ',')}</span>
-                    </div>
-                    <button onClick={() => handleNegotiate(item)} className="w-full bg-white border border-[#7c3aed] text-[#7c3aed] py-2 rounded-lg font-bold text-[10px] hover:bg-[#7c3aed] hover:text-white transition-colors flex items-center justify-center gap-1.5">
-                      <MessageSquare size={12} /> Negociar
-                    </button>
-                  </div>
-                </div>
-              ))}
-              {(filterType === 'DESAPEGO' ? desapegoItems : items).length === 0 && (
-                <div className="col-span-2 text-center py-10 text-gray-400">Nenhum item encontrado.</div>
-              )}
-            </div>
-          </div>
-        ) : (
-          <>
-            {/* Section 1: Desapegos */}
-            <SectionHeader title={`Desapego do ${condoName}`} icon={Repeat} count={desapegoItems.length} />
-            <HorizontalList items={desapegoItems} />
-
-            {/* Section 2: Lojas */}
-            <SectionHeader title="Lojas & Vitrines" icon={Store} count={lojaItems.length} />
-            <HorizontalList items={lojaItems} />
-          </>
-        )}
+        {/* Section 2: Lojas */}
+        <SectionHeader title="Lojas & Vitrines" icon={Store} count={lojaItems.length} />
+        <HorizontalList items={lojaItems} />
       </div>
 
-
-
-
-
       {/* Product Detail Modal */}
-      {
-        viewItem && (
-          <div className="fixed inset-0 z-50 bg-white animate-in slide-in-from-bottom-5 duration-300 flex flex-col">
-            {/* Header Image */}
-            <div className="relative h-1/2 bg-gray-100">
-              <img
-                src={viewItem.img}
-                className="w-full h-full object-cover cursor-zoom-in"
-                alt={viewItem.title}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowLightbox(true);
-                }}
-              />
-              <button
-                onClick={() => setViewItem(null)}
-                className="absolute top-4 left-4 p-2 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white/40 transition-colors"
-              >
-                <ArrowLeft size={24} />
-              </button>
-              <div className="absolute bottom-4 right-4 flex gap-2">
-                <span className="px-3 py-1 bg-black/50 backdrop-blur-md text-white text-xs font-bold rounded-full">
-                  {viewItem.condition}
-                </span>
-              </div>
-            </div>
+      {viewItem && (
+        <div className="fixed inset-0 z-50 bg-white animate-in slide-in-from-bottom-5 duration-300 flex flex-col">
 
-            {/* Content */}
-            <div className="flex-1 p-6 bg-white -mt-6 rounded-t-3xl relative overflow-y-auto pb-24">
-              <div className="w-12 h-1 bg-gray-200 rounded-full mx-auto mb-6"></div>
-
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900 leading-tight mb-1">{viewItem.title}</h2>
-                  <p className="text-sm text-gray-500">{viewItem.category} • {viewItem.time}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-2xl font-bold text-[#7c3aed]">R$ {viewItem.price.toFixed(2).replace('.', ',')}</p>
-                  {viewItem.originalPrice && <p className="text-sm text-gray-400 line-through">R$ {viewItem.originalPrice}</p>}
-                </div>
-              </div>
-
-              <hr className="border-gray-100 my-6" />
-
-              {/* Seller Info */}
-              <div className="flex items-center gap-3 mb-6 bg-gray-50 p-4 rounded-2xl">
-                <div className={`w-12 h-12 rounded-full ${viewItem.sellerColor} flex items-center justify-center text-white font-bold text-lg shadow-sm`}>
-                  {viewItem.sellerAvatar}
-                </div>
-                <div>
-                  <h3 className="font-bold text-gray-900">{viewItem.seller}</h3>
-                  <p className="text-xs text-gray-500">{viewItem.location}</p>
-                </div>
-                <div className="ml-auto">
-                  <button className="p-2 bg-white rounded-full text-gray-400 shadow-sm border border-gray-100">
-                    <Heart size={20} />
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <h3 className="font-bold text-gray-900 mb-2">Descrição</h3>
-                <p className="text-gray-600 leading-relaxed text-sm">
-                  {viewItem.description}
-                </p>
-              </div>
-            </div>
-
-            {/* Bottom Action */}
-            <div className="bg-white p-4 border-t border-gray-100 absolute bottom-0 left-0 right-0">
-              <button
-                onClick={() => {
-                  handleNegotiate(viewItem);
-                  setViewItem(null);
-                }}
-                className="w-full bg-[#7c3aed] text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-purple-200 hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
-              >
-                <MessageSquare size={20} />
-                Negociar Agora
-              </button>
-            </div>
-          </div>
-        )
-      }
-
-
-      {/* Lightbox Overlay */}
-      {
-        showLightbox && viewItem && (
-          <div
-            className="fixed inset-0 z-[60] bg-black flex items-center justify-center animate-in fade-in active:scale-100"
-            onClick={() => setShowLightbox(false)}
-          >
+          {/* Header Image (Top 45%) */}
+          <div className="relative h-[45vh] shrink-0 bg-gray-900">
+            <img
+              src={viewItem.img}
+              className="w-full h-full object-cover cursor-zoom-in"
+              alt={viewItem.title}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowLightbox(true);
+              }}
+            />
+            {/* Improved Back Button Visibility */}
             <button
-              onClick={() => setShowLightbox(false)}
-              className="absolute top-4 right-4 p-3 bg-white/10 rounded-full text-white hover:bg-white/20 z-50"
+              onClick={() => setViewItem(null)}
+              className="absolute top-4 left-4 p-2 bg-white/90 backdrop-blur-md rounded-full text-gray-900 shadow-md hover:bg-white transition-colors"
             >
               <ArrowLeft size={24} />
             </button>
-
-            <img
-              src={viewItem.img}
-              className="max-w-full max-h-full object-contain p-4"
-              alt={viewItem.title}
-              onClick={(e) => e.stopPropagation()}
-            />
+            <div className="absolute bottom-4 right-4 flex gap-2">
+              <span className="px-3 py-1 bg-black/60 backdrop-blur-md text-white text-xs font-bold rounded-full border border-white/20">
+                {viewItem.condition}
+              </span>
+            </div>
           </div>
-        )
-      }
-    </div >
+
+          {/* Content (Scrollable Middle) */}
+          <div className="flex-1 overflow-y-auto bg-white -mt-6 rounded-t-3xl relative z-10 px-6 pt-8 pb-4">
+            <div className="w-12 h-1 bg-gray-200 rounded-full mx-auto mb-6"></div>
+
+            <div className="flex justify-between items-start mb-2">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 leading-tight mb-1">{viewItem.title}</h2>
+                <p className="text-sm text-gray-500">{viewItem.category} • {viewItem.time}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-bold text-[#7c3aed]">R$ {viewItem.price.toFixed(2).replace('.', ',')}</p>
+                {viewItem.originalPrice && <p className="text-sm text-gray-400 line-through">R$ {viewItem.originalPrice}</p>}
+              </div>
+            </div>
+
+            <hr className="border-gray-100 my-6" />
+
+            {/* Seller Info */}
+            <div className="flex items-center gap-3 mb-6 bg-gray-50 p-4 rounded-2xl border border-gray-100">
+              <div className={`w-12 h-12 rounded-full ${viewItem.sellerColor} flex items-center justify-center text-white font-bold text-lg shadow-sm`}>
+                {viewItem.sellerAvatar}
+              </div>
+              <div>
+                <h3 className="font-bold text-gray-900">{viewItem.seller}</h3>
+                <p className="text-xs text-gray-500">{viewItem.location}</p>
+              </div>
+              <div className="ml-auto">
+                <button className="p-2 bg-white rounded-full text-gray-400 shadow-sm border border-gray-100 hover:text-red-500 transition-colors">
+                  <Heart size={20} />
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="font-bold text-gray-900 mb-2">Descrição</h3>
+              <p className="text-gray-600 leading-relaxed text-sm">
+                {viewItem.description}
+              </p>
+            </div>
+          </div>
+
+          {/* Fixed Footer (Bottom) */}
+          <div className="p-4 bg-white border-t border-gray-100 shrink-0 relative z-20 pb-8">
+            <button
+              onClick={() => {
+                handleNegotiate(viewItem);
+                setViewItem(null);
+              }}
+              className="w-full bg-[#7c3aed] text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-purple-200 hover:opacity-90 transition-opacity flex items-center justify-center gap-2 active:scale-95"
+            >
+              <MessageSquare size={20} />
+              Negociar Agora
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Lightbox Overlay */}
+      {showLightbox && viewItem && (
+        <div
+          className="fixed inset-0 z-[60] bg-black flex items-center justify-center animate-in fade-in active:scale-100"
+          onClick={() => setShowLightbox(false)}
+        >
+          <button
+            onClick={() => setShowLightbox(false)}
+            className="absolute top-4 right-4 p-3 bg-white/10 rounded-full text-white hover:bg-white/20 z-50"
+          >
+            <ArrowLeft size={24} />
+          </button>
+
+          <img
+            src={viewItem.img}
+            className="max-w-full max-h-full object-contain p-4"
+            alt={viewItem.title}
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
+    </div>
   );
 };
 

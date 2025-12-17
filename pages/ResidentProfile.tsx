@@ -3,6 +3,7 @@ import React from 'react';
 import { ArrowLeft, User, MapPin, Heart, Settings, LogOut, ChevronRight, Bell, Camera, ShoppingBag as ShoppingBagIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { APP_VERSION } from '../lib/constants';
 
 const ResidentProfile: React.FC = () => {
     const navigate = useNavigate();
@@ -387,7 +388,7 @@ const ResidentProfile: React.FC = () => {
                     Sair da Conta
                 </button>
 
-                <p className="text-center text-xs text-gray-400 mt-6">Versão 1.1.0 • Morador App</p>
+                <p className="text-center text-xs text-gray-400 mt-6">Versão {APP_VERSION} • Morador App</p>
             </div>
 
             {renderModal()}
