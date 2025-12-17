@@ -25,7 +25,9 @@ const Layout: React.FC<LayoutProps> = ({ children, role }) => {
     location.pathname === '/login' ||
     location.pathname === '/role-selection' ||
     location.pathname.startsWith('/register/') ||
-    location.pathname === '/pro'
+    location.pathname === '/pro' ||
+    location.pathname === '/sell' ||
+    location.pathname === '/create-offer'
   ) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col justify-center">
