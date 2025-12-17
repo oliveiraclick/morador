@@ -1,6 +1,9 @@
 import React from 'react';
-import { Bell, Settings, TrendingUp, TrendingDown, Users, Building, DollarSign, Store, BarChart3, ShieldCheck, FileText, Ticket } from 'lucide-react';
+import { Bell, Settings, TrendingUp, TrendingDown, Users, Building, DollarSign, Store, BarChart3, ShieldCheck, Ticket } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import AdminStatsCard from '../components/AdminStatsCard';
+import AdminSectorChart from '../components/AdminSectorChart';
+import RecentActivityList from '../components/RecentActivityList';
 
 const MasterDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -42,70 +45,59 @@ const MasterDashboard: React.FC = () => {
 
         {/* Metrics Grid */}
         <div className="grid grid-cols-2 gap-4">
-          <div className="bg-white p-4 rounded-3xl shadow-sm border border-gray-100">
-            <div className="flex justify-between items-start mb-4">
-              <div className="w-10 h-10 rounded-2xl bg-purple-100 flex items-center justify-center text-purple-600">
-                <DollarSign size={20} />
-              </div>
-              <span className="px-2 py-1 bg-green-100 text-green-700 text-[10px] font-bold rounded-full">+12%</span>
-            </div>
-            <p className="text-xs text-gray-500 font-medium mb-1">MRR Mensal</p>
-            <p className="text-xl font-bold text-gray-900">R$ 150.2k</p>
-          </div>
+          <AdminStatsCard
+            icon={DollarSign}
+            iconBgClass="bg-purple-100"
+            iconColorClass="text-purple-600"
+            percentage="+12%"
+            percentageBgClass="bg-green-100"
+            percentageColorClass="text-green-700"
+            label="MRR Mensal"
+            value="R$ 150.2k"
+          />
 
-          <div className="bg-white p-4 rounded-3xl shadow-sm border border-gray-100">
-            <div className="flex justify-between items-start mb-4">
-              <div className="w-10 h-10 rounded-2xl bg-indigo-100 flex items-center justify-center text-indigo-600">
-                <Building size={20} />
-              </div>
-              <span className="px-2 py-1 bg-green-100 text-green-700 text-[10px] font-bold rounded-full">+5%</span>
-            </div>
-            <p className="text-xs text-gray-500 font-medium mb-1">Condomínios</p>
-            <p className="text-xl font-bold text-gray-900">124</p>
-          </div>
+          <AdminStatsCard
+            icon={Building}
+            iconBgClass="bg-indigo-100"
+            iconColorClass="text-indigo-600"
+            percentage="+5%"
+            percentageBgClass="bg-green-100"
+            percentageColorClass="text-green-700"
+            label="Condomínios"
+            value="124"
+          />
 
-          <div className="col-span-2 bg-white p-4 rounded-3xl shadow-sm border border-gray-100">
-            <h3 className="font-bold text-gray-900 text-sm mb-3">Prestadores por Setor</h3>
-            <div className="space-y-3">
-              {[
-                { name: 'Limpeza', count: 45, color: 'bg-blue-500' },
-                { name: 'Manutenção', count: 32, color: 'bg-orange-500' },
-                { name: 'Beleza', count: 28, color: 'bg-pink-500' },
-                { name: 'Aulas', count: 15, color: 'bg-purple-500' }
-              ].map((sec, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full ${sec.color}`}></span>
-                  <span className="text-xs text-gray-500 flex-1">{sec.name}</span>
-                  <span className="text-xs font-bold text-gray-900">{sec.count}</span>
-                  <div className="w-24 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                    <div className={`h-full ${sec.color}`} style={{ width: `${(sec.count / 45) * 100}%` }}></div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <AdminSectorChart
+            data={[
+              { name: 'Limpeza', count: 45, color: 'bg-blue-500' },
+              { name: 'Manutenção', count: 32, color: 'bg-orange-500' },
+              { name: 'Beleza', count: 28, color: 'bg-pink-500' },
+              { name: 'Aulas', count: 15, color: 'bg-purple-500' }
+            ]}
+            total={45} // This should be max or total? The CSS uses count/45 so 45 is denominator. Let's pass 45 as total for now to match UI behavior.
+          />
 
-          <div className="bg-white p-4 rounded-3xl shadow-sm border border-gray-100">
-            <div className="flex justify-between items-start mb-4">
-              <div className="w-10 h-10 rounded-2xl bg-blue-100 flex items-center justify-center text-blue-600">
-                <Users size={20} />
-              </div>
-              <span className="px-2 py-1 bg-green-100 text-green-700 text-[10px] font-bold rounded-full">+8%</span>
-            </div>
-            <p className="text-xs text-gray-500 font-medium mb-1">Usuários Totais</p>
-            <p className="text-xl font-bold text-gray-900">45.3k</p>
-          </div>
+          <AdminStatsCard
+            icon={Users}
+            iconBgClass="bg-blue-100"
+            iconColorClass="text-blue-600"
+            percentage="+8%"
+            percentageBgClass="bg-green-100"
+            percentageColorClass="text-green-700"
+            label="Usuários Totais"
+            value="45.3k"
+          />
 
-          <div className="bg-white p-4 rounded-3xl shadow-sm border border-gray-100">
-            <div className="flex justify-between items-start mb-4">
-              <div className="w-10 h-10 rounded-2xl bg-orange-100 flex items-center justify-center text-orange-600">
-                <TrendingDown size={20} />
-              </div>
-              <span className="px-2 py-1 bg-green-100 text-green-700 text-[10px] font-bold rounded-full">-0.2%</span>
-            </div>
-            <p className="text-xs text-gray-500 font-medium mb-1">Churn Rate</p>
-            <p className="text-xl font-bold text-gray-900">1.2%</p>
-          </div>
+          <AdminStatsCard
+            icon={TrendingDown}
+            iconBgClass="bg-orange-100"
+            iconColorClass="text-orange-600"
+            percentage="-0.2%"
+            percentageBgClass="bg-green-100"
+            percentageColorClass="text-green-700"
+            label="Churn Rate"
+            value="1.2%"
+          />
         </div>
 
         {/* Quick Actions */}
@@ -202,50 +194,7 @@ const MasterDashboard: React.FC = () => {
 
         {/* Activity Feed (Bottom) */}
         <div>
-          <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-gray-100">
-            <div className="space-y-6">
-
-              <div className="flex gap-4">
-                <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 text-purple-600">
-                  <Store size={20} />
-                </div>
-                <div className="flex-1">
-                  <div className="flex justify-between items-start">
-                    <h4 className="font-bold text-gray-900 text-sm">Novo Condomínio Cadastrado</h4>
-                    <span className="text-[10px] text-gray-400">2m atrás</span>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">Residencial Flores do Campo • Plano Pro</p>
-                </div>
-              </div>
-
-              <div className="flex gap-4">
-                <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0 text-red-500">
-                  <FileText size={20} />
-                </div>
-                <div className="flex-1">
-                  <div className="flex justify-between items-start">
-                    <h4 className="font-bold text-gray-900 text-sm">Pagamento Recusado</h4>
-                    <span className="text-[10px] text-gray-400">15m atrás</span>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">Condomínio Solar • R$ 1.200,00</p>
-                </div>
-              </div>
-
-              <div className="flex gap-4">
-                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 text-blue-600">
-                  <Users size={20} />
-                </div>
-                <div className="flex-1">
-                  <div className="flex justify-between items-start">
-                    <h4 className="font-bold text-gray-900 text-sm">Novos Usuários (Lote)</h4>
-                    <span className="text-[10px] text-gray-400">1h atrás</span>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">Importação via CSV concluída • 120 registros</p>
-                </div>
-              </div>
-
-            </div>
-          </div>
+          <RecentActivityList />
         </div>
       </div>
 
