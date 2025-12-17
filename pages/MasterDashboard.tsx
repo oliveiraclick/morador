@@ -12,7 +12,7 @@ const MasterDashboard: React.FC = () => {
     mrr: 0,
     condos: 0,
     users: 0,
-    churn: 1.2 // Hardcoded for now
+    late: 0
   });
   const [sectorData, setSectorData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
