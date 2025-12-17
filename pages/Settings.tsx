@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, User, Bell, Shield, CircleHelp, LogOut, ChevronRight, Sparkles, RotateCcw } from 'lucide-react';
+import { ArrowLeft, User, Bell, Shield, CircleHelp, LogOut, ChevronRight, RotateCcw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { APP_VERSION } from '../lib/constants';
 
@@ -38,7 +38,6 @@ const Settings: React.FC = () => {
             title: 'Preferências',
             items: [
                 { icon: <Bell size={20} />, label: 'Notificações', action: () => { } },
-                { icon: <Sparkles size={20} />, label: 'Identidade Visual', action: () => navigate('/admin/branding') },
             ]
         },
         {
