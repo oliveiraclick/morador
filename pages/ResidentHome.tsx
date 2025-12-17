@@ -516,7 +516,7 @@ const ResidentHome: React.FC = () => {
                 <div key={item.id} className="min-w-[200px] bg-white p-3 rounded-2xl shadow-sm border border-gray-100 flex flex-col shrink-0 cursor-pointer hover:shadow-md transition-shadow"
                   onClick={() => navigate('/market', { state: { viewItemId: item.id, category: 'Todos' } })}
                 >
-                  <div className="relative mb-3 bg-gray-100 rounded-xl h-32 overflow-hidden">
+                  <div className="relative mb-3 bg-gray-100 rounded-xl aspect-square overflow-hidden">
                     <img
                       src={item.image_url}
                       onError={(e) => {
