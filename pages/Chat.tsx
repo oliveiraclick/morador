@@ -207,7 +207,7 @@ const Chat: React.FC = () => {
             </div>
 
             {/* Input Area */}
-            <div className="p-2 bg-[#f0f2f5] flex items-center gap-2 fixed bottom-0 left-0 right-0">
+            <div className="px-2 pt-2 pb-6 bg-[#f0f2f5] flex items-center gap-2 fixed bottom-0 left-0 right-0 z-20">
                 <div className="bg-white flex-1 rounded-full flex items-center px-4 py-2 shadow-sm">
                     <Smile size={24} className="text-gray-400 mr-2" />
                     <input

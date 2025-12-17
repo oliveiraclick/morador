@@ -309,7 +309,7 @@ const ResidentHome: React.FC = () => {
       )}
 
       {/* Header */}
-      <header className="bg-[#7c3aed] text-white pt-12 pb-24 rounded-b-[40px] px-6 relative overflow-hidden">
+      <header className="bg-[#7c3aed] text-white pt-12 pb-14 rounded-b-[40px] px-6 relative overflow-hidden">
         {/* Background Pattern */}
         <div className="absolute top-0 left-0 w-full h-full opacity-10">
           <div className="absolute right-0 top-0 w-64 h-64 bg-white rounded-full mix-blend-overlay blur-3xl -mr-16 -mt-16"></div>
@@ -380,7 +380,7 @@ const ResidentHome: React.FC = () => {
       </header>
 
       {/* Search Bar */}
-      <div className="px-6 -mt-6 mb-6 relative z-10">
+      <div className="px-6 -mt-8 mb-6 relative z-10">
         <form
           onSubmit={(e) => {
             e.preventDefault();
