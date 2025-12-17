@@ -29,7 +29,58 @@ const Login: React.FC = ({ setRole }: { setRole?: (role: UserRole) => void }) =>
         checkSession();
     }, []);
 
-    // ... existing handlers
+    const handleLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        try {
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email,
+                password,
+            });
+
+            if (error) throw error;
+
+            if (data.user) {
+                // Fetch Profile to get Role
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('role')
+                    .eq('id', data.user.id)
+                    .single();
+
+                const role = profile?.role || UserRole.RESIDENT;
+
+                localStorage.setItem('user_role', role);
+                localStorage.setItem('user_registered', 'true');
+                if (setRole) setRole(role as UserRole);
+
+                // Redirect
+                if (role === UserRole.ADMIN) navigate('/admin');
+                else if (role === UserRole.PROFESSIONAL) navigate('/dashboard');
+                else navigate('/home');
+            }
+        } catch (err: any) {
+            alert('Erro ao entrar: ' + err.message);
+        }
+    };
+
+    const handleGoogleLogin = async () => {
+        try {
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: window.location.origin,
+                    queryParams: {
+                        access_type: 'offline',
+                        prompt: 'consent',
+                    },
+                },
+            });
+            if (error) throw error;
+        } catch (error: any) {
+            alert('Erro ao conectar com Google: ' + error.message);
+        }
+    };
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col justify-center p-6">
