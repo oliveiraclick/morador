@@ -1,12 +1,95 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Bell, Settings, TrendingUp, TrendingDown, Users, Building, DollarSign, Store, BarChart3, ShieldCheck, Ticket } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 import AdminStatsCard from '../components/AdminStatsCard';
 import AdminSectorChart from '../components/AdminSectorChart';
 import RecentActivityList from '../components/RecentActivityList';
 
 const MasterDashboard: React.FC = () => {
   const navigate = useNavigate();
+
+  // Real Data States
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [totalCondos, setTotalCondos] = useState(0);
+  const [mrrMonthly, setMrrMonthly] = useState(0);
+  const [sectorData, setSectorData] = useState<{ name: string, count: number, color: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      // 1. Total Users
+      const { count: userCount } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true });
+
+      // 2. Total Condos
+      const { count: condoCount } = await supabase
+        .from('condos')
+        .select('*', { count: 'exact', head: true });
+
+      // 3. MRR (Sum of 'in' transactions this month)
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+
+      const { data: transactions } = await supabase
+        .from('financial_transactions')
+        .select('amount')
+        .eq('type', 'in')
+        .gte('date', startOfMonth.toISOString().split('T')[0]);
+
+      const mrr = transactions?.reduce((sum, t) => sum + (t.amount || 0), 0) || 0;
+
+      // 4. Sector Data (Professions count)
+      const { data: professionals } = await supabase
+        .from('profiles')
+        .select('profession')
+        .eq('role', 'professional');
+
+      const professionCounts: Record<string, number> = {};
+      professionals?.forEach(p => {
+        const prof = p.profession || 'Outros';
+        professionCounts[prof] = (professionCounts[prof] || 0) + 1;
+      });
+
+      const colors = ['bg-blue-500', 'bg-orange-500', 'bg-pink-500', 'bg-purple-500', 'bg-teal-500', 'bg-yellow-500'];
+      const sectors = Object.entries(professionCounts)
+        .slice(0, 4)
+        .map(([name, count], i) => ({
+          name,
+          count,
+          color: colors[i % colors.length]
+        }));
+
+      setTotalUsers(userCount || 0);
+      setTotalCondos(condoCount || 0);
+      setMrrMonthly(mrr);
+      setSectorData(sectors);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatCurrency = (value: number) => {
+    if (value >= 1000) {
+      return `R$ ${(value / 1000).toFixed(1)}k`;
+    }
+    return `R$ ${value.toFixed(2)}`;
+  };
+
+  const formatNumber = (value: number) => {
+    if (value >= 1000) {
+      return `${(value / 1000).toFixed(1)}k`;
+    }
+    return value.toString();
+  };
 
   return (
     <div className="bg-gray-50 min-h-screen pb-10">
@@ -49,54 +132,51 @@ const MasterDashboard: React.FC = () => {
             icon={DollarSign}
             iconBgClass="bg-purple-100"
             iconColorClass="text-purple-600"
-            percentage="+12%"
+            percentage=""
             percentageBgClass="bg-green-100"
             percentageColorClass="text-green-700"
             label="MRR Mensal"
-            value="R$ 150.2k"
+            value={formatCurrency(mrrMonthly)}
           />
 
           <AdminStatsCard
             icon={Building}
             iconBgClass="bg-indigo-100"
             iconColorClass="text-indigo-600"
-            percentage="+5%"
+            percentage=""
             percentageBgClass="bg-green-100"
             percentageColorClass="text-green-700"
             label="Condomínios"
-            value="124"
+            value={totalCondos.toString()}
           />
 
           <AdminSectorChart
-            data={[
-              { name: 'Limpeza', count: 45, color: 'bg-blue-500' },
-              { name: 'Manutenção', count: 32, color: 'bg-orange-500' },
-              { name: 'Beleza', count: 28, color: 'bg-pink-500' },
-              { name: 'Aulas', count: 15, color: 'bg-purple-500' }
+            data={sectorData.length > 0 ? sectorData : [
+              { name: 'Sem dados', count: 0, color: 'bg-gray-300' }
             ]}
-            total={45} // This should be max or total? The CSS uses count/45 so 45 is denominator. Let's pass 45 as total for now to match UI behavior.
+            total={Math.max(...sectorData.map(s => s.count), 1)}
           />
 
           <AdminStatsCard
             icon={Users}
             iconBgClass="bg-blue-100"
             iconColorClass="text-blue-600"
-            percentage="+8%"
+            percentage=""
             percentageBgClass="bg-green-100"
             percentageColorClass="text-green-700"
             label="Usuários Totais"
-            value="45.3k"
+            value={formatNumber(totalUsers)}
           />
 
           <AdminStatsCard
             icon={TrendingDown}
             iconBgClass="bg-orange-100"
             iconColorClass="text-orange-600"
-            percentage="-0.2%"
-            percentageBgClass="bg-green-100"
-            percentageColorClass="text-green-700"
-            label="Churn Rate"
-            value="1.2%"
+            percentage=""
+            percentageBgClass="bg-gray-100"
+            percentageColorClass="text-gray-500"
+            label="Profissionais"
+            value={sectorData.reduce((sum, s) => sum + s.count, 0).toString()}
           />
         </div>
 

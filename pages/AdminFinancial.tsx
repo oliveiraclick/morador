@@ -11,6 +11,8 @@ const AdminFinancial: React.FC = () => {
 
     const [transactions, setTransactions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [totalReceived, setTotalReceived] = useState(0);
+    const [totalPaid, setTotalPaid] = useState(0);
 
     useEffect(() => {
         fetchTransactions();
@@ -24,12 +26,38 @@ const AdminFinancial: React.FC = () => {
                 .order('date', { ascending: false });
 
             if (error) throw error;
-            if (data) setTransactions(data);
+            if (data) {
+                setTransactions(data);
+
+                // Calculate totals for current month
+                const now = new Date();
+                const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+                const monthlyData = data.filter(t => new Date(t.date) >= startOfMonth);
+
+                const received = monthlyData
+                    .filter(t => t.type === 'in')
+                    .reduce((sum, t) => sum + (t.amount || 0), 0);
+
+                const paid = monthlyData
+                    .filter(t => t.type === 'out')
+                    .reduce((sum, t) => sum + (t.amount || 0), 0);
+
+                setTotalReceived(received);
+                setTotalPaid(paid);
+            }
         } catch (error) {
             console.error('Error fetching transactions:', error);
         } finally {
             setLoading(false);
         }
+    };
+
+    const formatCurrency = (value: number) => {
+        if (value >= 1000) {
+            return `R$ ${(value / 1000).toFixed(1)}k`;
+        }
+        return `R$ ${value.toFixed(2)}`;
     };
 
     const filteredTransactions = transactions.filter(t =>
@@ -57,7 +85,7 @@ const AdminFinancial: React.FC = () => {
                             <span className="text-xs font-bold bg-white/20 px-2 py-1 rounded-lg">Mês Atual</span>
                         </div>
                         <p className="text-xs opacity-80 mb-1">Total Recebido</p>
-                        <h2 className="text-2xl font-bold">R$ 45.2k</h2>
+                        <h2 className="text-2xl font-bold">{formatCurrency(totalReceived)}</h2>
                     </div>
                     <div className="bg-red-500 text-white p-5 rounded-3xl shadow-lg shadow-red-200">
                         <div className="flex justify-between items-start mb-2">
@@ -67,7 +95,7 @@ const AdminFinancial: React.FC = () => {
                             <span className="text-xs font-bold bg-white/20 px-2 py-1 rounded-lg">Mês Atual</span>
                         </div>
                         <p className="text-xs opacity-80 mb-1">Total Pago</p>
-                        <h2 className="text-2xl font-bold">R$ 12.4k</h2>
+                        <h2 className="text-2xl font-bold">{formatCurrency(totalPaid)}</h2>
                     </div>
                 </div>
 
