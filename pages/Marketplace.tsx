@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Heart, MessageSquare, ArrowLeft, Store, Repeat, Utensils, Smartphone, Sparkles, ShoppingBag } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 
 const Marketplace: React.FC = () => {
   const navigate = useNavigate();
@@ -59,28 +60,27 @@ const Marketplace: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       // Fetch user's condo name
-      const { data: { user } } = await import('../lib/supabase').then(m => m.supabase.auth.getUser());
+      const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data: profile } = await import('../lib/supabase').then(m => m.supabase
+        const { data: profile } = await supabase
           .from('profiles')
           .select('condos(name)')
           .eq('id', user.id)
-          .single()
-        );
+          .single();
+
         if (profile?.condos?.name) {
           setCondoName(profile.condos.name);
         }
       }
 
       // Fetch marketplace items
-      const { data, error } = await import('../lib/supabase').then(m => m.supabase
+      const { data, error } = await supabase
         .from('marketplace_items')
         .select(`
           *,
           profiles:seller_id (full_name, unit)
         `)
-        .order('created_at', { ascending: false })
-      );
+        .order('created_at', { ascending: false });
 
       if (data) {
         // Map DB fields to UI fields expected by current render
@@ -161,7 +161,7 @@ const Marketplace: React.FC = () => {
         </div>
       ) : (
         items.map((item) => (
-          <div key={item.id} className="min-w-[220px] max-w-[220px] snap-center bg-white rounded-2xl p-3 shadow-sm border border-gray-100 flex-shrink-0">
+          <div key={item.id} className="min-w-[160px] md:min-w-[220px] snap-center bg-white rounded-2xl p-3 shadow-sm border border-gray-100 flex-shrink-0">
             {/* Seller Header */}
             <div className="flex items-center justify-between mb-3 px-1">
               <div className="flex items-center gap-2">
@@ -181,7 +181,7 @@ const Marketplace: React.FC = () => {
             {/* Image */}
             <div
               onClick={() => setViewItem(item)}
-              className="relative h-32 rounded-xl overflow-hidden mb-2 bg-gray-100 group cursor-pointer"
+              className="relative aspect-square rounded-xl overflow-hidden mb-2 bg-gray-100 group cursor-pointer"
             >
               <img
                 src={item.img}
