@@ -161,7 +161,7 @@ const Marketplace: React.FC = () => {
         </div>
       ) : (
         items.map((item) => (
-          <div key={item.id} className="min-w-[160px] md:min-w-[220px] snap-center bg-white rounded-2xl p-3 shadow-sm border border-gray-100 flex-shrink-0">
+          <div key={item.id} className="w-40 md:w-52 snap-center bg-white rounded-2xl p-3 shadow-sm border border-gray-100 flex-shrink-0">
             {/* Seller Header */}
             <div className="flex items-center justify-between mb-3 px-1">
               <div className="flex items-center gap-2">

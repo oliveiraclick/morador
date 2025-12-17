@@ -502,7 +502,7 @@ const ResidentHome: React.FC = () => {
               </div>
             ) : (
               desapegoItems.map((item) => (
-                <div key={item.id} className="min-w-[160px] md:min-w-[200px] bg-white p-3 rounded-2xl shadow-sm border border-gray-100 flex flex-col shrink-0 cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/market')}>
+                <div key={item.id} className="w-40 md:w-52 bg-white p-3 rounded-2xl shadow-sm border border-gray-100 flex flex-col shrink-0 cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/market')}>
                   <div className="relative mb-3 bg-gray-100 rounded-xl aspect-square overflow-hidden">
                     <img
                       src={item.image_url}
