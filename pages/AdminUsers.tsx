@@ -14,6 +14,10 @@ const AdminUsers: React.FC = () => {
     const [professionals, setProfessionals] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
+    // Settings State
+    const [requireApproval, setRequireApproval] = useState(true);
+    const [condoId, setCondoId] = useState<string | null>(null);
+
     useEffect(() => {
         fetchUsers();
     }, []);
@@ -22,16 +26,22 @@ const AdminUsers: React.FC = () => {
         try {
             setLoading(true);
 
-            // 1. Fetch Profiles
+            // 1. Fetch Condos (Simulated single condo for now or first one)
+            const { data: condos, error: condoError } = await supabase
+                .from('condos')
+                .select('*')
+                .limit(1);
+
+            if (condos && condos.length > 0) {
+                setRequireApproval(condos[0].require_approval);
+                setCondoId(condos[0].id);
+            }
+
+            // 2. Fetch Profiles
             const { data: profiles, error: profError } = await supabase
                 .from('profiles')
                 .select('*')
                 .order('created_at', { ascending: false });
-
-            // 2. Fetch Condos (for mapping names)
-            const { data: condos, error: condoError } = await supabase
-                .from('condos')
-                .select('id, name');
 
             if (profError) throw profError;
 
@@ -44,7 +54,7 @@ const AdminUsers: React.FC = () => {
                         name: p.full_name || 'Sem Nome',
                         condo: condos?.find(c => c.id === p.condo_id)?.name || 'Condomínio',
                         unit: p.unit || '-',
-                        street: p.unit?.split(',')[0] || '-', // Attempt to extract street
+                        street: p.unit?.split(',')[0] || '-',
                         status: p.status || 'pending',
                         email: p.email || 'email@oculto.com'
                     }));
@@ -81,7 +91,6 @@ const AdminUsers: React.FC = () => {
 
             if (error) throw error;
 
-            // Optimistic UI Update
             if (type === 'residents') {
                 setResidents(prev => prev.map(u => u.id === id ? { ...u, status: newStatus } : u));
             } else {
@@ -93,7 +102,6 @@ const AdminUsers: React.FC = () => {
     };
 
     const toggleProp = async (id: any, prop: 'isFree' | 'isVerified') => {
-        // Map UI prop to DB column
         const dbCol = prop === 'isFree' ? 'is_free' : 'is_verified';
         const currentList = professionals.find(u => u.id === id);
         if (!currentList) return;
@@ -114,6 +122,24 @@ const AdminUsers: React.FC = () => {
         }
     };
 
+    const toggleApprovalRequirement = async () => {
+        if (!condoId) return;
+        const newValue = !requireApproval;
+
+        try {
+            setRequireApproval(newValue); // Optimistic
+            const { error } = await supabase
+                .from('condos')
+                .update({ require_approval: newValue })
+                .eq('id', condoId);
+
+            if (error) throw error;
+        } catch (error) {
+            setRequireApproval(!newValue); // Revert
+            alert('Erro ao alterar configuração do condomínio');
+        }
+    };
+
     return (
         <div className="min-h-screen bg-gray-50 pb-20">
             {/* Header */}
@@ -121,17 +147,44 @@ const AdminUsers: React.FC = () => {
                 <button onClick={() => navigate('/admin')} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
                     <ArrowLeft size={24} className="text-gray-600" />
                 </button>
-                <h1 className="text-xl font-bold text-gray-900">Gerenciar Usuários</h1>
+                <div className="flex-1">
+                    <h1 className="text-xl font-bold text-gray-900">Gerenciar Usuários</h1>
+                    <p className="text-xs text-gray-500">Controle de acesso e moradores</p>
+                </div>
             </div>
 
             <div className="p-6">
+
+                {/* Global Settings Card */}
+                <div className="bg-white p-4 rounded-2xl shadow-sm border border-purple-100 mb-6 flex items-center justify-between">
+                    <div>
+                        <h3 className="font-bold text-gray-900 text-sm flex items-center gap-2">
+                            <Shield size={16} className="text-purple-600" /> Aprovação de Cadastro
+                        </h3>
+                        <p className="text-xs text-gray-500 mt-1 max-w-[200px]">
+                            {requireApproval
+                                ? 'Novos usuários ficam como "Pendente" até sua aprovação.'
+                                : 'Novos usuários entram automaticamente como "Ativo".'}
+                        </p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                            type="checkbox"
+                            checked={requireApproval}
+                            onChange={toggleApprovalRequirement}
+                            className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                    </label>
+                </div>
+
                 {/* Tabs */}
                 <div className="flex p-1 bg-gray-200 rounded-xl mb-6">
                     <button
                         onClick={() => setActiveTab('residents')}
                         className={`flex-1 py-3 rounded-lg text-sm font-bold transition-all ${activeTab === 'residents' ? 'bg-white text-purple-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                     >
-                        Moradores
+                        Moradores ({residents.filter(r => r.status === 'pending').length} pendentes)
                     </button>
                     <button
                         onClick={() => setActiveTab('professionals')}
@@ -154,9 +207,11 @@ const AdminUsers: React.FC = () => {
 
                 {/* Lists */}
                 <div className="space-y-4">
-                    {activeTab === 'residents' ? (
+                    {loading ? (
+                        <div className="text-center py-10 text-gray-400">Carregando usuários...</div>
+                    ) : activeTab === 'residents' ? (
                         residents.map(user => (
-                            <div key={user.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                            <div key={user.id} className={`bg-white p-4 rounded-2xl shadow-sm border ${user.status === 'pending' ? 'border-amber-200 bg-amber-50/30' : 'border-gray-100'}`}>
                                 <div className="flex justify-between items-start mb-3">
                                     <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
@@ -195,7 +250,9 @@ const AdminUsers: React.FC = () => {
                                 <div className="flex gap-2 mt-3">
                                     <button className="flex-1 bg-gray-100 text-gray-600 py-2 rounded-lg text-xs font-bold hover:bg-gray-200">Detalhes</button>
                                     {user.status === 'pending' && (
-                                        <button onClick={() => toggleStatus(user.id, 'residents', 'active')} className="flex-1 bg-purple-600 text-white py-2 rounded-lg text-xs font-bold hover:bg-purple-700">Aprovar</button>
+                                        <button onClick={() => toggleStatus(user.id, 'residents', 'active')} className="flex-1 bg-purple-600 text-white py-2 rounded-lg text-xs font-bold hover:bg-purple-700 flex items-center justify-center gap-1">
+                                            <CheckCircle size={14} /> Aprovar Entrada
+                                        </button>
                                     )}
                                 </div>
                             </div>
@@ -257,12 +314,14 @@ const AdminUsers: React.FC = () => {
                                             >
                                                 <Slash size={14} /> Bloquear
                                             </button>
-                                            <button
-                                                onClick={() => toggleStatus(user.id, 'professionals', 'active')}
-                                                className="flex-1 bg-teal-600 text-white py-2 rounded-lg text-xs font-bold hover:bg-teal-700 flex items-center justify-center gap-1"
-                                            >
-                                                <CheckCircle size={14} /> Aprovar
-                                            </button>
+                                            {user.status === 'pending' && (
+                                                <button
+                                                    onClick={() => toggleStatus(user.id, 'professionals', 'active')}
+                                                    className="flex-1 bg-teal-600 text-white py-2 rounded-lg text-xs font-bold hover:bg-teal-700 flex items-center justify-center gap-1"
+                                                >
+                                                    <CheckCircle size={14} /> Aprovar
+                                                </button>
+                                            )}
                                         </>
                                     )}
                                 </div>
