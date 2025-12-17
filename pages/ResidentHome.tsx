@@ -196,14 +196,10 @@ const ResidentHome: React.FC = () => {
 
       if (error) {
         console.error('Error fetching desapego:', error);
-        // Temporary: show error alert to user
-        // alert('Debug: ' + error.message);
       }
 
       if (data) {
-        // console.log('Desapego data:', data); // Debug
-        const shuffled = [...data].sort(() => 0.5 - Math.random());
-        setDesapegoItems(shuffled.slice(0, 5));
+        setDesapegoItems(data);
       }
     };
     fetchDesapego();
