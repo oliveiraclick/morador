@@ -25,13 +25,16 @@ const ResidentHome: React.FC = () => {
 
   React.useEffect(() => {
     const fetchNotifications = async () => {
-      const { data } = await import('../lib/supabase').then(m => m.supabase
+      const { data, error } = await supabase
         .from('broadcasts')
         .select('*')
         .or(`target.eq.all,target.eq.residents`)
         .order('created_at', { ascending: false })
-        .limit(10)
-      );
+        .limit(10);
+
+      if (error) {
+        console.error('Error fetching notifications:', error);
+      }
 
       if (data) {
         setNotifications(data);
@@ -127,10 +130,12 @@ const ResidentHome: React.FC = () => {
 
         // Fetch Profile for Condo Name and Completeness Check
         // We use maybeSingle() instead of single() to avoid errors if profile doesn't exist yet
-        const { data: profile } = await supabase.from('profiles')
+        const { data: profile, error } = await supabase.from('profiles')
           .select('full_name, avatar_url, condo_id, unit, condos(name)')
           .eq('id', user.id)
           .maybeSingle();
+
+        if (error) console.error("Error fetching profile:", error);
 
         if (profile) {
           // Fallback for name if metadata failure
@@ -186,13 +191,12 @@ const ResidentHome: React.FC = () => {
   // Fetch Desapego Items
   React.useEffect(() => {
     const fetchDesapego = async () => {
-      const { data, error } = await import('../lib/supabase').then(m => m.supabase
+      const { data, error } = await supabase
         .from('marketplace_items')
         .select('*')
         .eq('type', 'desapego')
         .order('created_at', { ascending: false })
-        .limit(20)
-      );
+        .limit(20);
 
       if (error) {
         console.error('Error fetching desapego:', error);
@@ -208,12 +212,16 @@ const ResidentHome: React.FC = () => {
   // Fetch Ads
   React.useEffect(() => {
     const fetchAds = async () => {
-      const { data } = await import('../lib/supabase').then(m => m.supabase
+      const { data, error } = await supabase
         .from('ads')
         .select('*')
         .eq('active', true)
-        .order('created_at', { ascending: false })
-      );
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching ads:', error);
+      }
+
       if (data) setAds(data);
     };
     fetchAds();
