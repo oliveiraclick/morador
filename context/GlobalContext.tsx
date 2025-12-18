@@ -102,8 +102,10 @@ export const GlobalProvider = ({ children }: { children: ReactNode }) => {
                 .order('created_at', { ascending: false });
 
             if (data) {
+                console.log('Raw Marketplace Data:', data);
                 const mappedItems: Item[] = data.map(item => ({
                     ...item,
+                    type: item.type ? item.type.trim().toUpperCase() : 'DESAPEGO',
                     img: item.image_url,
                     seller: item.profiles?.full_name || 'Vendedor',
                     sellerAvatar: item.profiles?.full_name?.substring(0, 2).toUpperCase() || 'VA',

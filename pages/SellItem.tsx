@@ -95,7 +95,7 @@ const SellItem: React.FC = () => {
         description,
         price: parseFloat(price),
         category,
-        type: 'desapego',
+        type: 'DESAPEGO',
         condition,
         image_url: imageUrl,
         status: 'active'

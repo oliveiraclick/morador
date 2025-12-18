@@ -26,7 +26,7 @@ const ResidentHome: React.FC = () => {
   const userId = profile?.id || '';
 
   // Desapego items from Global Context
-  const desapegoItems = items.filter(i => i.type === 'desapego').slice(0, 20);
+  const desapegoItems = items.filter(i => i.type === 'DESAPEGO').slice(0, 20);
 
   // Notification State
   const [showNotifications, setShowNotifications] = useState(false);
