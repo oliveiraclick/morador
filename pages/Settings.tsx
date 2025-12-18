@@ -2,11 +2,13 @@ import React from 'react';
 import { ArrowLeft, User, Bell, Shield, CircleHelp, LogOut, ChevronRight, RotateCcw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { APP_VERSION } from '../lib/constants';
+import { supabase } from '../lib/supabase';
 
 const Settings: React.FC = () => {
     const navigate = useNavigate();
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
         localStorage.removeItem('user_role');
         localStorage.removeItem('user_registered');
         window.location.href = '/login';

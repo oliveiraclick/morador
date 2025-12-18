@@ -2,6 +2,7 @@ import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Home, Search, PlusCircle, Calendar, User, ShoppingBag, LayoutDashboard, ClipboardList, Store, Building, DollarSign, Settings, Users, Bell, LogOut } from 'lucide-react';
 import { UserRole } from '../types';
+import { supabase } from '../lib/supabase';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -38,7 +39,8 @@ const Layout: React.FC<LayoutProps> = ({ children, role }) => {
     );
   }
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     localStorage.removeItem('user_role');
     localStorage.removeItem('user_registered');
     window.location.href = '/login';

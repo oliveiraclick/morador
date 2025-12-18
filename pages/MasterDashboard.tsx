@@ -5,9 +5,11 @@ import { supabase } from '../lib/supabase';
 import AdminStatsCard from '../components/AdminStatsCard';
 import AdminSectorChart from '../components/AdminSectorChart';
 import RecentActivityList from '../components/RecentActivityList';
+import { useGlobal } from '../context/GlobalContext';
 
 const MasterDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const { profile } = useGlobal();
 
   // Real Data States
   const [totalUsers, setTotalUsers] = useState(0);
@@ -98,13 +100,19 @@ const MasterDashboard: React.FC = () => {
         <div className="flex items-center gap-3">
           <div className="relative">
             <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-orange-400 to-pink-500 p-0.5">
-              <img src="https://picsum.photos/id/64/100/100" className="w-full h-full rounded-full object-cover border-2 border-white" alt="Admin" />
+              {profile?.avatar_url ? (
+                <img src={profile.avatar_url} className="w-full h-full rounded-full object-cover border-2 border-white" alt="Admin" />
+              ) : (
+                <div className="w-full h-full rounded-full bg-gray-200 flex items-center justify-center border-2 border-white">
+                  <span className="text-xs font-bold text-gray-500">{profile?.full_name?.substring(0, 2).toUpperCase() || 'AD'}</span>
+                </div>
+              )}
             </div>
             <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
           </div>
           <div>
-            <p className="text-xs text-gray-500 font-medium">Master Admin</p>
-            <h1 className="text-lg font-bold text-gray-900 leading-tight">Painel Master</h1>
+            <p className="text-xs text-gray-500 font-medium">{profile?.role === 'admin' ? 'Administrador' : 'Master Admin'}</p>
+            <h1 className="text-lg font-bold text-gray-900 leading-tight">{profile?.full_name || 'Admin'}</h1>
           </div>
         </div>
         <div className="flex gap-3">
@@ -121,7 +129,7 @@ const MasterDashboard: React.FC = () => {
         {/* Welcome */}
         <div>
           <h2 className="text-2xl font-bold text-gray-900">
-            Bom dia, Admin <span className="text-2xl">👋</span>
+            Bom dia, {profile?.full_name?.split(' ')[0] || 'Admin'} <span className="text-2xl">👋</span>
           </h2>
           <p className="text-gray-500 text-sm mt-1">Visão geral dos seus condomínios hoje.</p>
         </div>
