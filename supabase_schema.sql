@@ -49,6 +49,8 @@ create table if not exists public.profiles (
     profession text,
     service_history text,
     is_verified boolean default false,
+    is_on_site boolean default false,
+    is_vacation boolean default false,
     
     -- Status
     status user_status default 'pending',

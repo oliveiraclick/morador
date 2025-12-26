@@ -11,3 +11,12 @@ export const supabase = createClient(
     supabaseUrl || '',
     supabaseAnonKey || ''
 );
+
+export const getAppLogoUrl = () => {
+    const { data } = supabase.storage
+        .from('marketplace')
+        .getPublicUrl('app/logo.png');
+
+    // Add cache busting timestamp to ensure new uploads reflect immediately
+    return `${data.publicUrl}?t=${new Date().getTime()}`;
+};

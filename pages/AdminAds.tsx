@@ -17,7 +17,10 @@ const AdminAds: React.FC = () => {
     const [ads, setAds] = useState<Ad[]>([]);
     const [showModal, setShowModal] = useState(false);
     const [newAd, setNewAd] = useState<Partial<Ad>>({ title: '', description: '', imageUrl: '', link: '', active: true });
-    const [loading, setLoading] = useState(true);
+    const [loadingAd, setLoadingAd] = useState(false);
+    const [uploadingImage, setUploadingImage] = useState(false);
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
 
     useEffect(() => {
         fetchAds();
@@ -25,25 +28,64 @@ const AdminAds: React.FC = () => {
 
     const fetchAds = async () => {
         try {
-            setLoading(true);
+            setLoadingAd(true);
             const { data, error } = await supabase.from('ads').select('*').order('created_at', { ascending: false });
             if (error) throw error;
             if (data) setAds(data);
         } catch (error) {
             console.error('Error fetching ads:', error);
         } finally {
-            setLoading(false);
+            setLoadingAd(false);
+        }
+    };
+
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            setImageFile(file);
+
+            // Preview
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setImagePreview(reader.result as string);
+            };
+            reader.readAsDataURL(file);
         }
     };
 
     const handleAddAd = async () => {
         if (!newAd.title || !newAd.description) return;
+        setLoadingAd(true);
 
         try {
+            let imageUrl = newAd.imageUrl || 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&q=80&w=400';
+
+            // 1. Upload image if exists
+            if (imageFile) {
+                setUploadingImage(true);
+                const fileExt = imageFile.name.split('.').pop();
+                const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+                const filePath = `ads/${fileName}`;
+
+                const { error: uploadError } = await supabase.storage
+                    .from('marketplace')
+                    .upload(filePath, imageFile);
+
+                if (uploadError) throw uploadError;
+
+                const { data } = supabase.storage
+                    .from('marketplace')
+                    .getPublicUrl(filePath);
+
+                imageUrl = data.publicUrl;
+                setUploadingImage(false);
+            }
+
+            // 2. Insert Ad
             const { error } = await supabase.from('ads').insert([{
                 title: newAd.title,
                 description: newAd.description,
-                image_url: newAd.imageUrl || 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&q=80&w=400',
+                image_url: imageUrl,
                 link: newAd.link || '#',
                 active: newAd.active ?? true
             }]);
@@ -52,10 +94,19 @@ const AdminAds: React.FC = () => {
 
             fetchAds();
             setShowModal(false);
-            setNewAd({ title: '', description: '', imageUrl: '', link: '', active: true });
-        } catch (error) {
-            alert('Erro ao criar anúncio');
+            resetForm();
+        } catch (error: any) {
+            console.error('Error creating ad:', error);
+            alert('Erro ao criar anúncio: ' + error.message);
+        } finally {
+            setLoadingAd(false);
         }
+    };
+
+    const resetForm = () => {
+        setNewAd({ title: '', description: '', imageUrl: '', link: '', active: true });
+        setImageFile(null);
+        setImagePreview(null);
     };
 
     const handleDeleteAd = async (id: number) => {
@@ -99,7 +150,7 @@ const AdminAds: React.FC = () => {
                         <div key={ad.id} className={`bg-white rounded-3xl p-4 shadow-sm border border-gray-100 relative group overflow-hidden ${!ad.active ? 'opacity-60 grayscale' : ''}`}>
                             <div className="flex gap-4">
                                 <div className="w-20 h-20 rounded-xl bg-gray-100 overflow-hidden flex-shrink-0">
-                                    <img src={ad.imageUrl} alt={ad.title} className="w-full h-full object-cover" />
+                                    <img src={ad.imageUrl || (ad as any).image_url} alt={ad.title} className="w-full h-full object-cover" />
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <div className="flex justify-between items-start">
@@ -162,14 +213,28 @@ const AdminAds: React.FC = () => {
                             </div>
 
                             <div>
-                                <label className="text-xs font-bold text-gray-500 uppercase ml-1">URL da Imagem</label>
-                                <div className="relative">
+                                <label className="text-xs font-bold text-gray-500 uppercase ml-1">Imagem do Anúncio</label>
+                                <label className="block w-full cursor-pointer mt-1 group">
+                                    <div className="w-full h-32 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200 group-hover:border-pink-500 transition-colors flex flex-col items-center justify-center relative overflow-hidden">
+                                        {imagePreview ? (
+                                            <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <>
+                                                <Plus size={24} className="text-gray-400 mb-1" />
+                                                <span className="text-xs text-gray-500">Toque para selecionar imagem</span>
+                                            </>
+                                        )}
+                                        <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
+                                    </div>
+                                </label>
+                                <p className="text-[10px] text-gray-400 mt-1 text-center">Ou cole uma URL abaixo</p>
+                                <div className="relative mt-2">
                                     <ImageIcon size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                                     <input
                                         value={newAd.imageUrl}
                                         onChange={(e) => setNewAd({ ...newAd, imageUrl: e.target.value })}
                                         placeholder="https://..."
-                                        className="w-full mt-1 pl-10 pr-3 py-3 rounded-xl border border-gray-200 focus:border-pink-500 focus:outline-none text-sm"
+                                        className="w-full pl-10 pr-3 py-3 rounded-xl border border-gray-200 focus:border-pink-500 focus:outline-none text-sm"
                                     />
                                 </div>
                             </div>
@@ -189,12 +254,13 @@ const AdminAds: React.FC = () => {
 
                             <button
                                 onClick={handleAddAd}
-                                className="w-full bg-pink-600 text-white py-3 rounded-xl font-bold mt-2 shadow-lg shadow-pink-200 hover:bg-pink-700 transition-colors"
+                                disabled={loadingAd}
+                                className="w-full bg-pink-600 text-white py-3 rounded-xl font-bold mt-2 shadow-lg shadow-pink-200 hover:bg-pink-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                             >
-                                Criar Anúncio
+                                {loadingAd ? 'Criando...' : 'Criar Anúncio'}
                             </button>
                             <button
-                                onClick={() => setShowModal(false)}
+                                onClick={() => { setShowModal(false); resetForm(); }}
                                 className="w-full text-gray-400 font-bold text-sm py-2"
                             >
                                 Cancelar

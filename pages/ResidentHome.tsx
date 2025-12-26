@@ -85,17 +85,53 @@ const ResidentHome: React.FC = () => {
     checkBroadcasts();
   }, []);
 
-  // Check for pros on site
+  // Check for pros on site - Fetch from Supabase instead of local storage
   React.useEffect(() => {
-    const stored = localStorage.getItem('prof_on_site');
-    if (stored) {
+    const fetchActivePros = async () => {
       try {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
-          setActivePros(parsed);
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, full_name, profession, avatar_url')
+          .eq('role', 'professional')
+          .eq('is_on_site', true)
+          .eq('status', 'active');
+
+        if (error) throw error;
+
+        if (data) {
+          // Map to the format expected by ProfessionalCard
+          const mapped = data.map(p => ({
+            id: p.id,
+            name: p.full_name?.split(' ')[0] || 'Profissional',
+            profession: p.profession || 'Prestador',
+            avatar: p.avatar_url,
+            is_on_site: true
+          }));
+          setActivePros(mapped);
         }
-      } catch (e) { console.error(e) }
-    }
+      } catch (e) {
+        console.error("Error fetching active pros:", e);
+      }
+    };
+
+    fetchActivePros();
+
+    // Optional: Set up real-time subscription for check-ins
+    const subscription = supabase
+      .channel('public:profiles')
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'profiles',
+        filter: "role=eq.professional"
+      }, () => {
+        fetchActivePros();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
   }, []);
 
   // Profile Completion State

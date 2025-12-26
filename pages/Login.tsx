@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Mail, Lock, LogIn, Eye, EyeOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { UserRole } from '../types';
-import { supabase } from '../lib/supabase';
+import { supabase, getAppLogoUrl } from '../lib/supabase';
 import { APP_VERSION } from '../lib/constants';
 
 const Login: React.FC = ({ setRole }: { setRole?: (role: UserRole) => void }) => {
@@ -14,8 +14,7 @@ const Login: React.FC = ({ setRole }: { setRole?: (role: UserRole) => void }) =>
     const [logoUrl, setLogoUrl] = useState<string | null>(null);
 
     useEffect(() => {
-        const { data: { publicUrl } } = supabase.storage.from('marketplace').getPublicUrl('app/logo.png');
-        setLogoUrl(`${publicUrl}?t=${Date.now()}`);
+        setLogoUrl(getAppLogoUrl());
 
         const checkSession = async () => {
             // ... existing checks
@@ -88,7 +87,7 @@ const Login: React.FC = ({ setRole }: { setRole?: (role: UserRole) => void }) =>
             <div className="max-w-md w-full mx-auto">
                 <div className="text-center mb-10">
                     {logoUrl ? (
-                        <div className="w-24 h-24 mx-auto mb-4 p-2 bg-white rounded-2xl shadow-xl shadow-purple-200 flex items-center justify-center">
+                        <div className="w-32 h-32 mx-auto mb-6 flex items-center justify-center overflow-hidden">
                             <img
                                 src={logoUrl}
                                 className="w-full h-full object-contain"

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Upload, RotateCcw, Save, Loader2, Image as ImageIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase, getAppLogoUrl } from '../lib/supabase';
 
 const AdminBranding: React.FC = () => {
     const navigate = useNavigate();
@@ -19,10 +19,7 @@ const AdminBranding: React.FC = () => {
     }, []);
 
     const fetchCurrentLogo = async () => {
-        // Construct public URL with timestamp to bust cache
-        const { data: { publicUrl } } = supabase.storage.from(BUCKET_NAME).getPublicUrl(FILE_PATH);
-        // We append a random param to ensure we see the latest version
-        setCurrentLogoUrl(`${publicUrl}?t=${Date.now()}`);
+        setCurrentLogoUrl(getAppLogoUrl());
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -81,7 +78,7 @@ const AdminBranding: React.FC = () => {
                 {/* Current Logo Section */}
                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 text-center">
                     <h2 className="text-sm font-bold text-gray-500 uppercase mb-4">Logo Atual</h2>
-                    <div className="w-32 h-32 mx-auto bg-gray-50 rounded-2xl flex items-center justify-center border-2 border-dashed border-gray-200 p-2 overflow-hidden mb-4">
+                    <div className="w-40 h-40 mx-auto flex items-center justify-center overflow-hidden mb-4">
                         {currentLogoUrl ? (
                             <img src={currentLogoUrl} alt="App Logo" className="w-full h-full object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
                         ) : (
