@@ -61,6 +61,10 @@ const Login: React.FC = ({ setRole }: { setRole?: (role: UserRole) => void }) =>
                     localStorage.setItem('user_condo', condoName);
                 }
 
+                if (profile?.condo_id) {
+                    localStorage.setItem('user_condo_id', profile.condo_id);
+                }
+
                 if (setRole) setRole(role as UserRole);
 
                 // Redirect using normalized lowercase roles

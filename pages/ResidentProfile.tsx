@@ -63,16 +63,20 @@ const ResidentProfile: React.FC = () => {
         if (loading) return;
         setLoading(true);
         try {
-            const { error } = await supabase.from('profiles').update({
+            const { error } = await supabase.from('profiles').upsert({
+                id: userId,
                 full_name: name,
-                phone: phone
-            }).eq('id', userId);
+                phone: phone,
+                updated_at: new Date().toISOString()
+            });
 
             if (error) throw error;
             alert("Dados atualizados com sucesso!");
+
+            localStorage.setItem('user_name', name);
+
             await refreshProfile(); // Refresh Global Context
             setActiveModal(null);
-            localStorage.setItem('user_name', name);
         } catch (e: any) {
             alert("Erro ao atualizar: " + e.message);
         } finally {
@@ -84,16 +88,22 @@ const ResidentProfile: React.FC = () => {
         if (loading) return;
         setLoading(true);
         try {
-            const { error } = await supabase.from('profiles').update({
+            const { error } = await supabase.from('profiles').upsert({
+                id: userId,
                 condo_id: selectedCondo,
-                unit: unit
-            }).eq('id', userId);
+                unit: unit,
+                updated_at: new Date().toISOString()
+            });
 
             if (error) throw error;
 
             // Update local display
-            const sel = condos.find(c => c.id === selectedCondo);
-            if (sel) setCondo(sel.name);
+            const sel = condos.find(c => String(c.id) === String(selectedCondo));
+            if (sel) {
+                setCondo(sel.name);
+                localStorage.setItem('user_condo', sel.name);
+                localStorage.setItem('user_condo_id', String(sel.id));
+            }
 
             alert("Endereço atualizado com sucesso!");
             await refreshProfile(); // Refresh Global Context
@@ -108,9 +118,15 @@ const ResidentProfile: React.FC = () => {
     const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         try {
             setUploading(true);
+            console.log('Starting avatar upload for user:', userId);
 
             if (!event.target.files || event.target.files.length === 0) {
                 throw new Error('Você precisa selecionar uma imagem para fazer upload.');
+            }
+
+            if (!userId) {
+                console.error('UserId is missing during upload');
+                throw new Error('Sessão expirada. Por favor, faça login novamente.');
             }
 
             const file = event.target.files[0];
@@ -118,30 +134,42 @@ const ResidentProfile: React.FC = () => {
             const fileName = `${userId}/${Math.random()}.${fileExt}`;
             const filePath = `${fileName}`;
 
+            console.log('Uploading file to path:', filePath);
+
             const { error: uploadError } = await supabase.storage
                 .from('avatars')
-                .upload(filePath, file);
+                .upload(filePath, file, { cacheControl: '3600', upsert: true });
 
             if (uploadError) {
+                console.error('Storage Upload Error:', uploadError);
                 throw uploadError;
             }
 
+            console.log('Upload successful, getting public URL...');
             const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
             const publicUrl = data.publicUrl;
 
             // Update profile
             const { error: updateError } = await supabase
                 .from('profiles')
-                .update({ avatar_url: publicUrl })
-                .eq('id', userId);
+                .upsert({
+                    id: userId,
+                    avatar_url: publicUrl,
+                    updated_at: new Date().toISOString()
+                });
 
-            if (updateError) throw updateError;
+            if (updateError) {
+                console.error('Profile Update Error after upload:', updateError);
+                throw updateError;
+            }
 
             setAvatarUrl(publicUrl);
             alert('Foto de perfil atualizada!');
+            console.log('Avatar upload complete and profile updated.');
 
         } catch (error: any) {
-            alert('Erro ao fazer upload da imagem: ' + error.message);
+            console.error('Global handleAvatarUpload Error:', error);
+            alert('Erro ao fazer upload da imagem: ' + (error.message || 'Erro desconhecido'));
         } finally {
             setUploading(false);
         }

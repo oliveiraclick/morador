@@ -44,35 +44,35 @@ const RegisterResident: React.FC = () => {
             if (error) throw error;
 
             if (data.user) {
-                // Manual update to ensure data persistence and avoid trigger delays
+                // Manual upsert to ensure data persistence and avoid trigger conflicts
                 const { error: profileError } = await supabase
                     .from('profiles')
-                    .update({
+                    .upsert({
+                        id: data.user.id,
+                        email: email,
                         full_name: name,
                         condo_id: condo,
                         unit: `${street}, ${number}`,
                         role: UserRole.RESIDENT,
-                        status: 'active'
-                    })
-                    .eq('id', data.user.id);
+                        status: 'active',
+                        updated_at: new Date().toISOString()
+                    });
 
                 if (profileError) {
-                    console.error('Error updating profile:', profileError);
+                    console.error('Error upserting profile:', profileError);
                 }
 
                 localStorage.setItem('user_registered', 'true');
                 localStorage.setItem('user_role', UserRole.RESIDENT);
                 localStorage.setItem('user_name', name);
+                localStorage.setItem('user_condo_id', condo);
 
                 const selectedCondoObj = condos.find(c => String(c.id) === String(condo));
                 if (selectedCondoObj) {
                     localStorage.setItem('user_condo', selectedCondoObj.name);
                 }
 
-                // Profile creation is handled by DB Trigger on Supabase, but we updated manually for safety
                 alert('Cadastro realizado! Bem-vindo(a).');
-
-                // Use window.location as fallback if navigate has issues with context refresh
                 window.location.href = '/home';
             }
         } catch (err: any) {

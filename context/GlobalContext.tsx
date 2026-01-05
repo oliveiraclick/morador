@@ -60,7 +60,38 @@ interface GlobalContextType {
 const GlobalContext = createContext<GlobalContextType | undefined>(undefined);
 
 export const GlobalProvider = ({ children }: { children: ReactNode }) => {
-    const [profile, setProfile] = useState<UserProfile | null>(null);
+    // Unified synchronization logic
+    const syncLocalProfile = (data: any) => {
+        if (!data) return;
+        localStorage.setItem('user_name', data.full_name || '');
+        localStorage.setItem('user_role', data.role || '');
+        if (data.condo_name) localStorage.setItem('user_condo', data.condo_name);
+        if (data.condo_id) localStorage.setItem('user_condo_id', data.condo_id);
+    };
+
+    const [profile, setProfile] = useState<UserProfile | null>(() => {
+        // Hydrate from localStorage for instant UI
+        const savedName = localStorage.getItem('user_name');
+        const savedRole = localStorage.getItem('user_role');
+        const savedCondo = localStorage.getItem('user_condo');
+        const savedCondoId = localStorage.getItem('user_condo_id');
+
+        if (savedName || savedRole) {
+            return {
+                id: '', // Will be updated by refreshProfile
+                full_name: savedName || '',
+                role: savedRole || '',
+                condo_name: savedCondo || '',
+                condo_id: savedCondoId || '',
+                email: '',
+                phone: '',
+                unit: '',
+                avatar_url: ''
+            };
+        }
+        return null;
+    });
+
     const [items, setItems] = useState<Item[]>([]);
     const [condos, setCondos] = useState<Condo[]>([]);
     const [loading, setLoading] = useState(true);
@@ -79,11 +110,14 @@ export const GlobalProvider = ({ children }: { children: ReactNode }) => {
                     const condoName = profileData.condos?.name ||
                         (Array.isArray(profileData.condos) ? profileData.condos[0]?.name : '');
 
-                    setProfile({
+                    const updatedProfile = {
                         ...profileData,
                         email: user.email || '',
                         condo_name: condoName
-                    });
+                    };
+
+                    setProfile(updatedProfile);
+                    syncLocalProfile(updatedProfile);
                 }
             }
         } catch (error) {
