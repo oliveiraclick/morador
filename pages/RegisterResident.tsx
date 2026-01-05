@@ -81,19 +81,10 @@ const RegisterResident: React.FC = () => {
                         role: 'resident',
                         condo_id: condo,
                         unit: `${street}, ${number}`,
-                        avatar_url: null,
-                        profession: null,
-                        service_history: null,
-                        is_verified: false,
-                        status: 'pending',
-                        phone: null,
-                        is_on_service: false,
-                        is_vacation: false,
-                        is_free: false,
-                        created_at: new Date().toISOString(),
-                        updated_at: new Date().toISOString()
+                        status: 'active'
                     })
                     .select();
+
 
                 if (insertError) {
                     console.error('❌ Erro ao inserir:', insertError);
