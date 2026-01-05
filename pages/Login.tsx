@@ -42,16 +42,25 @@ const Login: React.FC = ({ setRole }: { setRole?: (role: UserRole) => void }) =>
 
             if (data.user) {
                 // Fetch Profile to get Role, Name and Condo
-                const { data: profile } = await supabase
+                const { data: profile, error: profileError } = await supabase
                     .from('profiles')
-                    .select('role, full_name, condos:condo_id(name)')
+                    .select('role, full_name, condo_id, condos:condo_id(name)')
                     .eq('id', data.user.id)
                     .single();
 
+                // Always save basic user info
+                localStorage.setItem('user_id', data.user.id);
+                localStorage.setItem('user_registered', 'true');
+
+                // If profile doesn't exist or is incomplete, redirect to complete registration
+                if (profileError || !profile || !profile.condo_id) {
+                    console.warn('Profile incomplete or missing, redirecting to complete registration');
+                    navigate('/complete-registration');
+                    return;
+                }
+
                 const role = profile?.role || UserRole.RESIDENT;
                 localStorage.setItem('user_role', role);
-                localStorage.setItem('user_registered', 'true');
-                localStorage.setItem('user_id', data.user.id);
 
                 if (profile?.full_name) {
                     localStorage.setItem('user_name', profile.full_name);
