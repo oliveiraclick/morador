@@ -2,9 +2,12 @@ import React, { useState } from 'react';
 import { ArrowLeft, Camera, Wand2, Loader2, ChevronDown, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { generateItemDescription } from '../services/geminiService';
+import { supabase } from '../lib/supabase';
+import { useGlobal } from '../context/GlobalContext';
 
 const SellItem: React.FC = () => {
   const navigate = useNavigate();
+  const { profile } = useGlobal();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
@@ -15,19 +18,31 @@ const SellItem: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Lazy Registration Check
+  // Robust Session Check
   React.useEffect(() => {
-    const checkRegistration = async () => {
-      const { data: { user } } = await import('../lib/supabase').then(m => m.supabase.auth.getUser());
-      if (user) {
-        const { data: profile } = await import('../lib/supabase').then(m => m.supabase.from('profiles').select('condo_id, unit').eq('id', user.id).single());
-        if (!profile?.condo_id || !profile?.unit) {
-          navigate('/complete-registration');
-        }
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        console.warn('Session not found in SellItem, redirecting to login...');
+        alert('Sessão expirada. Por favor, faça login novamente.');
+        navigate('/login');
+        return;
+      }
+
+      // If session exists but profile is incomplete (from global state or direct check)
+      const { data: profileCheck } = await supabase
+        .from('profiles')
+        .select('condo_id, unit')
+        .eq('id', session.user.id)
+        .maybeSingle();
+
+      if (!profileCheck?.condo_id || !profileCheck?.unit) {
+        navigate('/complete-registration');
       }
     };
-    checkRegistration();
-  }, []);
+    checkAuth();
+  }, [navigate]);
 
   const categories = ['Móveis', 'Eletrônicos', 'Roupas', 'Brinquedos', 'Livros', 'Outros'];
 
@@ -57,9 +72,8 @@ const SellItem: React.FC = () => {
     setLoading(true);
 
     try {
-      const supabase = await import('../lib/supabase').then(m => m.supabase);
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não logado");
+      if (!user) throw new Error("Usuário não logado. Por favor, faça login novamente.");
 
       let imageUrl = null;
       if (selectedFile) {
