@@ -64,6 +64,11 @@ const RegisterResident: React.FC = () => {
                 localStorage.setItem('user_role', UserRole.RESIDENT);
                 localStorage.setItem('user_name', name);
 
+                const selectedCondoObj = condos.find(c => String(c.id) === String(condo));
+                if (selectedCondoObj) {
+                    localStorage.setItem('user_condo', selectedCondoObj.name);
+                }
+
                 // Profile creation is handled by DB Trigger on Supabase, but we updated manually for safety
                 alert('Cadastro realizado! Bem-vindo(a).');
 

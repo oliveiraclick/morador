@@ -71,7 +71,7 @@ export const GlobalProvider = ({ children }: { children: ReactNode }) => {
             if (user) {
                 const { data: profileData } = await supabase
                     .from('profiles')
-                    .select('*, condos(name)')
+                    .select('*, condos:condo_id(name)')
                     .eq('id', user.id)
                     .maybeSingle();
 

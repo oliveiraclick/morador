@@ -41,18 +41,24 @@ const Login: React.FC = ({ setRole }: { setRole?: (role: UserRole) => void }) =>
             if (error) throw error;
 
             if (data.user) {
-                // Fetch Profile to get Role and Name
+                // Fetch Profile to get Role, Name and Condo
                 const { data: profile } = await supabase
                     .from('profiles')
-                    .select('role, full_name')
+                    .select('role, full_name, condos:condo_id(name)')
                     .eq('id', data.user.id)
                     .single();
 
                 const role = profile?.role || UserRole.RESIDENT;
                 localStorage.setItem('user_role', role);
                 localStorage.setItem('user_registered', 'true');
+
                 if (profile?.full_name) {
                     localStorage.setItem('user_name', profile.full_name);
+                }
+
+                if (profile?.condos) {
+                    const condoName = (profile.condos as any).name;
+                    localStorage.setItem('user_condo', condoName);
                 }
 
                 if (setRole) setRole(role as UserRole);

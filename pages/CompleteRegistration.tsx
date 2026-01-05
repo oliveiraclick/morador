@@ -53,6 +53,11 @@ const CompleteRegistration: React.FC = () => {
 
             if (error) throw error;
 
+            const selectedCondoObj = condos.find(c => String(c.id) === String(formData.condo_id));
+            if (selectedCondoObj) {
+                localStorage.setItem('user_condo', selectedCondoObj.name);
+            }
+
             alert('Cadastro completo! Agora você pode aproveitar tudo.');
             navigate(-1); // Go back to where they were (e.g., Sell Item) or Home
         } catch (error: any) {
