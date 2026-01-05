@@ -51,8 +51,23 @@ const ResidentProfile: React.FC = () => {
     }, [profile, globalCondos]);
 
     // Fallback: If no profile in context yet, fetch it (handled by Global, but we can trigger refresh)
+    // Also ensure userId is populated from Supabase session if missing
     React.useEffect(() => {
-        if (!profile) refreshProfile();
+        const initializeUser = async () => {
+            if (!profile) {
+                await refreshProfile();
+            }
+            // If userId is still empty, get it from Supabase session
+            if (!userId) {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (user) {
+                    setUserId(user.id);
+                    localStorage.setItem('user_id', user.id);
+                }
+            }
+        };
+        initializeUser();
+
         // Check if we should open a modal from redirect
         if (location.state && (location.state as any).openModal) {
             setActiveModal((location.state as any).openModal);
@@ -70,8 +85,21 @@ const ResidentProfile: React.FC = () => {
         if (loading) return;
         setLoading(true);
         try {
+            // Robust userId fallback
+            let currentUserId = userId;
+            if (!currentUserId) {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (user) {
+                    currentUserId = user.id;
+                    setUserId(user.id);
+                    localStorage.setItem('user_id', user.id);
+                } else {
+                    throw new Error('Sessão expirada. Por favor, faça login novamente.');
+                }
+            }
+
             const { error } = await supabase.from('profiles').upsert({
-                id: userId,
+                id: currentUserId,
                 full_name: name,
                 phone: phone,
                 updated_at: new Date().toISOString()
@@ -95,8 +123,21 @@ const ResidentProfile: React.FC = () => {
         if (loading) return;
         setLoading(true);
         try {
+            // Robust userId fallback
+            let currentUserId = userId;
+            if (!currentUserId) {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (user) {
+                    currentUserId = user.id;
+                    setUserId(user.id);
+                    localStorage.setItem('user_id', user.id);
+                } else {
+                    throw new Error('Sessão expirada. Por favor, faça login novamente.');
+                }
+            }
+
             const { error } = await supabase.from('profiles').upsert({
-                id: userId,
+                id: currentUserId,
                 condo_id: selectedCondo,
                 unit: unit,
                 updated_at: new Date().toISOString()
@@ -131,14 +172,25 @@ const ResidentProfile: React.FC = () => {
                 throw new Error('Você precisa selecionar uma imagem para fazer upload.');
             }
 
-            if (!userId) {
-                console.error('UserId is missing during upload');
-                throw new Error('Sessão expirada. Por favor, faça login novamente.');
+            // Robust userId fallback: try to get from Supabase session if missing
+            let currentUserId = userId;
+            if (!currentUserId) {
+                console.log('UserId missing, fetching from Supabase session...');
+                const { data: { user } } = await supabase.auth.getUser();
+                if (user) {
+                    currentUserId = user.id;
+                    setUserId(user.id);
+                    localStorage.setItem('user_id', user.id);
+                    console.log('Retrieved userId from session:', user.id);
+                } else {
+                    console.error('No active session found');
+                    throw new Error('Sessão expirada. Por favor, faça login novamente.');
+                }
             }
 
             const file = event.target.files[0];
             const fileExt = file.name.split('.').pop();
-            const fileName = `${userId}/${Math.random()}.${fileExt}`;
+            const fileName = `${currentUserId}/${Math.random()}.${fileExt}`;
             const filePath = `${fileName}`;
 
             console.log('Uploading file to path:', filePath);
