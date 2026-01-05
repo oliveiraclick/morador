@@ -19,10 +19,10 @@ const ResidentHome: React.FC = () => {
   const [activePros, setActivePros] = useState<any[]>([]);
   const [ads, setAds] = useState<any[]>([]);
 
-  // Derived State from Global Context
-  const userName = profile?.full_name?.split(' ')[0] || "Vizinho(a)";
+  // Derived State with LocalStorage Fallbacks for faster UI response
+  const userName = profile?.full_name?.split(' ')[0] || localStorage.getItem('user_name')?.split(' ')[0] || "Vizinho(a)";
   const userAvatar = profile?.avatar_url || null;
-  const condoName = profile?.condo_name || "Seu Condomínio";
+  const condoName = profile?.condo_name || localStorage.getItem('user_condo') || "Seu Condomínio";
   const userId = profile?.id || '';
 
   // Desapego items from Global Context
