@@ -47,6 +47,8 @@ import AdminAds from './pages/AdminAds';
 import ProfessionalPaywall from './pages/ProfessionalPaywall';
 import AdminBranding from './pages/AdminBranding';
 
+import { supabase } from './lib/supabase';
+
 const AppContent = () => {
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState<UserRole>(() => {
@@ -61,38 +63,49 @@ const AppContent = () => {
 
   useEffect(() => {
     const initAuth = async () => {
-      import('./lib/supabase').then(async ({ supabase }) => {
+      try {
+        console.log('App initialization started...');
         // Check active session
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+        if (sessionError) {
+          console.error('Session check error:', sessionError);
+        }
 
         if (session) {
+          console.log('Session found, fetching profile...');
           // Verify role from DB to be safe
-          const { data: profile } = await supabase
+          const { data: profile, error: profileError } = await supabase
             .from('profiles')
             .select('role')
             .eq('id', session.user.id)
-            .single();
+            .maybeSingle();
+
+          if (profileError) {
+            console.error('Profile fetch error:', profileError);
+          }
 
           const role = profile?.role || UserRole.RESIDENT;
 
           localStorage.setItem('user_role', role);
           localStorage.setItem('user_registered', 'true');
           setUserRole(role as UserRole);
+          console.log('User role initialized:', role);
         } else {
-          // No session, maybe verify if we should clear local storage?
-          // For now, trust the session check.
+          console.log('No active session found.');
         }
 
         setLoading(false);
 
         // Listen for changes (Sign in / Sign out)
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+          console.log('Auth event change:', event);
           if (event === 'SIGNED_IN' && session) {
             const { data: profile } = await supabase
               .from('profiles')
               .select('role')
               .eq('id', session.user.id)
-              .single();
+              .maybeSingle();
 
             const role = profile?.role || UserRole.RESIDENT;
             localStorage.setItem('user_role', role);
@@ -114,7 +127,10 @@ const AppContent = () => {
         });
 
         return () => subscription.unsubscribe();
-      });
+      } catch (err) {
+        console.error('Critical initialization error:', err);
+        setLoading(false); // Ensure loading is released even on crash
+      }
     };
 
     initAuth();
