@@ -52,13 +52,12 @@ const Login: React.FC = ({ setRole }: { setRole?: (role: UserRole) => void }) =>
                 localStorage.setItem('user_id', data.user.id);
                 localStorage.setItem('user_registered', 'true');
 
-                // If profile doesn't exist or is incomplete, redirect to complete registration
-                if (profileError || !profile || !profile.condo_id) {
-                    console.warn('Profile incomplete or missing, redirecting to complete registration');
-                    navigate('/complete-registration');
-                    return;
+                // If profile has critical error, warn but continue
+                if (profileError) {
+                    console.warn('Profile fetch warning:', profileError);
                 }
 
+                // Get role from profile or default to resident
                 const role = profile?.role || UserRole.RESIDENT;
                 localStorage.setItem('user_role', role);
 
