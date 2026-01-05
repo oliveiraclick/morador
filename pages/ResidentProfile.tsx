@@ -99,10 +99,14 @@ const ResidentProfile: React.FC = () => {
                 }
             }
 
+            // Get email with fallback
+            const currentEmail = email || localStorage.getItem('user_email') || profile?.email || '';
+
             const { error } = await supabase.from('profiles').upsert({
                 id: currentUserId,
                 full_name: name,
                 phone: phone,
+                email: currentEmail,
                 updated_at: new Date().toISOString()
             });
 
