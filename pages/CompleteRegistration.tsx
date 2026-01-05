@@ -43,13 +43,15 @@ const CompleteRegistration: React.FC = () => {
 
             const { error } = await supabase
                 .from('profiles')
-                .update({
+                .upsert({
+                    id: user.id,
+                    email: user.email,
                     condo_id: formData.condo_id,
                     unit: formData.unit,
-                    //   phone: formData.phone, // Update if you have phone column
-                    status: 'active' // Mark as fully active
-                })
-                .eq('id', user.id);
+                    role: 'resident',
+                    status: 'active',
+                    updated_at: new Date().toISOString()
+                });
 
             if (error) throw error;
 

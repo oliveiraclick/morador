@@ -60,6 +60,7 @@ const RegisterResident: React.FC = () => {
 
                 if (profileError) {
                     console.error('Error upserting profile:', profileError);
+                    throw new Error('Erro ao salvar perfil no banco: ' + profileError.message);
                 }
 
                 localStorage.setItem('user_registered', 'true');
