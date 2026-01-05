@@ -40,7 +40,7 @@ const Settings: React.FC = () => {
                         if (profile?.role === 'professional') {
                             navigate('/professional-profile');
                         } else {
-                            navigate('/profile');
+                            navigate('/profile', { state: { openModal: 'personal' } });
                         }
                     }
                 },

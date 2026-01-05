@@ -63,6 +63,7 @@ export const GlobalProvider = ({ children }: { children: ReactNode }) => {
     // Unified synchronization logic
     const syncLocalProfile = (data: any) => {
         if (!data) return;
+        if (data.id) localStorage.setItem('user_id', data.id);
         localStorage.setItem('user_name', data.full_name || '');
         localStorage.setItem('user_role', data.role || '');
         if (data.condo_name) localStorage.setItem('user_condo', data.condo_name);
@@ -71,14 +72,15 @@ export const GlobalProvider = ({ children }: { children: ReactNode }) => {
 
     const [profile, setProfile] = useState<UserProfile | null>(() => {
         // Hydrate from localStorage for instant UI
+        const savedId = localStorage.getItem('user_id');
         const savedName = localStorage.getItem('user_name');
         const savedRole = localStorage.getItem('user_role');
         const savedCondo = localStorage.getItem('user_condo');
         const savedCondoId = localStorage.getItem('user_condo_id');
 
-        if (savedName || savedRole) {
+        if (savedId || savedName || savedRole) {
             return {
-                id: '', // Will be updated by refreshProfile
+                id: savedId || '',
                 full_name: savedName || '',
                 role: savedRole || '',
                 condo_name: savedCondo || '',

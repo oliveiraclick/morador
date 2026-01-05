@@ -65,6 +65,7 @@ const RegisterResident: React.FC = () => {
                 localStorage.setItem('user_registered', 'true');
                 localStorage.setItem('user_role', UserRole.RESIDENT);
                 localStorage.setItem('user_name', name);
+                localStorage.setItem('user_id', data.user.id);
                 localStorage.setItem('user_condo_id', condo);
 
                 const selectedCondoObj = condos.find(c => String(c.id) === String(condo));

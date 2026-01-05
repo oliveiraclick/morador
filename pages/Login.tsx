@@ -51,6 +51,7 @@ const Login: React.FC = ({ setRole }: { setRole?: (role: UserRole) => void }) =>
                 const role = profile?.role || UserRole.RESIDENT;
                 localStorage.setItem('user_role', role);
                 localStorage.setItem('user_registered', 'true');
+                localStorage.setItem('user_id', data.user.id);
 
                 if (profile?.full_name) {
                     localStorage.setItem('user_name', profile.full_name);

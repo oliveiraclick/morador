@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { ArrowLeft, User, MapPin, Heart, Settings, LogOut, ChevronRight, Bell, Camera, ShoppingBag as ShoppingBagIcon } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { APP_VERSION } from '../lib/constants';
 
@@ -9,6 +9,7 @@ import { useGlobal } from '../context/GlobalContext';
 
 const ResidentProfile: React.FC = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const { profile, refreshProfile, condos: globalCondos } = useGlobal(); // Use Global Context
 
     // Initial State from Context
@@ -22,7 +23,7 @@ const ResidentProfile: React.FC = () => {
     const [uploading, setUploading] = React.useState(false);
 
     // We can assume profile is loaded or loading, but for form fields we need local state
-    const [userId, setUserId] = React.useState(profile?.id || '');
+    const [userId, setUserId] = React.useState(profile?.id || localStorage.getItem('user_id') || '');
     const [phone, setPhone] = React.useState(profile?.phone || '');
     const [email, setEmail] = React.useState(profile?.email || '');
     const [avatarUrl, setAvatarUrl] = React.useState(profile?.avatar_url || '');
@@ -52,6 +53,12 @@ const ResidentProfile: React.FC = () => {
     // Fallback: If no profile in context yet, fetch it (handled by Global, but we can trigger refresh)
     React.useEffect(() => {
         if (!profile) refreshProfile();
+        // Check if we should open a modal from redirect
+        if (location.state && (location.state as any).openModal) {
+            setActiveModal((location.state as any).openModal);
+            // Clear state to avoid reopening on refresh
+            window.history.replaceState({}, document.title);
+        }
     }, []);
 
     const handleLogout = () => {
