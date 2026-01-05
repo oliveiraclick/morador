@@ -35,9 +35,6 @@ const RegisterResident: React.FC = () => {
 
         try {
             console.log('=== INICIANDO CADASTRO ===');
-            console.log('Email:', email);
-            console.log('Nome:', name);
-            console.log('Condomínio:', condo);
 
             // 1. Cria usuário
             const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -47,112 +44,79 @@ const RegisterResident: React.FC = () => {
                     emailRedirectTo: `${window.location.origin}/auth/callback`,
                     data: {
                         full_name: name,
-                        role: UserRole.RESIDENT,
+                        role: 'resident',
                         condo_id: condo,
                         unit: `${street}, ${number}`
                     }
                 }
             });
 
-            if (authError) {
-                console.error('❌ Erro na autenticação:', authError);
-                throw new Error(authError.message);
-            }
+            if (authError) throw new Error(authError.message);
+            if (!authData.user) throw new Error('Usuário não foi criado');
 
-            if (!authData.user) {
-                console.error('❌ Usuário não foi criado');
-                throw new Error('Usuário não foi criado');
-            }
+            console.log('✅ Usuário criado:', authData.user.id);
 
-            console.log('✅ Usuário criado com ID:', authData.user.id);
+            // 2. Aguarda o trigger criar o perfil
+            await new Promise(resolve => setTimeout(resolve, 3000));
 
-            // 2. Aguarda 2 segundos
-            console.log('⏳ Aguardando 2 segundos...');
-            await new Promise(resolve => setTimeout(resolve, 2000));
-
-            // 3. Tenta inserir o perfil DIRETAMENTE (ignora se já existe)
-            console.log('📝 Tentando inserir perfil...');
-
-            const profileData = {
-                id: authData.user.id,
-                email: email,
-                full_name: name,
-                condo_id: condo,
-                unit: `${street}, ${number}`,
-                role: UserRole.RESIDENT,
-                status: 'active',
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-            };
-
-            console.log('Dados do perfil:', profileData);
-
-            const { data: insertedProfile, error: insertError } = await supabase
-                .from('profiles')
-                .insert(profileData)
-                .select();
-
-            if (insertError) {
-                console.error('❌ Erro ao inserir perfil:', insertError);
-                console.error('Código do erro:', insertError.code);
-                console.error('Detalhes:', insertError.details);
-                console.error('Mensagem:', insertError.message);
-
-                // Tenta um UPDATE se o INSERT falhar
-                console.log('🔄 Tentando UPDATE...');
-                const { data: updatedProfile, error: updateError } = await supabase
-                    .from('profiles')
-                    .update({
-                        email: email,
-                        full_name: name,
-                        condo_id: condo,
-                        unit: `${street}, ${number}`,
-                        role: UserRole.RESIDENT,
-                        status: 'active',
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('id', authData.user.id)
-                    .select();
-
-                if (updateError) {
-                    console.error('❌ UPDATE também falhou:', updateError);
-                } else {
-                    console.log('✅ Perfil atualizado:', updatedProfile);
-                }
-            } else {
-                console.log('✅ Perfil inserido com sucesso:', insertedProfile);
-            }
-
-            // 4. Verifica se o perfil realmente existe
-            console.log('🔍 Verificando se perfil foi salvo...');
-            const { data: verificacao, error: verifyError } = await supabase
+            // 3. Verifica se o perfil foi criado pelo trigger
+            const { data: existingProfile } = await supabase
                 .from('profiles')
                 .select('*')
                 .eq('id', authData.user.id)
                 .single();
 
-            if (verifyError) {
-                console.error('❌ Perfil NÃO encontrado no banco:', verifyError);
+            if (existingProfile) {
+                console.log('✅ Perfil criado pelo trigger:', existingProfile);
             } else {
-                console.log('✅ Perfil encontrado no banco:', verificacao);
+                // 4. Se não foi criado, insere manualmente COM TODAS AS COLUNAS
+                console.log('📝 Criando perfil manualmente...');
+
+                const { data: insertedProfile, error: insertError } = await supabase
+                    .from('profiles')
+                    .insert({
+                        id: authData.user.id,
+                        email: email,
+                        full_name: name,
+                        role: 'resident',
+                        condo_id: condo,
+                        unit: `${street}, ${number}`,
+                        avatar_url: null,
+                        profession: null,
+                        service_history: null,
+                        is_verified: false,
+                        status: 'pending',
+                        phone: null,
+                        is_on_service: false,
+                        is_vacation: false,
+                        is_free: false,
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    })
+                    .select();
+
+                if (insertError) {
+                    console.error('❌ Erro ao inserir:', insertError);
+                    throw new Error(insertError.message);
+                }
+
+                console.log('✅ Perfil inserido:', insertedProfile);
             }
 
             // 5. Salva no localStorage
             localStorage.setItem('user_registered', 'true');
-            localStorage.setItem('user_role', UserRole.RESIDENT);
+            localStorage.setItem('user_role', 'resident');
             localStorage.setItem('user_name', name);
             localStorage.setItem('user_id', authData.user.id);
             localStorage.setItem('user_condo_id', condo);
             localStorage.setItem('user_email', email);
 
-            console.log('✅ Dados salvos no localStorage');
-
             alert('Cadastro realizado com sucesso!');
             setTimeout(() => { window.location.href = '/home'; }, 1500);
 
         } catch (err: any) {
-            console.error('❌ ERRO GERAL:', err);
-            alert(`Erro no cadastro: ${err.message || 'Erro desconhecido'}`);
+            console.error('❌ ERRO:', err);
+            alert(`Erro no cadastro: ${err.message}`);
         }
     };
 
