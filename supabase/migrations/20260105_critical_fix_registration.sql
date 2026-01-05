@@ -65,6 +65,7 @@ BEGIN
     DROP POLICY IF EXISTS "Public Read Access" ON public.profiles;
     DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
     DROP POLICY IF EXISTS "Users can insert own profile" ON public.profiles;
+    DROP POLICY IF EXISTS "Authenticated can insert profile" ON public.profiles;
 EXCEPTION
     WHEN undefined_object THEN null;
 END $$;
@@ -73,4 +74,6 @@ ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Public Read Access" ON public.profiles FOR SELECT USING (true);
 CREATE POLICY "Users can update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
-CREATE POLICY "Users can insert own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
+-- IMPORTANT: More permissive INSERT - just requires authentication, not id match
+-- This is needed because auth.uid() may not be available immediately after signUp
+CREATE POLICY "Authenticated can insert profile" ON public.profiles FOR INSERT WITH CHECK (auth.role() = 'authenticated');
