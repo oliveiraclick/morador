@@ -170,8 +170,13 @@ export const GlobalProvider = ({ children }: { children: ReactNode }) => {
 
     const refreshAll = async () => {
         setLoading(true);
-        await Promise.all([refreshProfile(), refreshItems(), refreshCondos()]);
-        setLoading(false);
+        try {
+            await Promise.all([refreshProfile(), refreshItems(), refreshCondos()]);
+        } catch (error) {
+            console.error('Error in refreshAll:', error);
+        } finally {
+            setLoading(false);
+        }
     };
 
     useEffect(() => {
