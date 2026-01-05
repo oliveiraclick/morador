@@ -141,15 +141,16 @@ const ResidentHome: React.FC = () => {
   const [street, setStreet] = useState('');
   const [number, setNumber] = useState('');
 
-  // Check if profile is incomplete
+  // Check if profile is incomplete - DISABLED: Users can complete via Profile page
+  // The auto-popup was causing issues as registration data wasn't persisting
   React.useEffect(() => {
-    if (profile && (!profile.condo_id || !profile.unit)) {
-      // Load condos if needed
-      supabase.from('condos').select('*').then(({ data }) => {
-        if (data) setCondos(data);
-      });
-      setShowCompleteProfileModal(true);
-    }
+    // Modal disabled - users can access the app and complete profile later if needed
+    // if (profile && (!profile.condo_id || !profile.unit)) {
+    //   supabase.from('condos').select('*').then(({ data }) => {
+    //     if (data) setCondos(data);
+    //   });
+    //   setShowCompleteProfileModal(true);
+    // }
   }, [profile]);
 
   // Fetch Ads
