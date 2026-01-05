@@ -22,47 +22,86 @@ const RegisterProfessional: React.FC = () => {
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            // 1. Create Auth User
-            const { data, error } = await supabase.auth.signUp({
+            console.log('=== INICIANDO CADASTRO PROFISSIONAL ===');
+
+            // 1. Cria usuário
+            const { data: authData, error: authError } = await supabase.auth.signUp({
                 email,
                 password,
                 options: {
+                    emailRedirectTo: `${window.location.origin}/auth/callback`,
                     data: {
                         full_name: name,
-                        role: UserRole.PROFESSIONAL,
+                        role: 'professional',
                         profession: profession,
                         service_history: serviceHistory
                     }
                 }
             });
 
-            if (error) throw error;
+            if (authError) throw new Error(authError.message);
+            if (!authData.user) throw new Error('Usuário não foi criado');
 
-            if (data.user) {
-                // 2. Update Profile with Professional Details
-                const { error: updateError } = await supabase
-                    .from('profiles')
-                    .update({
-                        role: UserRole.PROFESSIONAL,
+            console.log('✅ Usuário criado:', authData.user.id);
+
+            // 2. Aguarda o trigger criar o perfil
+            await new Promise(resolve => setTimeout(resolve, 3000));
+
+            // 3. Verifica se o perfil foi criado pelo trigger
+            const { data: existingProfile } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', authData.user.id)
+                .single();
+
+            if (existingProfile) {
+                console.log('✅ Perfil criado pelo trigger:', existingProfile);
+
+                // Se o trigger criou, mas faltam os detalhes profissionais, atualiza
+                if (!existingProfile.profession) {
+                    await supabase.from('profiles').update({
                         profession: profession,
                         service_history: serviceHistory,
                         status: 'pending'
-                    })
-                    .eq('id', data.user.id);
+                    }).eq('id', authData.user.id);
+                }
+            } else {
+                // 4. Se não foi criado, insere manualmente
+                console.log('📝 Criando perfil manualmente...');
 
-                if (updateError) console.error('Error updating profile details:', updateError);
+                const { error: insertError } = await supabase
+                    .from('profiles')
+                    .insert({
+                        id: authData.user.id,
+                        email: email,
+                        full_name: name,
+                        role: 'professional',
+                        profession: profession,
+                        service_history: serviceHistory,
+                        status: 'active'
+                    });
 
-                // Maintain Legacy LocalStorage for consistency with ProtectedRoute
-                localStorage.setItem('user_registered', 'true');
-                localStorage.setItem('user_role', UserRole.PROFESSIONAL);
-                localStorage.setItem('user_name', name);
-
-                // Redirect to Paywall
-                window.location.href = '/plan/professional';
+                if (insertError) {
+                    console.warn('⚠️ Erro ao inserir perfil (FK timing?):', insertError.message);
+                }
             }
+
+            // 5. Salva no localStorage (completo para evitar "Vizinho")
+            localStorage.setItem('user_registered', 'true');
+            localStorage.setItem('user_role', 'professional');
+            localStorage.setItem('user_name', name);
+            localStorage.setItem('user_id', authData.user.id);
+            localStorage.setItem('user_email', email);
+
+            console.log('✅ Cadastro concluído.');
+            // Redirect to Paywall
+            window.location.href = '/plan/professional';
+
         } catch (err: any) {
+            console.error('❌ ERRO:', err);
             alert('Erro no cadastro: ' + err.message);
         }
+
     };
 
     return (
