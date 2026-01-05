@@ -69,8 +69,8 @@ const RegisterResident: React.FC = () => {
             if (existingProfile) {
                 console.log('✅ Perfil criado pelo trigger:', existingProfile);
             } else {
-                // 4. Se não foi criado, insere manualmente COM TODAS AS COLUNAS
-                console.log('📝 Criando perfil manualmente...');
+                // 4. Tenta inserir perfil (pode falhar se FK não existir ainda)
+                console.log('📝 Tentando criar perfil...');
 
                 const { data: insertedProfile, error: insertError } = await supabase
                     .from('profiles')
@@ -85,14 +85,14 @@ const RegisterResident: React.FC = () => {
                     })
                     .select();
 
-
                 if (insertError) {
-                    console.error('❌ Erro ao inserir:', insertError);
-                    throw new Error(insertError.message);
+                    // Não bloqueia - o trigger criará quando o email for confirmado
+                    console.warn('⚠️ Perfil será criado após confirmação de email:', insertError.message);
+                } else {
+                    console.log('✅ Perfil inserido:', insertedProfile);
                 }
-
-                console.log('✅ Perfil inserido:', insertedProfile);
             }
+
 
             // 5. Salva no localStorage
             localStorage.setItem('user_registered', 'true');
