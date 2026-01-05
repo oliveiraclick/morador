@@ -76,9 +76,10 @@ const ResidentProfile: React.FC = () => {
         }
     }, []);
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
         localStorage.clear();
-        navigate('/');
+        window.location.href = '/login';
     };
 
     const handleUpdateProfile = async () => {
