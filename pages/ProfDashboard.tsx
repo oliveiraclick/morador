@@ -79,10 +79,40 @@ const ProfDashboard: React.FC = () => {
 
    // Paywall Check
    useEffect(() => {
-      // If user is professional but hasn't paid (simulated flag) - Keep this as requested or for consistency
-      const hasPaid = localStorage.getItem('professional_payment_active') === 'true';
-      // For now we allow access if it's just a demo, but in real flow:
-      // if (!hasPaid) navigate('/plan/professional');
+      const verifyAccess = async () => {
+         const { data: { user } } = await supabase.auth.getUser();
+         if (!user) return;
+
+         const [profileRes, settingsRes] = await Promise.all([
+            supabase.from('profiles').select('*').eq('id', user.id).single(),
+            supabase.from('app_settings').select('*').eq('key', 'professional_trial_days').maybeSingle()
+         ]);
+
+         if (profileRes.data) {
+            // Priority 1: Manual exemption
+            if (profileRes.data.is_free) return;
+
+            // Priority 2: Paid status (simulated by localStorage for this demo/flow)
+            const hasPaid = localStorage.getItem('professional_payment_active') === 'true';
+            if (hasPaid) return;
+
+            // Priority 3: Trial period
+            if (settingsRes.data) {
+               const trialDays = parseInt(settingsRes.data.value);
+               const createdAt = new Date(profileRes.data.created_at);
+               const now = new Date();
+               const diffTime = Math.abs(now.getTime() - createdAt.getTime());
+               const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+               if (diffDays <= trialDays) return;
+            }
+
+            // No access -> Paywall
+            navigate('/plan/professional');
+         }
+      };
+
+      verifyAccess();
    }, []);
 
    const toggleStatus = async () => {

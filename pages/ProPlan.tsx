@@ -109,43 +109,20 @@ const ProPlan: React.FC = () => {
 
         {/* Plans */}
         <div id="plans">
-          <h2 className="text-2xl font-bold text-gray-900 text-center mb-8">Planos flexíveis</h2>
+          <h2 className="text-2xl font-bold text-gray-900 text-center mb-8">Comece agora mesmo</h2>
 
-          <div className="space-y-4">
-            {/* Free */}
-            <div className="border border-gray-100 rounded-3xl p-6 bg-white shadow-sm">
-              <span className="text-sm font-medium text-gray-500">Básico</span>
-              <h3 className="text-3xl font-bold text-gray-900 mb-6">Grátis</h3>
-
-              <ul className="space-y-4 mb-8">
-                <li className="flex items-center gap-3 text-sm text-gray-500">
-                  <CheckCircle2 size={18} className="text-green-500" />
-                  Perfil simples
-                </li>
-                <li className="flex items-center gap-3 text-sm text-gray-500">
-                  <CheckCircle2 size={18} className="text-green-500" />
-                  Agenda manual
-                </li>
-                <li className="flex items-center gap-3 text-sm text-gray-300 line-through decoration-gray-300">
-                  <CheckCircle2 size={18} className="text-gray-200" />
-                  Pagamentos online
-                </li>
-              </ul>
-
-              <button className="w-full py-3 border border-gray-200 rounded-xl text-gray-600 font-bold text-sm">Plano Atual</button>
-            </div>
-
-            {/* Pro */}
+          <div className="max-w-md mx-auto">
+            {/* Pro Only */}
             <div className="border-2 border-purple-500 rounded-3xl p-6 bg-white shadow-xl relative overflow-hidden">
               <div className="absolute top-0 right-0 left-0 h-1.5 bg-gradient-to-r from-purple-400 to-pink-500"></div>
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-purple-600 text-white text-[10px] font-bold px-3 py-1 rounded-b-lg tracking-wider uppercase">Recomendado</div>
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-purple-600 text-white text-[10px] font-bold px-3 py-1 rounded-b-lg tracking-wider uppercase">Vantagem Exclusiva</div>
 
               <span className="text-sm font-bold text-purple-600 mt-2 block">Morador Pro</span>
               <div className="flex items-end gap-1 mb-2 mt-1">
                 <h3 className="text-4xl font-bold text-gray-900">R$ 29,90</h3>
                 <span className="text-gray-500 text-xs font-medium mb-1">/mês</span>
               </div>
-              <p className="text-[10px] text-green-600 font-bold mb-6">7 dias grátis, cancele quando quiser.</p>
+              <p className="text-[10px] text-green-600 font-bold mb-6">Teste grátis por 7 dias, cancele quando quiser.</p>
 
               <ul className="space-y-4 mb-8">
                 <li className="flex items-center gap-3 text-sm text-gray-700 font-medium">
@@ -168,8 +145,7 @@ const ProPlan: React.FC = () => {
 
               <button
                 onClick={() => {
-                  alert('Redirecionando para checkout...');
-                  navigate('/dashboard');
+                  navigate('/register/professional');
                 }}
                 className="w-full py-3.5 bg-gradient-to-r from-[#7c3aed] to-[#9333ea] rounded-xl text-white font-bold text-sm shadow-lg shadow-purple-200 hover:shadow-purple-300 transition-all active:scale-95"
               >

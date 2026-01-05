@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, CheckCircle2, ChevronDown, Star, Wallet, Calendar, ShieldCheck, Ticket } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 
 const ProfessionalPaywall: React.FC = () => {
     const navigate = useNavigate();
@@ -8,6 +9,43 @@ const ProfessionalPaywall: React.FC = () => {
     const [couponMessage, setCouponMessage] = useState('');
     const [isFree, setIsFree] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [trialDays, setTrialDays] = useState(0);
+    const [daysElapsed, setDaysElapsed] = useState(0);
+    const [userProfile, setUserProfile] = useState<any>(null);
+
+    useEffect(() => {
+        const checkTrialStatus = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            // Get profile and settings
+            const [profileRes, settingsRes] = await Promise.all([
+                supabase.from('profiles').select('*').eq('id', user.id).single(),
+                supabase.from('app_settings').select('*').eq('key', 'professional_trial_days').maybeSingle()
+            ]);
+
+            if (profileRes.data) {
+                setUserProfile(profileRes.data);
+                if (profileRes.data.is_free) setIsFree(true);
+
+                // Calculate age of account
+                const createdAt = new Date(profileRes.data.created_at);
+                const now = new Date();
+                const diffTime = Math.abs(now.getTime() - createdAt.getTime());
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                setDaysElapsed(diffDays);
+            }
+
+            if (settingsRes.data) {
+                setTrialDays(parseInt(settingsRes.data.value));
+            }
+        };
+
+        checkTrialStatus();
+    }, []);
+
+    const isInsideTrial = trialDays > 0 && daysElapsed <= trialDays;
+    const canAccessForFree = isFree || isInsideTrial;
 
     const handleApplyCoupon = () => {
         if (coupon.toUpperCase() === 'VILA100' || coupon.toUpperCase() === 'INICIO') {
@@ -127,7 +165,14 @@ const ProfessionalPaywall: React.FC = () => {
                             <span className="text-gray-500 text-xs font-medium mb-1">/mês</span>
                         </div>
 
-                        {!isFree && <p className="text-[10px] text-gray-400 mb-6 font-medium">Cobrado via Kiwify. Cancele quando quiser.</p>}
+                        {canAccessForFree && (
+                            <p className="text-[10px] text-green-600 mb-6 font-bold flex items-center gap-1">
+                                <ShieldCheck size={12} />
+                                {isFree ? 'Você possui isenção total' : `Em período de teste: restam ${trialDays - daysElapsed + 1} dias.`}
+                            </p>
+                        )}
+
+                        {!canAccessForFree && <p className="text-[10px] text-gray-400 mb-6 font-medium">Cobrado via Kiwify. Cancele quando quiser.</p>}
 
                         {/* Coupon Input */}
                         <div className="mb-6 bg-gray-50 rounded-xl p-3 border border-dashed border-gray-300">
@@ -163,9 +208,9 @@ const ProfessionalPaywall: React.FC = () => {
                             onClick={handleSubscribe}
                             disabled={loading}
                             className={`w-full py-4 rounded-xl text-white font-bold text-sm shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2
-                ${isFree ? 'bg-green-600 shadow-green-200 hover:bg-green-700' : 'bg-[#0d9488] shadow-teal-200 hover:bg-teal-700'}`}
+                ${canAccessForFree ? 'bg-green-600 shadow-green-200 hover:bg-green-700' : 'bg-[#0d9488] shadow-teal-200 hover:bg-teal-700'}`}
                         >
-                            {loading ? 'Processando...' : (isFree ? 'Ativar Plano Grátis' : 'Pagar com Kiwify')}
+                            {loading ? 'Processando...' : (canAccessForFree ? (isFree ? 'Acessar com Isenção' : 'Acessar Teste Grátis') : 'Pagar com Kiwify')}
                         </button>
 
                         {!isFree && (

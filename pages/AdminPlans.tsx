@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Ticket, Plus, CreditCard, Trash2, Edit2, Copy } from 'lucide-react';
+import { ArrowLeft, Ticket, Plus, CreditCard, Trash2, Edit2, Copy, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
@@ -12,6 +12,8 @@ const AdminPlans: React.FC = () => {
 
     const [showCouponModal, setShowCouponModal] = useState(false);
     const [newCoupon, setNewCoupon] = useState({ code: '', discount: '', duration: '' });
+    const [trialDays, setTrialDays] = useState('7');
+    const [savingTrial, setSavingTrial] = useState(false);
 
     useEffect(() => {
         fetchData();
@@ -28,16 +30,44 @@ const AdminPlans: React.FC = () => {
             if (plansRes.data && plansRes.data.length > 0) {
                 setPlans(plansRes.data);
             } else {
-                // Return default plans if DB is empty to avoid broken UI
                 setPlans([
-                    { id: 1, name: 'Morador Pro', price: 'R$ 14,90', features: ['Sem anúncios', 'Clube de Descontos', 'Suporte Prioritário'], color: 'bg-purple-600' },
-                    { id: 2, name: 'Condomínio Digital', price: 'R$ 299,00', features: ['Gestão Completa', 'App White Label', 'Portaria Remota'], color: 'bg-indigo-600' },
+                    { id: 1, name: 'Morador Pro', price: 'R$ 29,90', features: ['Sem anúncios', 'Agenda Automática', 'Selo de Verificação'], color: 'bg-purple-600' }
                 ]);
             }
+
+            // Fetch App Settings
+            const { data: settings } = await supabase
+                .from('app_settings')
+                .select('*')
+                .eq('key', 'professional_trial_days')
+                .maybeSingle();
+
+            if (settings) setTrialDays(settings.value);
+
         } catch (error) {
             console.error('Error fetching data:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleUpdateTrialDays = async () => {
+        setSavingTrial(true);
+        try {
+            const { error } = await supabase
+                .from('app_settings')
+                .upsert({
+                    key: 'professional_trial_days',
+                    value: trialDays,
+                    description: 'Número de dias de teste grátis para novos profissionais'
+                });
+
+            if (error) throw error;
+            alert('Configuração salva com sucesso!');
+        } catch (error) {
+            alert('Erro ao salvar configuração');
+        } finally {
+            setSavingTrial(false);
         }
     };
 
@@ -70,8 +100,6 @@ const AdminPlans: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 pb-20">
-            {/* ... Existing UI ... */}
-
             {/* Header */}
             <div className="bg-white px-6 py-4 flex items-center gap-4 shadow-sm sticky top-0 z-10">
                 <button onClick={() => navigate('/admin')} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
@@ -81,9 +109,8 @@ const AdminPlans: React.FC = () => {
             </div>
 
             <div className="p-6 space-y-8">
-                {/* ... Plans Section ... */}
+                {/* Plans Section */}
                 <div>
-                    {/* No changes to Plans UI */}
                     <div className="flex justify-between items-center mb-4">
                         <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                             <CreditCard size={20} className="text-purple-600" />
@@ -103,7 +130,7 @@ const AdminPlans: React.FC = () => {
                                         <h3 className="font-bold text-gray-900 text-lg">{plan.name}</h3>
                                         <p className="text-2xl font-bold text-gray-700 mt-1">{plan.price}<span className="text-xs text-gray-400 font-normal">/mês</span></p>
                                     </div>
-                                    <button className="p-2 bg-gray-50 rounded-lg hover:bg-gray-100 text-gray-500">
+                                    <button className="p-2 bg-gray-50 rounded-lg hover:bg-gray-100 text-gray-400 cursor-not-allowed">
                                         <Edit2 size={18} />
                                     </button>
                                 </div>
@@ -161,6 +188,44 @@ const AdminPlans: React.FC = () => {
                                 </div>
                             </div>
                         ))}
+                    </div>
+                </div>
+
+                <hr className="border-gray-200" />
+
+                {/* Trial Settings Section */}
+                <div>
+                    <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                        <Star size={20} className="text-orange-500" />
+                        Teste Grátis (Trial)
+                    </h2>
+
+                    <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
+                        <div className="flex flex-col sm:flex-row sm:items-end gap-4">
+                            <div className="flex-1">
+                                <label className="text-xs font-bold text-gray-500 uppercase ml-1 block mb-2">Dias de teste para novos usuários</label>
+                                <div className="flex items-center gap-3">
+                                    <input
+                                        type="number"
+                                        value={trialDays}
+                                        onChange={(e) => setTrialDays(e.target.value)}
+                                        className="w-24 p-3 rounded-xl border border-gray-200 focus:border-purple-500 focus:outline-none font-bold text-lg text-center"
+                                    />
+                                    <span className="font-medium text-gray-500">Dias</span>
+                                </div>
+                                <p className="text-[10px] text-gray-400 mt-2">
+                                    O usuário profissional terá acesso total sem pagar durante este período após o cadastro.
+                                </p>
+                            </div>
+
+                            <button
+                                onClick={handleUpdateTrialDays}
+                                disabled={savingTrial}
+                                className="bg-purple-600 text-white px-8 py-3.5 rounded-xl font-bold hover:bg-purple-700 transition-colors shadow-lg shadow-purple-200 disabled:opacity-50"
+                            >
+                                {savingTrial ? 'Salvando...' : 'Salvar Dias'}
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
