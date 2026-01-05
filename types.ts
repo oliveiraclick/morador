@@ -1,7 +1,7 @@
 export enum UserRole {
-  RESIDENT = 'RESIDENT',
-  PROFESSIONAL = 'PROFESSIONAL',
-  ADMIN = 'ADMIN'
+  RESIDENT = 'resident',
+  PROFESSIONAL = 'professional',
+  ADMIN = 'admin'
 }
 
 export interface Service {

@@ -140,6 +140,17 @@ export const GlobalProvider = ({ children }: { children: ReactNode }) => {
 
     useEffect(() => {
         refreshAll();
+
+        // Add listener for auth changes to refresh profile data
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+                await refreshProfile();
+            } else if (event === 'SIGNED_OUT') {
+                setProfile(null);
+            }
+        });
+
+        return () => subscription.unsubscribe();
     }, []);
 
     return (

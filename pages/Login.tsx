@@ -41,20 +41,23 @@ const Login: React.FC = ({ setRole }: { setRole?: (role: UserRole) => void }) =>
             if (error) throw error;
 
             if (data.user) {
-                // Fetch Profile to get Role
+                // Fetch Profile to get Role and Name
                 const { data: profile } = await supabase
                     .from('profiles')
-                    .select('role')
+                    .select('role, full_name')
                     .eq('id', data.user.id)
                     .single();
 
                 const role = profile?.role || UserRole.RESIDENT;
-
                 localStorage.setItem('user_role', role);
                 localStorage.setItem('user_registered', 'true');
+                if (profile?.full_name) {
+                    localStorage.setItem('user_name', profile.full_name);
+                }
+
                 if (setRole) setRole(role as UserRole);
 
-                // Redirect
+                // Redirect using normalized lowercase roles
                 if (role === UserRole.ADMIN) navigate('/admin');
                 else if (role === UserRole.PROFESSIONAL) navigate('/dashboard');
                 else navigate('/home');

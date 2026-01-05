@@ -17,7 +17,7 @@ const Layout: React.FC<LayoutProps> = ({ children, role }) => {
   const location = useLocation();
 
   // Normalize role to avoid case sensitivity issues (e.g. 'resident' vs 'RESIDENT')
-  const normalizedRole = role ? role.toUpperCase() : '';
+  const normalizedRole = role ? role.toLowerCase() : '';
 
 
   // Hide nav check...

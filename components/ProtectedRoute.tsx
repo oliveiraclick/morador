@@ -16,7 +16,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles 
         return <Navigate to="/login" replace />;
     }
 
-    const normalizedRole = userRole ? userRole.toUpperCase() : '';
+    const normalizedRole = userRole ? userRole.toLowerCase() : '';
 
     // 2. Role not allowed -> Redirect to their correct home
     // Check using the normalized role against the allowed roles (which are Enums, likely Uppercase)

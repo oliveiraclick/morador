@@ -44,11 +44,31 @@ const RegisterResident: React.FC = () => {
             if (error) throw error;
 
             if (data.user) {
+                // Manual update to ensure data persistence and avoid trigger delays
+                const { error: profileError } = await supabase
+                    .from('profiles')
+                    .update({
+                        full_name: name,
+                        condo_id: condo,
+                        unit: `${street}, ${number}`,
+                        role: UserRole.RESIDENT,
+                        status: 'active'
+                    })
+                    .eq('id', data.user.id);
+
+                if (profileError) {
+                    console.error('Error updating profile:', profileError);
+                }
+
                 localStorage.setItem('user_registered', 'true');
                 localStorage.setItem('user_role', UserRole.RESIDENT);
-                // Profile creation is handled by DB Trigger on Supabase
-                alert('Cadastro realizado! Verifique seu email ou entre direto.');
-                navigate('/home');
+                localStorage.setItem('user_name', name);
+
+                // Profile creation is handled by DB Trigger on Supabase, but we updated manually for safety
+                alert('Cadastro realizado! Bem-vindo(a).');
+
+                // Use window.location as fallback if navigate has issues with context refresh
+                window.location.href = '/home';
             }
         } catch (err: any) {
             alert('Erro no cadastro: ' + err.message);
