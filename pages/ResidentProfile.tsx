@@ -213,11 +213,13 @@ const ResidentProfile: React.FC = () => {
             const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
             const publicUrl = data.publicUrl;
 
-            // Update profile
+            // Update profile with required fields to avoid NOT NULL constraints
             const { error: updateError } = await supabase
                 .from('profiles')
                 .upsert({
                     id: userId,
+                    full_name: name || profile?.full_name || localStorage.getItem('user_name') || '',
+                    email: email || profile?.email || localStorage.getItem('user_email') || '',
                     avatar_url: publicUrl,
                     updated_at: new Date().toISOString()
                 });
