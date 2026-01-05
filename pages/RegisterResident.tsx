@@ -102,6 +102,12 @@ const RegisterResident: React.FC = () => {
             localStorage.setItem('user_condo_id', condo);
             localStorage.setItem('user_email', email);
 
+            // Busca o nome do condomínio para exibição
+            const selectedCondo = condos.find(c => String(c.id) === String(condo));
+            if (selectedCondo) {
+                localStorage.setItem('user_condo', selectedCondo.name);
+            }
+
             alert('Cadastro realizado com sucesso!');
             setTimeout(() => { window.location.href = '/home'; }, 1500);
 
