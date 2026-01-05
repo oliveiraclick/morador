@@ -27,58 +27,73 @@ const RegisterResident: React.FC = () => {
 
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!email || !password || !name || !condo || !street || !number) {
+            alert('Por favor, preencha todos os campos obrigatórios.');
+            return;
+        }
+
         try {
-            const { data, error } = await supabase.auth.signUp({
+            const { data: authData, error: authError } = await supabase.auth.signUp({
                 email,
                 password,
                 options: {
+                    emailRedirectTo: `${window.location.origin}/auth/callback`,
                     data: {
                         full_name: name,
                         role: UserRole.RESIDENT,
-                        condo_id: condo, // Storing ID
-                        unit: `${street}, ${number}` // Simple aggregation for now
+                        condo_id: condo,
+                        unit: `${street}, ${number}`
                     }
                 }
             });
 
-            if (error) throw error;
+            if (authError) throw new Error(authError.message);
+            if (!authData.user) throw new Error('Usuário não foi criado');
 
-            if (data.user) {
-                // Manual upsert to ensure data persistence and avoid trigger conflicts
-                const { error: profileError } = await supabase
+            console.log('Usuário criado:', authData.user.id);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            const { data: existingProfile, error: checkError } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', authData.user.id)
+                .single();
+
+            if (checkError && checkError.code !== 'PGRST116') {
+                console.warn('Erro ao verificar perfil:', checkError);
+            }
+
+            if (!existingProfile) {
+                console.log('Criando perfil manualmente...');
+                const { error: insertError } = await supabase
                     .from('profiles')
-                    .upsert({
-                        id: data.user.id,
+                    .insert({
+                        id: authData.user.id,
                         email: email,
                         full_name: name,
                         condo_id: condo,
                         unit: `${street}, ${number}`,
                         role: UserRole.RESIDENT,
-                        status: 'active',
-                        updated_at: new Date().toISOString()
+                        status: 'active'
                     });
 
-                if (profileError) {
-                    // Log the error but don't block - registration is working
-                    console.warn('Profile upsert warning (non-blocking):', profileError);
-                }
-
-                localStorage.setItem('user_registered', 'true');
-                localStorage.setItem('user_role', UserRole.RESIDENT);
-                localStorage.setItem('user_name', name);
-                localStorage.setItem('user_id', data.user.id);
-                localStorage.setItem('user_condo_id', condo);
-
-                const selectedCondoObj = condos.find(c => String(c.id) === String(condo));
-                if (selectedCondoObj) {
-                    localStorage.setItem('user_condo', selectedCondoObj.name);
-                }
-
-                alert('Cadastro realizado! Bem-vindo(a).');
-                window.location.href = '/home';
+                if (insertError) console.error('Erro ao inserir perfil:', insertError);
             }
+
+            localStorage.setItem('user_registered', 'true');
+            localStorage.setItem('user_role', UserRole.RESIDENT);
+            localStorage.setItem('user_name', name);
+            localStorage.setItem('user_id', authData.user.id);
+            localStorage.setItem('user_condo_id', condo);
+            localStorage.setItem('user_email', email);
+
+            alert('Cadastro realizado com sucesso! Verifique seu e-mail para confirmar.');
+            setTimeout(() => { window.location.href = '/home'; }, 1500);
+
         } catch (err: any) {
-            alert('Erro no cadastro: ' + err.message);
+            console.error('Erro completo:', err);
+            alert(`Erro no cadastro: ${err.message || 'Erro desconhecido'}`);
         }
     };
 
