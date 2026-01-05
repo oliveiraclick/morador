@@ -1,29 +1,21 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { ArrowLeft, Star, Clock, MapPin, Share2, Settings, ShieldCheck, Camera, PenSquare, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useGlobal } from '../context/GlobalContext';
 
 const ProfessionalProfile: React.FC = () => {
     const navigate = useNavigate();
-    const [profile, setProfile] = useState<any>(null);
+    const { profile, refreshProfile } = useGlobal();
 
     React.useEffect(() => {
-        const fetchProfile = async () => {
-            const { data: { user } } = await import('../lib/supabase').then(m => m.supabase.auth.getUser());
-            if (user) {
-                const { data } = await import('../lib/supabase').then(m => m.supabase
-                    .from('profiles')
-                    .select('*')
-                    .eq('id', user.id)
-                    .single());
-                if (data) setProfile(data);
-            }
-        };
-        fetchProfile();
-    }, []);
+        if (!profile) refreshProfile();
+    }, [profile, refreshProfile]);
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
+        const { supabase } = await import('../lib/supabase');
+        await supabase.auth.signOut();
         localStorage.clear();
-        navigate('/');
+        window.location.href = '/login';
     };
 
     if (!profile) return <div className="min-h-screen bg-white flex items-center justify-center">Carregando...</div>;

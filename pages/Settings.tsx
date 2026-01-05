@@ -3,14 +3,15 @@ import { ArrowLeft, User, Bell, Shield, CircleHelp, LogOut, ChevronRight, Rotate
 import { useNavigate } from 'react-router-dom';
 import { APP_VERSION } from '../lib/constants';
 import { supabase } from '../lib/supabase';
+import { useGlobal } from '../context/GlobalContext';
 
 const Settings: React.FC = () => {
     const navigate = useNavigate();
+    const { profile } = useGlobal();
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
-        localStorage.removeItem('user_role');
-        localStorage.removeItem('user_registered');
+        localStorage.clear();
         window.location.href = '/login';
     };
 
@@ -32,7 +33,17 @@ const Settings: React.FC = () => {
         {
             title: 'Conta e Perfil',
             items: [
-                { icon: <User size={20} />, label: 'Meus Dados', action: () => navigate('/professional-profile') },
+                {
+                    icon: <User size={20} />,
+                    label: 'Meus Dados',
+                    action: () => {
+                        if (profile?.role === 'professional') {
+                            navigate('/professional-profile');
+                        } else {
+                            navigate('/profile');
+                        }
+                    }
+                },
                 { icon: <Shield size={20} />, label: 'Privacidade e Segurança', action: () => { } },
             ]
         },
