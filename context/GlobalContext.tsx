@@ -102,11 +102,16 @@ export const GlobalProvider = ({ children }: { children: ReactNode }) => {
         try {
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
-                const { data: profileData } = await supabase
+                console.log('Fetching profile for user:', user.id);
+                const { data: profileData, error: profileError } = await supabase
                     .from('profiles')
                     .select('*, condos:condo_id(name)')
                     .eq('id', user.id)
                     .maybeSingle();
+
+                if (profileError) {
+                    console.error('Profile fetch error:', profileError);
+                }
 
                 if (profileData) {
                     const condoName = profileData.condos?.name ||
@@ -120,7 +125,15 @@ export const GlobalProvider = ({ children }: { children: ReactNode }) => {
 
                     setProfile(updatedProfile);
                     syncLocalProfile(updatedProfile);
+                    console.log('Profile synced successfully');
+                } else {
+                    console.warn('No profile found for authenticated user');
+                    // We don't clear profile here because it might be a race condition during registration
                 }
+            } else {
+                setProfile(null);
+                localStorage.removeItem('user_id');
+                localStorage.removeItem('user_role');
             }
         } catch (error) {
             console.error('Error fetching profile:', error);
@@ -138,7 +151,6 @@ export const GlobalProvider = ({ children }: { children: ReactNode }) => {
                 .order('created_at', { ascending: false });
 
             if (data) {
-                console.log('Raw Marketplace Data:', data);
                 const mappedItems: Item[] = data.map(item => ({
                     ...item,
                     type: item.type ? item.type.trim().toUpperCase() : 'DESAPEGO',
@@ -182,12 +194,14 @@ export const GlobalProvider = ({ children }: { children: ReactNode }) => {
     useEffect(() => {
         refreshAll();
 
-        // Add listener for auth changes to refresh profile data
+        // One-stop listener for auth state changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-            if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+            console.log('Auth event change in GlobalContext:', event);
+            if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
                 await refreshProfile();
             } else if (event === 'SIGNED_OUT') {
                 setProfile(null);
+                localStorage.clear();
             }
         });
 

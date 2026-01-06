@@ -36,7 +36,7 @@ const RegisterResident: React.FC = () => {
         try {
             console.log('=== INICIANDO CADASTRO ===');
 
-            // 1. Cria usuário
+            // 1. Cria usuário no Auth do Supabase
             const { data: authData, error: authError } = await supabase.auth.signUp({
                 email,
                 password,
@@ -56,45 +56,38 @@ const RegisterResident: React.FC = () => {
 
             console.log('✅ Usuário criado:', authData.user.id);
 
-            // 2. Aguarda o trigger criar o perfil
-            await new Promise(resolve => setTimeout(resolve, 3000));
+            // 2. Mecanismo de Polling (Verificação Profunda)
+            // Aguardamos o trigger do banco criar o perfil automaticamente
+            let profileCreated = false;
+            let attempts = 0;
+            const maxAttempts = 10; // 10 segundos no total
 
-            // 3. Verifica se o perfil foi criado pelo trigger
-            const { data: existingProfile } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', authData.user.id)
-                .single();
+            while (!profileCreated && attempts < maxAttempts) {
+                attempts++;
+                console.log(`🔍 Verificando criação do perfil (tentativa ${attempts})...`);
 
-            if (existingProfile) {
-                console.log('✅ Perfil criado pelo trigger:', existingProfile);
-            } else {
-                // 4. Tenta inserir perfil (pode falhar se FK não existir ainda)
-                console.log('📝 Tentando criar perfil...');
-
-                const { data: insertedProfile, error: insertError } = await supabase
+                const { data: profile } = await supabase
                     .from('profiles')
-                    .insert({
-                        id: authData.user.id,
-                        email: email,
-                        full_name: name,
-                        role: 'resident',
-                        condo_id: condo,
-                        unit: `${street}, ${number}`,
-                        status: 'active'
-                    })
-                    .select();
+                    .select('id')
+                    .eq('id', authData.user.id)
+                    .maybeSingle();
 
-                if (insertError) {
-                    // Não bloqueia - o trigger criará quando o email for confirmado
-                    console.warn('⚠️ Perfil será criado após confirmação de email:', insertError.message);
+                if (profile) {
+                    profileCreated = true;
+                    console.log('✅ Perfil detectado!');
                 } else {
-                    console.log('✅ Perfil inserido:', insertedProfile);
+                    await new Promise(r => setTimeout(r, 1000));
                 }
             }
 
+            if (!profileCreated) {
+                console.warn('⚠️ O perfil está demorando para ser criado. O usuário poderá completar os dados após o login.');
+                alert('Cadastro recebido! Estamos processando seus dados. Seus dados estarão disponíveis em instantes.');
+            } else {
+                alert('Cadastro realizado com sucesso!');
+            }
 
-            // 5. Salva no localStorage
+            // 3. Salva no localStorage (Backup para UI instantânea)
             localStorage.setItem('user_registered', 'true');
             localStorage.setItem('user_role', 'resident');
             localStorage.setItem('user_name', name);
@@ -102,18 +95,17 @@ const RegisterResident: React.FC = () => {
             localStorage.setItem('user_condo_id', condo);
             localStorage.setItem('user_email', email);
 
-            // Busca o nome do condomínio para exibição
             const selectedCondo = condos.find(c => String(c.id) === String(condo));
             if (selectedCondo) {
                 localStorage.setItem('user_condo', selectedCondo.name);
             }
 
-            alert('Cadastro realizado com sucesso!');
-            setTimeout(() => { window.location.href = '/home'; }, 1500);
+            // Redireciona para Home
+            window.location.href = '/home';
 
         } catch (err: any) {
-            console.error('❌ ERRO:', err);
-            alert(`Erro no cadastro: ${err.message}`);
+            console.error('❌ ERRO NO CADASTRO:', err);
+            alert(`Erro no processo: ${err.message}`);
         }
     };
 

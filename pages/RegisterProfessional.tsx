@@ -24,7 +24,7 @@ const RegisterProfessional: React.FC = () => {
         try {
             console.log('=== INICIANDO CADASTRO PROFISSIONAL ===');
 
-            // 1. Cria usuário
+            // 1. Cria usuário no Auth
             const { data: authData, error: authError } = await supabase.auth.signUp({
                 email,
                 password,
@@ -44,49 +44,30 @@ const RegisterProfessional: React.FC = () => {
 
             console.log('✅ Usuário criado:', authData.user.id);
 
-            // 2. Aguarda o trigger criar o perfil
-            await new Promise(resolve => setTimeout(resolve, 3000));
+            // 2. Mecanismo de Polling
+            let profileCreated = false;
+            let attempts = 0;
+            const maxAttempts = 10;
 
-            // 3. Verifica se o perfil foi criado pelo trigger
-            const { data: existingProfile } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', authData.user.id)
-                .single();
+            while (!profileCreated && attempts < maxAttempts) {
+                attempts++;
+                console.log(`🔍 Verificando perfil profissional (tentativa ${attempts})...`);
 
-            if (existingProfile) {
-                console.log('✅ Perfil criado pelo trigger:', existingProfile);
-
-                // Se o trigger criou, mas faltam os detalhes profissionais, atualiza
-                if (!existingProfile.profession) {
-                    await supabase.from('profiles').update({
-                        profession: profession,
-                        service_history: serviceHistory,
-                        status: 'pending'
-                    }).eq('id', authData.user.id);
-                }
-            } else {
-                // 4. Se não foi criado, insere manualmente
-                console.log('📝 Criando perfil manualmente...');
-
-                const { error: insertError } = await supabase
+                const { data: profile } = await supabase
                     .from('profiles')
-                    .insert({
-                        id: authData.user.id,
-                        email: email,
-                        full_name: name,
-                        role: 'professional',
-                        profession: profession,
-                        service_history: serviceHistory,
-                        status: 'active'
-                    });
+                    .select('id')
+                    .eq('id', authData.user.id)
+                    .maybeSingle();
 
-                if (insertError) {
-                    console.warn('⚠️ Erro ao inserir perfil (FK timing?):', insertError.message);
+                if (profile) {
+                    profileCreated = true;
+                    console.log('✅ Perfil detectado!');
+                } else {
+                    await new Promise(r => setTimeout(r, 1000));
                 }
             }
 
-            // 5. Salva no localStorage (completo para evitar "Vizinho")
+            // 3. Salva no localStorage (Backup para o Paywall)
             localStorage.setItem('user_registered', 'true');
             localStorage.setItem('user_role', 'professional');
             localStorage.setItem('user_name', name);
@@ -98,7 +79,7 @@ const RegisterProfessional: React.FC = () => {
             window.location.href = '/plan/professional';
 
         } catch (err: any) {
-            console.error('❌ ERRO:', err);
+            console.error('❌ ERRO PROFISSIONAL:', err);
             alert('Erro no cadastro: ' + err.message);
         }
 

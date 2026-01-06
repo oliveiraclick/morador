@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
-import { GlobalProvider } from './context/GlobalContext';
+import { useGlobal, GlobalProvider } from './context/GlobalContext';
 import { UserRole } from './types';
 
 // Pages
@@ -50,91 +50,10 @@ import AdminBranding from './pages/AdminBranding';
 import { supabase } from './lib/supabase';
 
 const AppContent = () => {
-  const [loading, setLoading] = useState(true);
-  const [userRole, setUserRole] = useState<UserRole>(() => {
-    const stored = localStorage.getItem('user_role');
-    if (stored === UserRole.ADMIN || stored === UserRole.RESIDENT || stored === UserRole.PROFESSIONAL) {
-      return stored as UserRole;
-    }
-    return UserRole.RESIDENT;
-  });
-
+  const { profile, loading, refreshProfile } = useGlobal();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const initAuth = async () => {
-      try {
-        console.log('App initialization started...');
-        // Check active session
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-
-        if (sessionError) {
-          console.error('Session check error:', sessionError);
-        }
-
-        if (session) {
-          console.log('Session found, fetching profile...');
-          // Verify role from DB to be safe
-          const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', session.user.id)
-            .maybeSingle();
-
-          if (profileError) {
-            console.error('Profile fetch error:', profileError);
-          }
-
-          const role = profile?.role || UserRole.RESIDENT;
-
-          localStorage.setItem('user_role', role);
-          localStorage.setItem('user_registered', 'true');
-          setUserRole(role as UserRole);
-          console.log('User role initialized:', role);
-        } else {
-          console.log('No active session found.');
-        }
-
-        setLoading(false);
-
-        // Listen for changes (Sign in / Sign out)
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-          console.log('Auth event change:', event);
-          if (event === 'SIGNED_IN' && session) {
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('role')
-              .eq('id', session.user.id)
-              .maybeSingle();
-
-            const role = profile?.role || UserRole.RESIDENT;
-            localStorage.setItem('user_role', role);
-            localStorage.setItem('user_registered', 'true');
-            setUserRole(role as UserRole);
-
-            // Redirect Logic
-            if (window.location.pathname === '/login' || window.location.pathname === '/' || window.location.pathname === '/register/resident' || window.location.pathname === '/register/professional') {
-              if (role === UserRole.ADMIN) navigate('/admin');
-              else if (role === UserRole.PROFESSIONAL) navigate('/dashboard');
-              else navigate('/home');
-            }
-
-          } else if (event === 'SIGNED_OUT') {
-            localStorage.clear();
-            setUserRole(UserRole.RESIDENT);
-            navigate('/login');
-          }
-        });
-
-        return () => subscription.unsubscribe();
-      } catch (err) {
-        console.error('Critical initialization error:', err);
-        setLoading(false); // Ensure loading is released even on crash
-      }
-    };
-
-    initAuth();
-  }, [navigate]);
+  const userRole = (profile?.role as UserRole) || (localStorage.getItem('user_role') as UserRole) || UserRole.RESIDENT;
 
   if (loading) {
     return (
@@ -152,7 +71,7 @@ const AppContent = () => {
         <Route path="/role-selection" element={<RoleSelection />} />
         <Route path="/register/resident" element={<RegisterResident />} />
         <Route path="/register/professional" element={<RegisterProfessional />} />
-        <Route path="/login" element={<Login setRole={setUserRole} />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/complete-registration" element={
           <ProtectedRoute allowedRoles={[UserRole.RESIDENT, UserRole.PROFESSIONAL]}>
             <CompleteRegistration />
