@@ -68,6 +68,10 @@ export const GlobalProvider = ({ children }: { children: ReactNode }) => {
         localStorage.setItem('user_role', data.role || '');
         if (data.condo_name) localStorage.setItem('user_condo', data.condo_name);
         if (data.condo_id) localStorage.setItem('user_condo_id', data.condo_id);
+        if (data.avatar_url) localStorage.setItem('user_avatar', data.avatar_url);
+        if (data.unit) localStorage.setItem('user_unit', data.unit);
+        if (data.phone) localStorage.setItem('user_phone', data.phone);
+        localStorage.setItem('user_registered', 'true');
     };
 
     const [profile, setProfile] = useState<UserProfile | null>(() => {
@@ -77,6 +81,7 @@ export const GlobalProvider = ({ children }: { children: ReactNode }) => {
         const savedRole = localStorage.getItem('user_role');
         const savedCondo = localStorage.getItem('user_condo');
         const savedCondoId = localStorage.getItem('user_condo_id');
+        const savedAvatar = localStorage.getItem('user_avatar');
 
         if (savedId || savedName || savedRole) {
             return {
@@ -85,10 +90,10 @@ export const GlobalProvider = ({ children }: { children: ReactNode }) => {
                 role: savedRole || '',
                 condo_name: savedCondo || '',
                 condo_id: savedCondoId || '',
+                avatar_url: savedAvatar || '',
                 email: '',
                 phone: '',
-                unit: '',
-                avatar_url: ''
+                unit: ''
             };
         }
         return null;
@@ -103,9 +108,11 @@ export const GlobalProvider = ({ children }: { children: ReactNode }) => {
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
                 console.log('Fetching profile for user:', user.id);
+
+                // 1. Fetch Profile
                 const { data: profileData, error: profileError } = await supabase
                     .from('profiles')
-                    .select('*, condos:condo_id(name)')
+                    .select('*')
                     .eq('id', user.id)
                     .maybeSingle();
 
@@ -114,8 +121,16 @@ export const GlobalProvider = ({ children }: { children: ReactNode }) => {
                 }
 
                 if (profileData) {
-                    const condoName = profileData.condos?.name ||
-                        (Array.isArray(profileData.condos) ? profileData.condos[0]?.name : '');
+                    // 2. Fetch Condo Name independently (more robust than join)
+                    let condoName = '';
+                    if (profileData.condo_id) {
+                        const { data: condoData } = await supabase
+                            .from('condos')
+                            .select('name')
+                            .eq('id', profileData.condo_id)
+                            .maybeSingle();
+                        if (condoData) condoName = condoData.name;
+                    }
 
                     const updatedProfile = {
                         ...profileData,
@@ -128,7 +143,6 @@ export const GlobalProvider = ({ children }: { children: ReactNode }) => {
                     console.log('Profile synced successfully');
                 } else {
                     console.warn('No profile found for authenticated user');
-                    // We don't clear profile here because it might be a race condition during registration
                 }
             } else {
                 setProfile(null);

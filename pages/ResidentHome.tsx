@@ -21,7 +21,7 @@ const ResidentHome: React.FC = () => {
 
   // Derived State with LocalStorage Fallbacks for faster UI response
   const userName = profile?.full_name?.split(' ')[0] || localStorage.getItem('user_name')?.split(' ')[0] || "Vizinho(a)";
-  const userAvatar = profile?.avatar_url || null;
+  const userAvatar = profile?.avatar_url || localStorage.getItem('user_avatar') || null;
   const condoName = profile?.condo_name || localStorage.getItem('user_condo') || "Seu Condomínio";
   const userId = profile?.id || '';
 

@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Building, MapPin, CheckCircle2 } from 'lucide-react';
+import { useGlobal } from '../context/GlobalContext';
 
 const CompleteRegistration: React.FC = () => {
     const navigate = useNavigate();
+    const { refreshProfile } = useGlobal();
     const [loading, setLoading] = useState(false);
     const [condos, setCondos] = useState<any[]>([]);
 
@@ -43,15 +45,13 @@ const CompleteRegistration: React.FC = () => {
 
             const { error } = await supabase
                 .from('profiles')
-                .upsert({
-                    id: user.id,
-                    email: user.email,
+                .update({
                     condo_id: formData.condo_id,
                     unit: formData.unit,
-                    role: 'resident',
                     status: 'active',
                     updated_at: new Date().toISOString()
-                });
+                })
+                .eq('id', user.id);
 
             if (error) throw error;
 
@@ -60,8 +60,9 @@ const CompleteRegistration: React.FC = () => {
                 localStorage.setItem('user_condo', selectedCondoObj.name);
             }
 
+            await refreshProfile();
             alert('Cadastro completo! Agora você pode aproveitar tudo.');
-            navigate(-1); // Go back to where they were (e.g., Sell Item) or Home
+            navigate('/home');
         } catch (error: any) {
             console.error('Error updating profile:', error);
             alert('Erro ao salvar: ' + error.message);

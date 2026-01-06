@@ -41,48 +41,15 @@ const Login: React.FC = ({ setRole }: { setRole?: (role: UserRole) => void }) =>
             if (error) throw error;
 
             if (data.user) {
-                // Fetch Profile to get Role, Name and Condo
-                const { data: profile, error: profileError } = await supabase
-                    .from('profiles')
-                    .select('role, full_name, condo_id, condos:condo_id(name)')
-                    .eq('id', data.user.id)
-                    .single();
-
-                // Always save basic user info
-                localStorage.setItem('user_id', data.user.id);
+                // Force a check/refresh
+                // The GlobalContext listener will pick this up, but we can manually trigger navigation logic
+                // after a short delay to allow context to update
                 localStorage.setItem('user_registered', 'true');
-
-                // If profile has critical error, warn but continue
-                if (profileError) {
-                    console.warn('Profile fetch warning:', profileError);
-                }
-
-                // Get role from profile or default to resident
-                const role = profile?.role || UserRole.RESIDENT;
-                localStorage.setItem('user_role', role);
-
-                if (profile?.full_name) {
-                    localStorage.setItem('user_name', profile.full_name);
-                }
-
-                if (profile?.condos) {
-                    const condoName = (profile.condos as any).name;
-                    localStorage.setItem('user_condo', condoName);
-                }
-
-                if (profile?.condo_id) {
-                    localStorage.setItem('user_condo_id', profile.condo_id);
-                }
-
-                if (setRole) setRole(role as UserRole);
-
-                // Redirect using normalized lowercase roles
-                if (role === UserRole.ADMIN) navigate('/admin');
-                else if (role === UserRole.PROFESSIONAL) navigate('/dashboard');
-                else navigate('/home');
+                navigate('/home');
             }
         } catch (err: any) {
-            alert('Erro ao entrar: ' + err.message);
+            console.error(err);
+            alert('Erro ao entrar: ' + (err.message || 'Verifique suas credenciais'));
         }
     };
 

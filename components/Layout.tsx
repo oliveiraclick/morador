@@ -40,10 +40,15 @@ const Layout: React.FC<LayoutProps> = ({ children, role }) => {
   }
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    localStorage.removeItem('user_role');
-    localStorage.removeItem('user_registered');
-    window.location.href = '/login';
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      localStorage.removeItem('user_role');
+      localStorage.removeItem('user_registered');
+      window.location.href = '/login';
+    }
   };
 
   const navItemClass = (path: string) =>

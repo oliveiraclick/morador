@@ -11,7 +11,7 @@ import Splash from './pages/Splash';
 import RoleSelection from './pages/RoleSelection';
 import Login from './pages/Login';
 import RegisterResident from './pages/RegisterResident';
-import CompleteRegistration from './pages/CompleteRegistration'; // Imported
+import CompleteRegistration from './pages/CompleteRegistration';
 import RegisterProfessional from './pages/RegisterProfessional';
 import Chat from './pages/Chat';
 import Settings from './pages/Settings';
@@ -46,14 +46,34 @@ import AdminAds from './pages/AdminAds';
 
 import ProfessionalPaywall from './pages/ProfessionalPaywall';
 import AdminBranding from './pages/AdminBranding';
-
 import { supabase } from './lib/supabase';
+import ErrorBoundary from './components/ErrorBoundary';
 
 const AppContent = () => {
   const { profile, loading, refreshProfile } = useGlobal();
   const navigate = useNavigate();
 
   const userRole = (profile?.role as UserRole) || (localStorage.getItem('user_role') as UserRole) || UserRole.RESIDENT;
+
+  // Global Auth Redirection Logic
+  useEffect(() => {
+    const path = window.location.pathname;
+
+    // 1. Redirect logged-in users away from auth pages
+    if (profile && (path === '/login' || path === '/' || path === '/role-selection')) {
+      if (profile.role === UserRole.ADMIN) navigate('/admin');
+      else if (profile.role === UserRole.PROFESSIONAL) navigate('/dashboard');
+      else navigate('/home');
+    }
+
+    // 2. Check for incomplete profile (Residents only)
+    if (profile && profile.role === UserRole.RESIDENT && path === '/home') {
+      if (!profile.condo_id || !profile.unit) {
+        console.log('Incomplete resident profile, redirecting to complete-registration');
+        navigate('/complete-registration');
+      }
+    }
+  }, [profile, navigate]);
 
   if (loading) {
     return (
@@ -237,8 +257,6 @@ const AppContent = () => {
     </Layout>
   );
 };
-
-import ErrorBoundary from './components/ErrorBoundary';
 
 const App = () => {
   return (

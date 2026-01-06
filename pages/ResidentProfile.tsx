@@ -77,9 +77,14 @@ const ResidentProfile: React.FC = () => {
     }, []);
 
     const handleLogout = async () => {
-        await supabase.auth.signOut();
-        localStorage.clear();
-        window.location.href = '/login';
+        try {
+            await supabase.auth.signOut();
+        } catch (error) {
+            console.error('Error signing out:', error);
+        } finally {
+            localStorage.clear();
+            window.location.href = '/login';
+        }
     };
 
     const handleUpdateProfile = async () => {
@@ -102,13 +107,12 @@ const ResidentProfile: React.FC = () => {
             // Get email with fallback
             const currentEmail = email || localStorage.getItem('user_email') || profile?.email || '';
 
-            const { error } = await supabase.from('profiles').upsert({
-                id: currentUserId,
+            const { error } = await supabase.from('profiles').update({
                 full_name: name,
                 phone: phone,
                 email: currentEmail,
                 updated_at: new Date().toISOString()
-            });
+            }).eq('id', currentUserId);
 
             if (error) throw error;
             alert("Dados atualizados com sucesso!");
@@ -141,12 +145,11 @@ const ResidentProfile: React.FC = () => {
                 }
             }
 
-            const { error } = await supabase.from('profiles').upsert({
-                id: currentUserId,
+            const { error } = await supabase.from('profiles').update({
                 condo_id: selectedCondo,
                 unit: unit,
                 updated_at: new Date().toISOString()
-            });
+            }).eq('id', currentUserId);
 
             if (error) throw error;
 
@@ -216,13 +219,11 @@ const ResidentProfile: React.FC = () => {
             // Update profile with required fields to avoid NOT NULL constraints
             const { error: updateError } = await supabase
                 .from('profiles')
-                .upsert({
-                    id: userId,
-                    full_name: name || profile?.full_name || localStorage.getItem('user_name') || '',
-                    email: email || profile?.email || localStorage.getItem('user_email') || '',
+                .update({
                     avatar_url: publicUrl,
                     updated_at: new Date().toISOString()
-                });
+                })
+                .eq('id', currentUserId);
 
             if (updateError) {
                 console.error('Profile Update Error after upload:', updateError);

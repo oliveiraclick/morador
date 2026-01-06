@@ -42,6 +42,8 @@ const Marketplace: React.FC = () => {
   const categories = ['Todos', 'Móveis', 'Eletrônicos', 'Infantil', 'Roupas', 'Beleza', 'Comida'];
 
   // Theme Logic... (rest of the file)
+  const condoName = profile?.condo_name || localStorage.getItem('user_condo') || 'Condomínio';
+
   const themes: Record<string, any> = {
     'Todos': {
       gradient: 'bg-white',
@@ -55,7 +57,7 @@ const Marketplace: React.FC = () => {
       text: 'text-white',
       accent: 'text-white',
       icon: Utensils,
-      headerTitle: 'Sabores da Vila'
+      headerTitle: `Sabores do ${condoName}`
     },
     'Beleza': {
       gradient: 'bg-gradient-to-r from-pink-400 to-rose-400',
@@ -76,7 +78,6 @@ const Marketplace: React.FC = () => {
   const currentTheme = themes[activeCategory] || themes['Todos'];
   const HeaderIcon = currentTheme.icon;
 
-  const condoName = profile?.condo_name || 'Vila';
 
   // State from Global Context instead of local
   // Removed local useEffect for fetchData
