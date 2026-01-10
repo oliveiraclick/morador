@@ -197,11 +197,20 @@ export const GlobalProvider = ({ children }: { children: ReactNode }) => {
     const refreshAll = async () => {
         setLoading(true);
         try {
-            await Promise.all([refreshProfile(), refreshItems(), refreshCondos()]);
+            // Priority 1: Authentication & Profile (Critical for routing)
+            await refreshProfile();
         } catch (error) {
-            console.error('Error in refreshAll:', error);
+            console.error('Error in refreshAll (Profile):', error);
         } finally {
+            // Release the UI block immediately after auth check
             setLoading(false);
+        }
+
+        // Priority 2: Content (Can load in background)
+        try {
+            await Promise.all([refreshItems(), refreshCondos()]);
+        } catch (error) {
+            console.error('Error in refreshAll (Content):', error);
         }
     };
 

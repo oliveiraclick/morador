@@ -41,11 +41,32 @@ const Login: React.FC = ({ setRole }: { setRole?: (role: UserRole) => void }) =>
             if (error) throw error;
 
             if (data.user) {
-                // Force a check/refresh
-                // The GlobalContext listener will pick this up, but we can manually trigger navigation logic
-                // after a short delay to allow context to update
+                // 1. Fetch Profile explicitly to guarantee localStorage is ready
+                // Use maybeSingle to avoid 406 error if profile doesn't exist yet
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', data.user.id)
+                    .maybeSingle();
+
+                // 2. Set LocalStorage Critical Data
                 localStorage.setItem('user_registered', 'true');
-                navigate('/home');
+
+                if (profile) {
+                    // Sync essential data immediately
+                    localStorage.setItem('user_role', profile.role || 'resident');
+                    if (profile.full_name) localStorage.setItem('user_name', profile.full_name);
+
+                    // 3. Routing Logic based on Role
+                    const role = profile.role || 'resident';
+                    if (role === UserRole.ADMIN) navigate('/admin');
+                    else if (role === UserRole.PROFESSIONAL) navigate('/dashboard');
+                    else navigate('/home');
+                } else {
+                    // Start fresh for new users without profile
+                    localStorage.setItem('user_role', 'resident');
+                    navigate('/complete-registration');
+                }
             }
         } catch (err: any) {
             console.error(err);
