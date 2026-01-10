@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, Settings, TrendingUp, TrendingDown, Users, Building, DollarSign, Store, BarChart3, ShieldCheck, Ticket } from 'lucide-react';
+import { Bell, Settings, TrendingUp, TrendingDown, Users, Building, DollarSign, Store, BarChart3, ShieldCheck, Ticket, Tag } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import AdminStatsCard from '../components/AdminStatsCard';
@@ -275,6 +275,18 @@ const MasterDashboard: React.FC = () => {
                   <Store size={16} className="text-white" />
                 </div>
                 <span className="text-white font-bold text-sm leading-tight block">Gerenciar Anúncios</span>
+              </div>
+            </button>
+
+            <button onClick={() => navigate('/admin/categories')} className="h-32 rounded-3xl p-4 relative overflow-hidden flex items-end group col-span-1 bg-teal-600">
+              <div className="absolute inset-0 bg-gradient-to-br from-teal-500 to-emerald-600"></div>
+              <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/20 rounded-full blur-2xl group-hover:bg-white/30 transition-colors"></div>
+
+              <div className="relative z-10 text-left w-full">
+                <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center mb-2">
+                  <Tag size={16} className="text-white" />
+                </div>
+                <span className="text-white font-bold text-sm leading-tight block">Categorias Pro</span>
               </div>
             </button>
           </div>

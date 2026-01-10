@@ -43,11 +43,13 @@ import AdminFinancial from './pages/AdminFinancial';
 import AdminPlans from './pages/AdminPlans';
 import AdminBroadcast from './pages/AdminBroadcast';
 import AdminAds from './pages/AdminAds';
+import AdminCategories from './pages/AdminCategories';
 
 import ProfessionalPaywall from './pages/ProfessionalPaywall';
 import AdminBranding from './pages/AdminBranding';
 import { supabase } from './lib/supabase';
 import ErrorBoundary from './components/ErrorBoundary';
+import ScrollToTop from './components/ScrollToTop';
 
 const AppContent = () => {
   const { profile, loading, refreshProfile } = useGlobal();
@@ -85,6 +87,7 @@ const AppContent = () => {
 
   return (
     <Layout role={userRole}>
+      <ScrollToTop />
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<Splash />} />
@@ -244,6 +247,11 @@ const AppContent = () => {
         <Route path="/admin/ads" element={
           <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
             <AdminAds />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/categories" element={
+          <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+            <AdminCategories />
           </ProtectedRoute>
         } />
 

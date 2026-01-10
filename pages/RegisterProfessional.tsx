@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, User, Briefcase, Lock, Mail } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { UserRole } from '../types';
@@ -15,9 +15,39 @@ const RegisterProfessional: React.FC = () => {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [profession, setProfession] = useState('');
+
+    // New Fields
+    const [phone, setPhone] = useState('');
+    const [companyName, setCompanyName] = useState('');
+    const [address, setAddress] = useState('');
+    const [profession, setProfession] = useState(''); // Selected Category ID or Name
+
     const [referredBy, setReferredBy] = useState(referrer);
     const [serviceHistory, setServiceHistory] = useState('');
+
+    // Dynamic Categories
+    const [categories, setCategories] = useState<{ id: string, name: string }[]>([]);
+    const [loadingCategories, setLoadingCategories] = useState(true);
+
+    useEffect(() => {
+        fetchCategories();
+    }, []);
+
+    const fetchCategories = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('professional_categories')
+                .select('id, name')
+                .eq('active', true)
+                .order('name');
+
+            if (data) setCategories(data);
+        } catch (error) {
+            console.error('Error fetching categories', error);
+        } finally {
+            setLoadingCategories(false);
+        }
+    };
 
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -33,8 +63,11 @@ const RegisterProfessional: React.FC = () => {
                     data: {
                         full_name: name,
                         role: 'professional',
-                        profession: profession,
-                        service_history: serviceHistory
+                        profession: profession, // This will be the category name
+                        service_history: serviceHistory,
+                        phone: phone,
+                        company_name: companyName,
+                        address: address
                     }
                 }
             });
@@ -62,6 +95,15 @@ const RegisterProfessional: React.FC = () => {
                 if (profile) {
                     profileCreated = true;
                     console.log('✅ Perfil detectado!');
+
+                    // Force update extra fields just in case trigger missed metadata
+                    await supabase.from('profiles').update({
+                        phone,
+                        company_name: companyName,
+                        address: address,
+                        profession: profession
+                    }).eq('id', authData.user.id);
+
                 } else {
                     await new Promise(r => setTimeout(r, 1000));
                 }
@@ -148,6 +190,25 @@ const RegisterProfessional: React.FC = () => {
                         </div>
                     </div>
 
+                    {/* New Field: Phone */}
+                    <div className="space-y-1">
+                        <label className="text-xs font-bold text-gray-500 uppercase ml-1">Telefone / WhatsApp</label>
+                        <div className="relative">
+                            <Briefcase size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                            {/* Using Briefcase as generic icon or could import Phone */}
+                            <input required type="tel" value={phone} onChange={e => setPhone(e.target.value)} className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:border-teal-500 focus:outline-none" placeholder="(00) 00000-0000" />
+                        </div>
+                    </div>
+
+                    {/* New Field: Company Name */}
+                    <div className="space-y-1">
+                        <label className="text-xs font-bold text-gray-500 uppercase ml-1">Nome da Empresa (Opcional)</label>
+                        <div className="relative">
+                            <Briefcase size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                            <input type="text" value={companyName} onChange={e => setCompanyName(e.target.value)} className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:border-teal-500 focus:outline-none" placeholder="Nome Fantasia" />
+                        </div>
+                    </div>
+
                     <div className="space-y-1">
                         <label className="text-xs font-bold text-gray-500 uppercase ml-1">Quem te indicou?</label>
                         <div className="relative">
@@ -162,11 +223,41 @@ const RegisterProfessional: React.FC = () => {
                         </div>
                     </div>
 
+                    {/* Dynamic Categories Dropdown */}
                     <div className="space-y-1">
-                        <label className="text-xs font-bold text-gray-500 uppercase ml-1">Profissão / Serviço</label>
+                        <label className="text-xs font-bold text-gray-500 uppercase ml-1">Profissão / Categoria</label>
                         <div className="relative">
                             <Briefcase size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                            <input required type="text" value={profession} onChange={e => setProfession(e.target.value)} className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:border-teal-500 focus:outline-none" placeholder="Ex: Eletricista, Manicure..." />
+                            <select
+                                required
+                                value={profession}
+                                onChange={e => setProfession(e.target.value)}
+                                className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:border-teal-500 focus:outline-none bg-white appearance-none"
+                            >
+                                <option value="" disabled>Selecione sua categoria</option>
+                                {loadingCategories ? (
+                                    <option>Carregando...</option>
+                                ) : (
+                                    categories.map(cat => (
+                                        <option key={cat.id} value={cat.name}>{cat.name}</option>
+                                    ))
+                                )}
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* New Field: Address */}
+                    <div className="space-y-1">
+                        <label className="text-xs font-bold text-gray-500 uppercase ml-1">Endereço Comercial / Base</label>
+                        <div className="relative">
+                            <input
+                                required
+                                type="text"
+                                value={address}
+                                onChange={e => setAddress(e.target.value)}
+                                className="w-full p-3 rounded-xl border border-gray-200 focus:border-teal-500 focus:outline-none"
+                                placeholder="Rua, Bairro ou Cidade"
+                            />
                         </div>
                     </div>
 

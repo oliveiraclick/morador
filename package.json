@@ -10,6 +10,9 @@
     "release": "node scripts/bump_version.js"
   },
   "dependencies": {
+    "@capacitor/android": "^8.0.0",
+    "@capacitor/cli": "^8.0.0",
+    "@capacitor/core": "^8.0.0",
     "@google/genai": "^1.33.0",
     "@supabase/supabase-js": "^2.39.0",
     "lucide-react": "^0.363.0",

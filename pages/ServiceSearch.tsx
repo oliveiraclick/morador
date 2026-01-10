@@ -34,7 +34,7 @@ const ServiceSearch: React.FC = () => {
                 .from('profiles')
                 .select('id, full_name, profession, service_history, avatar_url')
                 .eq('role', UserRole.PROFESSIONAL)
-                .ilike('profession', `%${term}%`); // Simple search on profession for now
+                .or(`profession.ilike.%${term}%,full_name.ilike.%${term}%,service_history.ilike.%${term}%`);
 
             // Allow searching by name as well?
             // .or(`profession.ilike.%${term}%,full_name.ilike.%${term}%`) 

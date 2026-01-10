@@ -212,7 +212,10 @@ const Marketplace: React.FC = () => {
             <h1 className="text-lg font-bold">{currentTheme.headerTitle}</h1>
           </div>
 
-          <button className={`p-2 -mr-2 rounded-full ${currentTheme.text === 'text-white' ? 'hover:bg-white/20 text-white' : 'hover:bg-gray-100 text-gray-900'}`}>
+          <button
+            onClick={() => navigate('/service-search')}
+            className={`p-2 -mr-2 rounded-full ${currentTheme.text === 'text-white' ? 'hover:bg-white/20 text-white' : 'hover:bg-gray-100 text-gray-900'}`}
+          >
             <Search size={24} />
           </button>
         </div>
